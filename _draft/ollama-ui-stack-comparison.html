@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ollama 웹 UI·에이전트 스택 비교: Open WebUI, LibreChat, AnythingLLM, n8n</title>
+  <style>
+    :root{
+      --bg:#0b1020; --paper:#111936; --paper-2:#172142; --ink:#edf4ff; --muted:#aebbd5;
+      --line:#2a3a67; --service:#43a7ff; --store:#38d39f; --warn:#ffc857; --risk:#ff6b7a;
+      --external:#b388ff; --ok:#5ee2a0; --shadow:0 18px 50px rgba(0,0,0,.32);
+      --radius:20px; --radius-sm:13px; --max:1240px;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:radial-gradient(circle at top left,#1a2c57 0,#0b1020 34rem);color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.55}
+    a{color:#9bd0ff;text-decoration:none;border-bottom:1px solid rgba(155,208,255,.45)}
+    a:hover{color:white;border-bottom-color:white}
+    header,main,footer{width:min(var(--max),calc(100% - 32px));margin:auto}
+    header{padding:36px 0 24px}
+    h1{font-size:clamp(2rem,5vw,4.4rem);line-height:1.03;margin:0 0 16px;letter-spacing:-.05em}
+    h2{font-size:clamp(1.55rem,3vw,2.25rem);margin:0 0 14px;letter-spacing:-.03em}
+    h3{font-size:1.05rem;margin:0 0 10px;color:#f7fbff}
+    p{margin:0 0 12px;color:var(--muted)}
+    .lead{font-size:1.13rem;max-width:920px;color:#d8e5ff}
+    .meta{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 0}
+    .tag,.status{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 10px;background:rgba(255,255,255,.04);font-size:.82rem;color:#d8e4ff;white-space:nowrap}
+    .status.confirmed{border-color:rgba(94,226,160,.55);background:rgba(94,226,160,.10);color:#bff7d9}
+    .status.inferred{border-color:rgba(255,200,87,.55);background:rgba(255,200,87,.10);color:#ffe2a0}
+    .status.risk{border-color:rgba(255,107,122,.55);background:rgba(255,107,122,.10);color:#ffc2c9}
+    section{margin:22px 0;padding:24px;border:1px solid rgba(134,163,222,.22);background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));border-radius:var(--radius);box-shadow:var(--shadow)}
+    .section-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:18px}
+    .section-head p{max-width:760px}
+    .grid{display:grid;gap:16px}
+    .cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+    @media (max-width:920px){.cols-2,.cols-3,.cols-4{grid-template-columns:1fr}.section-head{display:block}.wide-table{overflow-x:auto}}
+    .panel,.node,.flowchart-step,.decision-node,.terminal-node,.milestone,.signal{border:1px solid var(--line);background:rgba(12,18,39,.74);border-radius:var(--radius-sm);padding:16px;position:relative}
+    .panel strong,.node strong{color:#fff}
+    .callout{border-left:4px solid var(--ok);background:rgba(94,226,160,.10)}
+    .warning{border-left:4px solid var(--warn);background:rgba(255,200,87,.10)}
+    .riskbox{border-left:4px solid var(--risk);background:rgba(255,107,122,.10)}
+    .rank{font-size:2.2rem;font-weight:800;letter-spacing:-.05em;color:#fff}
+    .product-card{transition:transform .2s ease,border-color .2s ease,background .2s ease;overflow:hidden}
+    .product-card.active{border-color:#8fd3ff;background:linear-gradient(180deg,rgba(67,167,255,.16),rgba(255,255,255,.035));transform:translateY(-2px)}
+    .card-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+    .score-badge{font-weight:800;font-size:1.3rem;color:white;background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:14px;padding:6px 10px;min-width:70px;text-align:center}
+    .scorebar{height:9px;border-radius:999px;background:#233154;margin:12px 0;overflow:hidden}
+    .scorebar span{display:block;height:100%;width:50%;border-radius:999px;background:linear-gradient(90deg,var(--service),var(--ok));transition:width .25s ease}
+    .mini-list{padding-left:18px;margin:10px 0 0;color:#c9d6ef}
+    .mini-list li{margin:5px 0}
+    .controls{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;position:sticky;top:0;z-index:2;padding:10px 0;background:linear-gradient(180deg,rgba(11,16,32,.96),rgba(11,16,32,.78))}
+    button.filter{border:1px solid var(--line);background:#111b3a;color:#dce9ff;border-radius:999px;padding:9px 13px;font-weight:700;cursor:pointer}
+    button.filter[aria-pressed="true"]{background:#e8f4ff;color:#0a132b;border-color:#e8f4ff}
+    .system-map{display:grid;grid-template-columns:1fr .5fr 1.2fr .5fr 1fr;gap:12px;align-items:stretch}
+    .system-map .node{min-height:118px;display:flex;flex-direction:column;justify-content:center}
+    .node.client{border-color:rgba(67,167,255,.55)}
+    .node.service{border-color:rgba(67,167,255,.55)}
+    .node.store{border-color:rgba(56,211,159,.55)}
+    .node.external{border-color:rgba(179,136,255,.55)}
+    .edge{display:flex;align-items:center;justify-content:center;color:#d8e7ff;font-size:.86rem;text-align:center;border:1px dashed var(--line);border-radius:999px;padding:10px;background:rgba(255,255,255,.03)}
+    .edge::after{content:"→";font-size:1.35rem;margin-left:8px;color:#9bd0ff}
+    .boundary-band{grid-column:1/-1;border:1px dashed rgba(255,255,255,.22);border-radius:16px;padding:9px 12px;color:#aebbd5;background:rgba(255,255,255,.035);font-size:.88rem}
+    @media (max-width:980px){.system-map{grid-template-columns:1fr}.edge::after{content:"↓"}}
+    .finding-grid .panel{min-height:150px}
+    .verdict{font-size:1.2rem;color:#fff;font-weight:800}
+    .matrix{width:100%;border-collapse:separate;border-spacing:0;min-width:940px;color:#dbe6fb}
+    .matrix th,.matrix td{padding:12px 12px;border-bottom:1px solid rgba(134,163,222,.18);vertical-align:top;text-align:left}
+    .matrix th{position:sticky;top:52px;background:#121b3a;color:#fff;z-index:1}
+    .matrix tr.highlight-row td{background:rgba(67,167,255,.09)}
+    .pill{display:inline-block;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid var(--line);font-size:.78rem;color:#dce8ff;margin:2px 2px 2px 0}
+    .flowchart{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:stretch}
+    .decision-node{border-color:rgba(255,200,87,.55);background:rgba(255,200,87,.08)}
+    .terminal-node{border-color:rgba(94,226,160,.55);background:rgba(94,226,160,.08)}
+    .branch-edge{display:flex;align-items:center;justify-content:center;border:1px dashed var(--line);border-radius:14px;min-height:64px;color:#bcd0ee;font-weight:700;text-align:center}
+    @media (max-width:1100px){.flowchart{grid-template-columns:1fr}}
+    .activity-card .metric{font-size:2rem;line-height:1;font-weight:900;color:#fff;letter-spacing:-.04em}
+    .activity-card small{color:#91a6c8}
+    .timeline{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+    @media (max-width:920px){.timeline{grid-template-columns:1fr}}
+    .risk-register{width:100%;border-collapse:collapse;color:#dbe6fb}
+    .risk-register th,.risk-register td{padding:12px;border:1px solid rgba(134,163,222,.18);vertical-align:top;text-align:left}
+    .risk-register th{background:rgba(255,255,255,.06);color:#fff}
+    .traceability{display:grid;gap:10px}
+    .trace-row{display:grid;grid-template-columns:1.15fr 2.1fr .8fr;gap:10px;align-items:start;border:1px solid rgba(134,163,222,.18);background:rgba(255,255,255,.035);border-radius:14px;padding:12px}
+    @media (max-width:900px){.trace-row{grid-template-columns:1fr}}
+    .trace-row code,.source-url{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.82rem;color:#b9dcff;word-break:break-all}
+    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:8px;padding:2px 6px;color:#fff}
+    .footnote{font-size:.88rem;color:#93a7c9;margin-top:12px}
+    footer{padding:24px 0 42px;color:#94a7c8;font-size:.9rem}
+  </style>
+</head>
+<body>
+<header>
+  <div class="meta">
+    <span class="status confirmed">Confidence: complete</span>
+    <span class="tag">기준일: 2026-06-04 KST</span>
+    <span class="tag">대상: Ollama 서버 + 웹 UI + 도구/MCP/에이전트</span>
+  </div>
+  <h1>Ollama 웹 UI·에이전트 스택 비교</h1>
+  <p class="lead">처음 시작한다면 <strong>Open WebUI</strong>를 기본 채팅 UI로 두고, 자동화가 필요해질 때 <strong>n8n</strong>을 백오피스 워크플로우 엔진으로 붙이는 구성이 가장 균형적입니다. <strong>LibreChat</strong>은 subagent가 핵심일 때, <strong>AnythingLLM</strong>은 문서/RAG 워크스페이스가 핵심일 때 선택 가치가 큽니다.</p>
+</header>
+
+<main>
+  <section id="map">
+    <div class="section-head">
+      <div>
+        <h2>1. 추천 구조 지도</h2>
+        <p>네 도구는 서로 같은 층에 놓기보다 역할을 나눠야 합니다. 채팅 UX, Ollama 모델, MCP/도구, 장기 자동화를 분리하면 운영 복잡도가 낮아집니다.</p>
+      </div>
+      <span class="status confirmed">Nimitz 구조 검토 반영</span>
+    </div>
+    <div class="system-map">
+      <div class="node client"><span class="tag">사용자</span><strong>브라우저 채팅</strong><p>일상 대화, 모델 선택, 파일/문서 질의, 도구 호출 시작점</p></div>
+      <div class="edge">주 UI</div>
+      <div class="node service"><span class="tag">기본 추천</span><strong>Open WebUI</strong><p>Ollama 친화, Skills, Tools/Functions, Knowledge/RAG, MCP 서버 연결</p></div>
+      <div class="edge">로컬 추론</div>
+      <div class="node store"><span class="tag">모델 런타임</span><strong>Ollama</strong><p>로컬/서버 모델 실행, tool calling 지원 모델 선택이 품질의 병목</p></div>
+      <div class="boundary-band">운영 경계: “interactive chat → Open WebUI”, “scheduled/webhook/retry workflow → n8n”, “model serving → Ollama”</div>
+      <div class="node external"><span class="tag">대체 주 UI</span><strong>LibreChat</strong><p>Subagents, Agent Chain, MCP, Skills가 핵심 요구일 때 Open WebUI 대신 고려</p></div>
+      <div class="edge">전문 워크스페이스</div>
+      <div class="node external"><span class="tag">문서 중심</span><strong>AnythingLLM</strong><p>워크스페이스/RAG/Agent Flow 중심이면 강함. 동일 문서 코퍼스 중복 운영은 피함</p></div>
+      <div class="edge">MCP·Webhook</div>
+      <div class="node service"><span class="tag">자동화 엔진</span><strong>n8n</strong><p>트리거, 스케줄, 외부 앱, 재시도, 감사 로그. 채팅 UI가 아니라 워크플로우 백엔드</p></div>
+    </div>
+  </section>
+
+  <section id="interactive">
+    <div class="section-head">
+      <div>
+        <h2>2. 관점별 추천 카드</h2>
+        <p>아래 버튼을 눌러 “무엇을 가장 중요하게 볼지” 바꿔보세요. 점수는 공식 기능, GitHub 활동성, Ollama 적합성, 사용 편의성을 합친 기술 판단입니다.</p>
+      </div>
+      <span id="profileLabel" class="status confirmed">현재 관점: 초보자·일상 사용</span>
+    </div>
+    <div class="controls" role="toolbar" aria-label="비교 관점 선택">
+      <button class="filter" type="button" data-profile="starter" aria-pressed="true">초보자·일상 사용</button>
+      <button class="filter" type="button" data-profile="agents" aria-pressed="false">Skill·Subagent</button>
+      <button class="filter" type="button" data-profile="rag" aria-pressed="false">문서·RAG</button>
+      <button class="filter" type="button" data-profile="automation" aria-pressed="false">자동화·MCP</button>
+      <button class="filter" type="button" data-profile="activity" aria-pressed="false">프로젝트 활성도</button>
+    </div>
+    <div class="grid cols-4 finding-grid" id="productCards">
+      <article class="panel product-card active" data-product="openwebui" data-starter="95" data-agents="76" data-rag="82" data-automation="73" data-activity="90">
+        <div class="card-title"><h3>Open WebUI</h3><span class="score-badge">95</span></div>
+        <div class="scorebar"><span></span></div>
+        <p class="verdict">기본 추천</p>
+        <ul class="mini-list">
+          <li>Ollama 연결이 가장 자연스러움</li>
+          <li>Skills, Tools/Functions, MCP, Knowledge/RAG 제공</li>
+          <li>복잡한 subagent orchestration은 외부 계층 필요</li>
+        </ul>
+      </article>
+      <article class="panel product-card" data-product="librechat" data-starter="72" data-agents="94" data-rag="76" data-automation="70" data-activity="82">
+        <div class="card-title"><h3>LibreChat</h3><span class="score-badge">72</span></div>
+        <div class="scorebar"><span></span></div>
+        <p class="verdict">Subagent 특화</p>
+        <ul class="mini-list">
+          <li>Subagents, Agent Chain, Skills, MCP 문서가 강함</li>
+          <li>Ollama는 OpenAI-compatible endpoint 설정 방식</li>
+          <li>초기 설정은 Open WebUI보다 구성 파일 이해가 필요</li>
+        </ul>
+      </article>
+      <article class="panel product-card" data-product="anythingllm" data-starter="84" data-agents="80" data-rag="92" data-automation="68" data-activity="76">
+        <div class="card-title"><h3>AnythingLLM</h3><span class="score-badge">84</span></div>
+        <div class="scorebar"><span></span></div>
+        <p class="verdict">문서/RAG 특화</p>
+        <ul class="mini-list">
+          <li>로컬-first, 워크스페이스, 문서 질의 경험이 좋음</li>
+          <li>Agents, custom skills, MCP, Agent Flows 제공</li>
+          <li>일반 채팅 UI보다 지식관리 제품에 가까움</li>
+        </ul>
+      </article>
+      <article class="panel product-card" data-product="n8n" data-starter="69" data-agents="78" data-rag="63" data-automation="96" data-activity="98">
+        <div class="card-title"><h3>n8n</h3><span class="score-badge">69</span></div>
+        <div class="scorebar"><span></span></div>
+        <p class="verdict">자동화 백엔드</p>
+        <ul class="mini-list">
+          <li>400+ integrations, visual workflow, LangChain AI nodes</li>
+          <li>Ollama + Qdrant + Postgres starter kit 존재</li>
+          <li>ChatGPT형 웹 UI 대체재가 아니라 workflow engine</li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <section id="decision">
+    <div class="section-head">
+      <div>
+        <h2>3. 선택 플로우차트</h2>
+        <p>질문 하나씩 내려가면 “첫 설치 후보”가 빠르게 정해집니다. 여러 요구가 동시에 있으면 한 제품에 몰아넣지 말고 역할을 분리하세요.</p>
+      </div>
+      <span class="status confirmed">권장 시작점: Open WebUI + Ollama</span>
+    </div>
+    <div class="flowchart">
+      <div class="terminal-node"><strong>Start</strong><p>Ollama 서버를 이미 쓰거나 쓸 예정</p></div>
+      <div class="branch-edge">웹에서 편하게 대화하고 모델 관리?</div>
+      <div class="terminal-node"><strong>Open WebUI</strong><p>가장 먼저 설치할 후보. 기능 폭과 사용성이 균형적</p></div>
+      <div class="decision-node"><strong>자동화가 반복됨?</strong><p>스케줄, webhook, 외부 API, 장시간 작업</p></div>
+      <div class="branch-edge">예: workflow 필요</div>
+      <div class="terminal-node"><strong>n8n 추가</strong><p>MCP 또는 webhook으로 Open WebUI에서 호출</p></div>
+      <div class="decision-node"><strong>Subagent가 핵심?</strong><p>부모 agent가 child agent에게 위임·합성</p></div>
+      <div class="terminal-node"><strong>LibreChat 고려</strong><p>주 UI 자체를 바꾸는 결정을 할 만큼 중요할 때</p></div>
+      <div class="decision-node"><strong>문서 코퍼스가 핵심?</strong><p>팀/개인 지식베이스, 워크스페이스, RAG 운영</p></div>
+      <div class="terminal-node"><strong>AnythingLLM 고려</strong><p>문서 중심 workflow가 상위 요구라면 적합</p></div>
+      <div class="branch-edge">아직 불확실</div>
+      <div class="terminal-node"><strong>두 서비스로 시작</strong><p>Open WebUI + Ollama만 먼저, 필요가 반복될 때 n8n</p></div>
+    </div>
+  </section>
+
+  <section id="matrix">
+    <div class="section-head">
+      <div>
+        <h2>4. 기술 비교 매트릭스</h2>
+        <p>사용자가 말한 skill, MCP, tool, multi sub-agent 요구를 기능별로 쪼개 비교했습니다.</p>
+      </div>
+      <span class="status confirmed">공식 문서 기반</span>
+    </div>
+    <div class="wide-table">
+      <table class="matrix" aria-label="Ollama UI stack comparison matrix">
+        <thead>
+          <tr>
+            <th>후보</th><th>Ollama 적합성</th><th>Skill·Tool·MCP</th><th>Multi sub-agent</th><th>RAG·문서</th><th>사용 편의성</th><th>주의점</th>
+          </tr>
+        </thead>
+        <tbody id="matrixRows">
+          <tr data-row="openwebui" class="highlight-row">
+            <td><strong>Open WebUI</strong><br><span class="pill">기본 추천</span></td>
+            <td>Ollama 연결·모델 관리 경험이 가장 직접적. Docker로 시작하기 쉬움.</td>
+            <td><span class="pill">Skills</span><span class="pill">Tools/Functions</span><span class="pill">MCP Streamable HTTP</span><span class="pill">OpenAPI servers</span></td>
+            <td>내장 subagent graph보다는 Pipes/외부 agent/MCP로 확장하는 방식.</td>
+            <td>Knowledge/RAG 기능이 있어 일반 지식베이스는 충분히 시작 가능.</td>
+            <td>초보자에게 가장 단순한 첫 선택. UI가 ChatGPT류 사용감에 가까움.</td>
+            <td>stdio/SSE MCP는 보통 mcpo 같은 bridge가 필요. 도구 노출 권한과 Python function 실행 위험 관리 필요.</td>
+          </tr>
+          <tr data-row="librechat">
+            <td><strong>LibreChat</strong><br><span class="pill">agent specialist</span></td>
+            <td>Ollama를 OpenAI-compatible endpoint로 붙임. 설정은 YAML 중심.</td>
+            <td><span class="pill">MCP</span><span class="pill">OpenAPI Actions</span><span class="pill">Skills SKILL.md</span><span class="pill">Agent tools</span></td>
+            <td>Subagents와 Agent Chain 문서가 가장 직접적. 이 요구가 핵심이면 강력.</td>
+            <td>파일 검색, context, code interpreter 계열 기능 제공.</td>
+            <td>기능은 풍부하지만 Open WebUI보다 초기 설정과 운영 개념이 많음.</td>
+            <td>Agent Chain은 변화가 빠른 영역. 일부 기능은 별도 API/서비스 의존 가능.</td>
+          </tr>
+          <tr data-row="anythingllm">
+            <td><strong>AnythingLLM</strong><br><span class="pill">RAG workspace</span></td>
+            <td>Ollama local provider를 공식 지원. 데스크톱/도커 선택 가능.</td>
+            <td><span class="pill">Agent skills</span><span class="pill">Custom skills</span><span class="pill">MCP</span><span class="pill">Agent Flows</span></td>
+            <td>복잡한 subagent graph보다는 workspace agent와 no-code flow 성격이 강함.</td>
+            <td>문서 ingest, workspace, local-first RAG 경험이 핵심 강점.</td>
+            <td>문서 중심 사용자에게 쉽고 직관적. 일반 assistant UI로만 보면 목적성이 다름.</td>
+            <td>같은 파일을 Open WebUI와 중복 색인하면 권한·최신성·스토리지 관리가 흐트러짐.</td>
+          </tr>
+          <tr data-row="n8n">
+            <td><strong>n8n</strong><br><span class="pill">workflow engine</span></td>
+            <td>Ollama credentials/chat model/embeddings 및 self-hosted AI starter kit 제공.</td>
+            <td><span class="pill">MCP Server Trigger</span><span class="pill">MCP Client Tool</span><span class="pill">AI Agent node</span><span class="pill">400+ integrations</span></td>
+            <td>agent node와 workflow fan-out은 가능하지만 채팅형 subagent UI와는 다름.</td>
+            <td>Qdrant 등과 결합해 RAG workflow를 만들 수 있으나 지식관리 UI는 아님.</td>
+            <td>설치 자체는 쉬운 편이나 운영·보안·credential 관리 난도가 있음.</td>
+            <td>Open WebUI 대체가 아니라 자동화 계층. starter kit은 평가/테스트 성격으로 보고 운영 하드닝 필요.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="activity">
+    <div class="section-head">
+      <div>
+        <h2>5. 최신성·프로젝트 활성도 신호</h2>
+        <p>GitHub API로 2026-06-04 KST에 확인한 수치입니다. 별 수만이 품질을 보장하지는 않지만, 릴리스와 최근 push가 모두 살아 있어 네 프로젝트 모두 활발한 편입니다.</p>
+      </div>
+      <span class="status confirmed">직접 확인: GitHub API</span>
+    </div>
+    <div class="grid cols-4">
+      <article class="panel activity-card"><h3>Open WebUI</h3><div class="metric">139,829</div><small>stars · forks 20,076</small><p>Latest release: <strong>v0.9.6</strong><br>Published: 2026-06-01<br>Pushed: 2026-06-02</p></article>
+      <article class="panel activity-card"><h3>LibreChat</h3><div class="metric">38,016</div><small>stars · forks 7,817</small><p>Latest release: <strong>v0.8.6</strong><br>Published: 2026-06-01 · prerelease<br>Pushed: 2026-06-03</p></article>
+      <article class="panel activity-card"><h3>AnythingLLM</h3><div class="metric">60,984</div><small>stars · forks 6,626</small><p>Latest release: <strong>v1.13.0</strong><br>Published: 2026-05-26<br>Pushed: 2026-06-03</p></article>
+      <article class="panel activity-card"><h3>n8n</h3><div class="metric">190,925</div><small>stars · forks 58,239</small><p>Latest release: <strong>n8n@1.123.51</strong><br>Published: 2026-06-03<br>Pushed: 2026-06-03</p></article>
+    </div>
+    <p class="footnote">해석: n8n은 전체 OSS 활동·생태계가 가장 크지만 “채팅 UI”가 아닙니다. 채팅 UI 후보 중에서는 Open WebUI의 활동성과 채택 규모가 가장 강합니다.</p>
+  </section>
+
+  <section id="usability">
+    <div class="section-head">
+      <div>
+        <h2>6. 사용 편의성·운영 난도</h2>
+        <p>처음 듣는 도구를 선택할 때는 기능 수보다 “첫 성공까지 걸리는 시간”과 “나중에 헷갈리지 않는 역할 분리”가 더 중요합니다.</p>
+      </div>
+      <span class="status inferred">운영 경험 기반 해석 포함</span>
+    </div>
+    <div class="timeline">
+      <div class="milestone"><span class="rank">1</span><h3>Open WebUI</h3><p>가장 쉬운 첫 UI. Ollama와 붙여 채팅, 모델 선택, 지식베이스, 도구 호출을 한 화면에서 시작하기 좋음.</p></div>
+      <div class="milestone"><span class="rank">2</span><h3>AnythingLLM</h3><p>문서/RAG 목적이면 사용성이 좋음. 다만 “일반 chat hub”보다 “지식 workspace”라는 관점으로 봐야 함.</p></div>
+      <div class="milestone"><span class="rank">3</span><h3>LibreChat</h3><p>agent/subagent 기능은 훌륭하지만 설정 파일, providers, tools, 권한 개념을 이해해야 장점이 살아남.</p></div>
+      <div class="milestone"><span class="rank">4</span><h3>n8n</h3><p>노드 기반 자동화는 강력하지만 채팅 앱이 아님. credential, trigger, retry, 배포 보안까지 운영 책임이 생김.</p></div>
+    </div>
+  </section>
+
+  <section id="risks">
+    <div class="section-head">
+      <div>
+        <h2>7. 리스크와 운영 가드레일</h2>
+        <p>도구가 많아질수록 모델보다 운영 설계가 병목이 됩니다. 처음부터 네 제품을 모두 병렬 도입하지 않는 것이 핵심입니다.</p>
+      </div>
+      <span class="status risk">주의 필요</span>
+    </div>
+    <div class="wide-table">
+      <table class="risk-register">
+        <thead><tr><th>리스크</th><th>영향</th><th>완화책</th></tr></thead>
+        <tbody>
+          <tr><td>작은 Ollama 모델의 tool calling 품질</td><td>도구를 잘못 고르거나 인자 schema를 지키지 못해 workflow 실패</td><td>도구 호출이 검증된 모델을 고르고, MCP tool마다 샘플 프롬프트로 end-to-end 테스트</td></tr>
+          <tr><td>MCP/tool 과다 노출</td><td>잘못된 workflow 호출, 권한 상승, 외부 API 오작동</td><td>도구는 기본 비활성/allowlist로 시작. n8n workflow와 MCP server는 좁은 이름·schema·최소권한으로 노출하고, 파일/쉘/외부 API처럼 상태를 바꾸는 작업은 human approval, audit log, sandbox를 둠</td></tr>
+          <tr><td>채팅 UI 중복 도입</td><td>대화 기록, 파일 색인, 권한, tool 설정이 흩어져 운영 피로 증가</td><td>첫 달은 Open WebUI 하나만 주 UI로 사용. 반복 요구가 증명될 때 specialist 추가</td></tr>
+          <tr><td>문서/RAG 중복 색인</td><td>답변 불일치, 저장공간 낭비, 최신성 추적 실패</td><td>문서 코퍼스 소유자를 Open WebUI 또는 AnythingLLM 중 하나로 고정</td></tr>
+          <tr><td>로컬 서비스 원격 노출</td><td>LAN 사용자가 Open WebUI 첫 관리자 계정을 선점하거나 Ollama API를 직접 호출할 수 있음</td><td>Open WebUI Docker는 로컬 테스트 시 <span class="kbd">127.0.0.1</span>에만 bind. Ollama <span class="kbd">11434</span>도 외부 노출 금지. 원격 접속은 VPN/TLS reverse proxy/IP allowlist/강한 인증 후에만 허용</td></tr>
+          <tr><td>관리자·credential 관리</td><td>계정 탈취 또는 n8n workflow secret 유출 시 채팅, 문서, API 키, 자동화 대상이 노출됨</td><td>첫 실행 즉시 강한 관리자 비밀번호를 만들고 가입 승인/비활성화를 설정. n8n은 안정적인 encryption key와 별도 secret storage를 쓰며, credential을 prompt나 tool description에 넣지 않음</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+
+  <section id="homebrew-quickstart">
+    <div class="section-head">
+      <div>
+        <h2>8. Homebrew로 설치한 Open WebUI 사용법</h2>
+        <p><span class="kbd">brew install --cask open-webui</span>가 canonical Homebrew 설치 명령입니다. 최신 Homebrew에서는 <span class="kbd">brew install open-webui</span>도 cask로 해석될 수 있지만, 설치되는 것은 CLI 서버가 아니라 <strong>Open WebUI Desktop 앱</strong>입니다. 그래서 터미널에서 <span class="kbd">open-webui serve</span>가 바로 되는 형태가 아니며, <span class="kbd">brew services start open-webui</span>도 일반 사용 경로가 아닙니다. Desktop 앱은 로컬 개인 사용에는 편하지만 초기 Alpha 성격이 있으므로 재현 가능한 서버/상시 운영은 Docker 또는 Python 서버 경로가 더 적합합니다.</p>
+      </div>
+      <span class="status confirmed">로컬 확인: Cask Desktop App</span>
+    </div>
+    <div class="grid cols-3 finding-grid">
+      <article class="panel callout">
+        <h3>1) Ollama 실행 확인</h3>
+        <p>먼저 모델 서버가 살아 있어야 합니다. 터미널에서 아래를 확인하세요.</p>
+        <p><span class="kbd">ollama list</span><br><span class="kbd">curl http://127.0.0.1:11434/api/tags</span></p>
+        <p>응답이 없으면 <span class="kbd">ollama serve</span> 또는 <span class="kbd">brew services start ollama</span>로 시작합니다. Ollama API는 기본적으로 로컬 전용 <span class="kbd">127.0.0.1:11434</span>로 유지하고, <span class="kbd">OLLAMA_HOST=0.0.0.0</span> 또는 Docker port publish로 LAN에 열지 마세요.</p>
+      </article>
+      <article class="panel callout">
+        <h3>2) Open WebUI Desktop 열기</h3>
+        <p>터미널 CLI가 아니라 앱을 실행합니다.</p>
+        <p><span class="kbd">open -a "Open WebUI"</span></p>
+        <p>또는 Finder/Launchpad에서 <strong>Open WebUI</strong> 앱을 여세요. 첫 실행 후 첫 계정이 관리자 계정이 됩니다. 네트워크에 노출하기 전에 강한 고유 비밀번호로 관리자 계정을 먼저 만들고, 필요 없으면 추가 가입을 막거나 승인제로 두세요.</p>
+      </article>
+      <article class="panel callout">
+        <h3>3) Ollama 연결 URL</h3>
+        <p>모델이 안 보이면 관리자 설정에서 연결을 확인합니다.</p>
+        <p><strong>Settings → Admin Settings → Connections → Ollama</strong><br><span class="kbd">http://127.0.0.1:11434</span></p>
+        <p>Desktop/로컬 실행은 Docker가 아니므로 보통 <span class="kbd">host.docker.internal</span>이 필요 없습니다. Desktop 앱이 관리하는 내부 서버의 브라우저 포트는 공식 Homebrew cask 메타데이터에 안정적으로 문서화되어 있지 않으므로, 앱 UI로 여는 것을 기준으로 삼으세요.</p>
+      </article>
+    </div>
+    <div class="grid cols-2" style="margin-top:16px">
+      <div class="panel warning">
+        <h3>브라우저로 접속 가능한 “Docker 서버형”이 목적이면?</h3>
+        <p>Homebrew Desktop 앱은 빠른 로컬 사용에는 편하지만, 상시 서버/다른 기기 접속/운영 배포 목적이면 공식 권장 경로인 Docker 또는 Python 서버 실행이 더 명확합니다. 아래는 <strong>로컬 테스트용 quickstart</strong>입니다.</p>
+        <p><span class="kbd">docker run -d -p 127.0.0.1:3000:8080 -v open-webui:/app/backend/data --name open-webui ghcr.io/open-webui/open-webui:main</span></p>
+        <p>이 방식은 브라우저에서 <span class="kbd">http://localhost:3000</span>으로 접속합니다. <span class="kbd">127.0.0.1:3000:8080</span> bind는 로컬 테스트용 안전 기본값입니다. 다른 기기에서 접속하게 만들려면 관리자 계정 생성 후 TLS reverse proxy, VPN 또는 IP allowlist, 강한 인증을 먼저 구성하세요. Docker 컨테이너에서 Mac의 Ollama에 붙일 때는 연결 URL이 <span class="kbd">http://host.docker.internal:11434</span>가 될 수 있습니다. 운영에서는 <span class="kbd">:main</span> 같은 mutable tag 대신 검토한 release tag 또는 digest pinning을 고려하고, <span class="kbd">--restart unless-stopped</span>, 고정 <span class="kbd">WEBUI_SECRET_KEY</span>, 정기 백업을 추가하세요.</p>
+      </div>
+      <div class="panel warning">
+        <h3>Python/uv 서버 설치는 Homebrew cask와 별개</h3>
+        <p>터미널에서 <span class="kbd">open-webui serve</span>를 쓰고 싶다면 Desktop cask가 아니라 Python 패키지 또는 uv 실행 경로를 사용합니다.</p>
+        <p><span class="kbd">pip install open-webui</span><br><span class="kbd">open-webui serve</span></p>
+        <p>접속 URL은 보통 <span class="kbd">http://localhost:8080</span>입니다. 임시 실행보다 데이터 위치를 고정하려면 <span class="kbd">DATA_DIR=~/.open-webui uvx --python 3.11 open-webui@latest serve</span>처럼 <span class="kbd">DATA_DIR</span>을 지정하세요.</p>
+      </div>
+    </div>
+  </section>
+
+
+  <section id="ollama-running-troubleshooting">
+    <div class="section-head">
+      <div>
+        <h2>9. “Ollama is running”만 보일 때</h2>
+        <p>브라우저에서 <span class="kbd">Ollama is running</span>만 보이면 Open WebUI가 열린 것이 아니라 Ollama API 포트 <span class="kbd">11434</span>를 직접 연 것입니다. 이 화면은 정상적인 Ollama 상태 확인 페이지이지, 채팅 UI가 아닙니다.</p>
+      </div>
+      <span class="status confirmed">진단: Ollama 포트 접속</span>
+    </div>
+    <div class="grid cols-3 finding-grid">
+      <article class="panel callout">
+        <h3>1) 잘못 연 주소</h3>
+        <p><span class="kbd">http://localhost:11434</span> 또는 <span class="kbd">http://127.0.0.1:11434</span>는 Ollama API입니다.</p>
+        <p>여기서는 메뉴나 모델 선택 UI가 보이지 않는 것이 정상입니다.</p>
+      </article>
+      <article class="panel callout">
+        <h3>2) Open WebUI 앱 열기</h3>
+        <p>Homebrew cask 설치라면 브라우저 주소를 직접 열지 말고 앱을 실행하세요.</p>
+        <p><span class="kbd">open -a "Open WebUI"</span></p>
+        <p>Open WebUI 화면에서는 로그인/회원가입, 새 채팅, 모델 선택 드롭다운이 보여야 합니다. <span class="kbd">localhost:3000</span>과 <span class="kbd">localhost:8080</span>도 닫혀 있고 Open WebUI 프로세스가 없다면, Open WebUI가 아직 실행되지 않은 상태입니다.</p>
+      </article>
+      <article class="panel callout">
+        <h3>3) 연결 설정</h3>
+        <p>모델이 안 보이면 관리자 계정으로 들어가서 아래를 확인합니다.</p>
+        <p><strong>Settings → Admin Settings → Connections → Ollama</strong></p>
+        <p>설치 방식별 URL을 구분하세요: Homebrew Desktop/Python 서버가 같은 Mac에서 돌면 <span class="kbd">http://127.0.0.1:11434</span>, Docker Open WebUI가 Mac host의 Ollama에 붙으면 <span class="kbd">http://host.docker.internal:11434</span>, Docker compose 내부 Ollama라면 compose service/container URL을 씁니다.</p>
+        <p>저장 후 새 채팅 화면의 모델 드롭다운을 새로고침하세요.</p>
+      </article>
+    </div>
+  </section>
+
+
+  <section id="podman-server-quickstart">
+    <div class="section-head">
+      <div>
+        <h2>10. Podman으로 브라우저형 Open WebUI 서버 띄우기</h2>
+        <p>Homebrew Desktop 앱이 아니라 브라우저에서 <span class="kbd">localhost:3000</span>으로 접속하는 서버형 UI를 원하면 Podman으로 Open WebUI 컨테이너만 실행하고, Ollama는 Mac host에서 계속 실행하는 구성이 깔끔합니다.</p>
+      </div>
+      <span class="status confirmed">권장: Open WebUI container + host Ollama</span>
+    </div>
+    <div class="grid cols-2 finding-grid">
+      <article class="panel callout">
+        <h3>1) Podman 준비</h3>
+        <p><span class="kbd">brew install podman</span><br><span class="kbd">podman machine init</span><br><span class="kbd">podman machine start</span></p>
+        <p>확인: <span class="kbd">podman version</span></p>
+      </article>
+      <article class="panel callout">
+        <h3>2) 안전한 로컬 실행</h3>
+        <p><span class="kbd">podman run -d --replace --name openwebui -p 127.0.0.1:3000:8080 -v open-webui:/app/backend/data -e OLLAMA_BASE_URL=http://host.containers.internal:11434 ghcr.io/open-webui/open-webui:main</span></p>
+        <p>접속: <span class="kbd">http://localhost:3000</span></p>
+      </article>
+    </div>
+    <div class="grid cols-3 finding-grid" style="margin-top:16px">
+      <article class="panel warning">
+        <h3>Ollama URL</h3>
+        <p>Podman 컨테이너 안에서 <span class="kbd">127.0.0.1</span>은 Mac host가 아니라 컨테이너/VM 자신입니다. Open WebUI에는 <span class="kbd">http://host.containers.internal:11434</span>를 넣으세요.</p>
+      </article>
+      <article class="panel warning">
+        <h3>검증 명령</h3>
+        <p><span class="kbd">curl http://127.0.0.1:11434/api/tags</span><br><span class="kbd">curl http://127.0.0.1:3000</span><br><span class="kbd">podman exec openwebui curl -fsS http://host.containers.internal:11434/api/tags</span></p>
+        <p>기존 <span class="kbd">open-webui</span> volume에 예전 Ollama URL이 저장되어 있으면 env var보다 UI 저장 설정이 우선될 수 있습니다. 모델이 안 보이면 먼저 <strong>Admin Settings → Connections → Ollama</strong>에서 URL을 다시 저장하세요. fresh volume은 채팅 기록과 설정을 잃을 수 있으므로, 의도적으로 clean instance를 만들고 백업을 확인한 뒤에만 사용하세요.</p>
+      </article>
+      <article class="panel riskbox">
+        <h3>피해야 할 것</h3>
+        <p><span class="kbd">-p 3000:8080</span>처럼 host IP를 생략하면 LAN에 노출될 수 있습니다. <span class="kbd">OLLAMA_HOST=0.0.0.0:11434</span>, <span class="kbd">-p 11434:11434</span>, <span class="kbd">--network=host</span>는 기본 대안으로 쓰지 마세요.</p>
+      </article>
+    </div>
+    <div class="panel warning" style="margin-top:16px">
+      <h3>Podman Compose variant</h3>
+      <p>Compose를 쓰더라도 port host IP를 생략하지 마세요. 아래처럼 loopback bind를 명시합니다.</p>
+      <pre class="kbd">services:
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: openwebui
+    ports:
+      - "127.0.0.1:3000:8080"
+    volumes:
+      - open-webui:/app/backend/data
+    environment:
+      OLLAMA_BASE_URL: http://host.containers.internal:11434
+volumes:
+  open-webui:</pre>
+      <p>Compose 실행 전 provider가 필요할 수 있습니다: <span class="kbd">brew install podman-compose</span>. 실행: <span class="kbd">podman compose up -d</span> 또는 환경에 따라 <span class="kbd">podman-compose up -d</span></p>
+    </div>
+
+  </section>
+
+  <section id="trace">
+    <div class="section-head">
+      <div>
+        <h2>11. Traceability · 근거 링크</h2>
+        <p>핵심 결론과 사용한 근거를 연결했습니다. 외부 링크는 문서 열람용이며 이 HTML은 외부 리소스를 불러오지 않습니다.</p>
+      </div>
+      <span class="status confirmed">검증 가능</span>
+    </div>
+    <div class="traceability">
+      <div class="trace-row"><strong>Ollama tool calling</strong><span>Ollama는 tools, parallel tool calls, multi-turn agent loop를 문서화한다.</span><span class="source-url">docs.ollama.com/capabilities/tool-calling</span></div>
+      <div class="trace-row"><strong>Open WebUI Ollama/MCP/Tools</strong><span>Ollama quick start, MCP server 연결, Functions/Tools, Skills, Knowledge 기능 근거.</span><span class="source-url">docs.openwebui.com/features/extensibility/mcp/</span></div>
+      <div class="trace-row"><strong>LibreChat agents/subagents</strong><span>LibreChat은 Agents, MCP, Skills, Subagents/Agent Chain을 공식 기능으로 설명한다.</span><span class="source-url">librechat.ai/docs/features/subagents</span></div>
+      <div class="trace-row"><strong>AnythingLLM MCP/Agent Flows</strong><span>AnythingLLM은 MCP compatibility, Agent, custom skills, Agent Flows 중심의 문서/RAG 제품이다.</span><span class="source-url">docs.anythingllm.com/mcp-compatibility/overview</span></div>
+      <div class="trace-row"><strong>n8n AI/Ollama/MCP</strong><span>n8n은 self-hosted AI starter kit, Ollama credentials/model nodes, MCP server/client nodes를 제공한다.</span><span class="source-url">docs.n8n.io/hosting/starter-kits/ai-starter-kit/</span></div>
+      <div class="trace-row"><strong>프로젝트 활성도</strong><span>stars, forks, release, pushed_at 값은 2026-06-04 KST GitHub API 직접 조회로 기록했다.</span><span class="source-url">api.github.com/repos/open-webui/open-webui · api.github.com/repos/danny-avila/LibreChat · api.github.com/repos/Mintplex-Labs/anything-llm · api.github.com/repos/n8n-io/n8n</span></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p>작성 목적: Ollama 서버 기반 웹 UI와 agent/tool/MCP 확장 전략을 빠르게 결정하기 위한 기술 인포그래픽. 권장 다음 단계는 Open WebUI + Ollama baseline 설치 후, 반복 자동화가 생길 때 n8n을 MCP 경계로 추가하는 것입니다.</p>
+</footer>
+
+<script>
+(function(){
+  const labels = {
+    starter: '현재 관점: 초보자·일상 사용',
+    agents: '현재 관점: Skill·Subagent',
+    rag: '현재 관점: 문서·RAG',
+    automation: '현재 관점: 자동화·MCP',
+    activity: '현재 관점: 프로젝트 활성도'
+  };
+  const bestByProfile = {
+    starter: 'openwebui', agents: 'librechat', rag: 'anythingllm', automation: 'n8n', activity: 'n8n'
+  };
+  const buttons = Array.from(document.querySelectorAll('button.filter'));
+  const cards = Array.from(document.querySelectorAll('.product-card'));
+  const rows = Array.from(document.querySelectorAll('#matrixRows tr'));
+  const label = document.getElementById('profileLabel');
+  function setProfile(profile){
+    buttons.forEach(btn => btn.setAttribute('aria-pressed', String(btn.dataset.profile === profile)));
+    label.textContent = labels[profile];
+    const best = bestByProfile[profile];
+    cards.forEach(card => {
+      const score = Number(card.dataset[profile]);
+      card.querySelector('.score-badge').textContent = score;
+      card.querySelector('.scorebar span').style.width = score + '%';
+      card.classList.toggle('active', card.dataset.product === best);
+    });
+    rows.forEach(row => row.classList.toggle('highlight-row', row.dataset.row === best));
+  }
+  buttons.forEach(btn => btn.addEventListener('click', () => setProfile(btn.dataset.profile)));
+  setProfile('starter');
+})();
+</script>
+</body>
+</html>

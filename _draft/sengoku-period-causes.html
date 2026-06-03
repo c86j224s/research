@@ -1,0 +1,1285 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; media-src 'none'; font-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>전국시대의 기원과 다이묘 질서</title>
+  <style>
+    :root {
+      --bg: #f6f4ef;
+      --ink: #1f252b;
+      --muted: #66717d;
+      --panel: #ffffff;
+      --panel-2: #f0ece3;
+      --line: #d8d1c4;
+      --line-dark: #a79986;
+      --red: #a7362d;
+      --blue: #2f6597;
+      --green: #34775a;
+      --gold: #a46f1b;
+      --violet: #6d5b9c;
+      --teal: #247b7b;
+      --risk: #a7362d;
+      --warn: #9a6700;
+      --ok: #2f7a50;
+      --shadow: 0 16px 36px rgba(31, 37, 43, .08);
+      --radius: 8px;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.8), rgba(246,244,239,.92) 260px),
+        var(--bg);
+      color: var(--ink);
+      line-height: 1.62;
+    }
+    a { color: #245ba7; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    button, select { font: inherit; }
+    main, .masthead, .nav-inner { width: min(1180px, calc(100vw - 32px)); margin: 0 auto; }
+    header {
+      background: #fffdf8;
+      border-bottom: 1px solid var(--line);
+    }
+    .masthead {
+      padding: 34px 0 28px;
+      display: grid;
+      gap: 18px;
+    }
+    .eyebrow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    h1 {
+      margin: 0;
+      max-width: 980px;
+      font-size: clamp(32px, 5.2vw, 62px);
+      line-height: 1.06;
+      letter-spacing: 0;
+    }
+    h2 { margin: 0 0 14px; font-size: clamp(24px, 3vw, 34px); line-height: 1.2; letter-spacing: 0; }
+    h3 { margin: 0 0 10px; font-size: 18px; letter-spacing: 0; }
+    h4 { margin: 0; font-size: 15px; letter-spacing: 0; }
+    p { margin: 0; }
+    section { padding: 30px 0; }
+    .lead { max-width: 900px; color: #4d5a65; font-size: 17px; }
+    .tag, .status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 3px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .tag.red { color: var(--red); border-color: rgba(167,54,45,.35); background: #fff1ef; }
+    .tag.blue { color: var(--blue); border-color: rgba(47,101,151,.35); background: #eff6ff; }
+    .tag.green { color: var(--green); border-color: rgba(52,119,90,.35); background: #eef9f2; }
+    .tag.gold { color: var(--gold); border-color: rgba(164,111,27,.35); background: #fff8e8; }
+    .tag.violet { color: var(--violet); border-color: rgba(109,91,156,.35); background: #f5f1ff; }
+    .status.confirmed { color: var(--ok); background: #eef9f2; border-color: rgba(47,122,80,.35); }
+    .status.caveat { color: var(--warn); background: #fff8e1; border-color: rgba(154,103,0,.35); }
+    .status.risk { color: var(--risk); background: #fff1ef; border-color: rgba(167,54,45,.35); }
+
+    .sticky-nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(255, 253, 248, .94);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(10px);
+    }
+    .nav-inner {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 9px 0;
+    }
+    .nav-inner a {
+      flex: 0 0 auto;
+      padding: 7px 10px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      color: #3f4a55;
+      font-size: 13px;
+      text-decoration: none;
+    }
+    .nav-inner a:hover, .nav-inner a:focus { border-color: var(--line); background: #fff; }
+
+    .panel, .card, .system-map, .timeline-shell, .table-wrap, .control-strip {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .panel, .system-map, .timeline-shell, .table-wrap { padding: 18px; }
+    .grid { display: grid; gap: 14px; }
+    .cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .key-card {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+    .key-card strong { display: block; font-size: 30px; line-height: 1.1; }
+    .key-card span { color: var(--muted); font-size: 13px; }
+
+    .cause-map {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      align-items: stretch;
+    }
+    .cause-node {
+      min-height: 146px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      position: relative;
+    }
+    .cause-node::after {
+      content: "";
+      position: absolute;
+      right: -15px;
+      top: 50%;
+      width: 20px;
+      height: 2px;
+      background: var(--line-dark);
+    }
+    .cause-node:last-child::after { display: none; }
+    .cause-node b { display: block; margin-bottom: 7px; }
+    .cause-node small { color: var(--muted); }
+
+    .map-wrap {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(280px, .9fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .japan-map {
+      width: 100%;
+      min-height: 560px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #f9fbfc;
+    }
+    .region-land { fill: #e2ded3; stroke: #81766a; stroke-width: 2; }
+    .land-underlay { pointer-events: none; }
+    .land-tile {
+      fill: #e7e1d6;
+      stroke: rgba(129,118,106,.35);
+      stroke-width: .8;
+      shape-rendering: crispEdges;
+    }
+    .region-zone { fill-opacity: .18; stroke-width: 2; }
+    .region-label { font-size: 15px; font-weight: 700; fill: #26313b; }
+    .tile-grid-line { stroke: rgba(129,118,106,.2); stroke-width: .7; }
+    .map-tile {
+      stroke: #fffdf8;
+      stroke-width: 1.25;
+      shape-rendering: crispEdges;
+      cursor: pointer;
+      transition: opacity .12s ease, stroke-width .12s ease;
+    }
+    .map-tile.coast { opacity: .82; }
+    .map-tile.core { opacity: .96; }
+    .map-tile.active {
+      opacity: 1;
+      stroke: #17202a;
+      stroke-width: 2.4;
+    }
+    .map-tile:focus-visible {
+      stroke: #111827;
+      stroke-width: 3;
+      outline: none;
+    }
+    .map-tile-region:focus-visible .map-tile {
+      stroke: #111827;
+      stroke-width: 2.8;
+      outline: none;
+    }
+    .map-water-label { font-size: 12px; fill: #617283; }
+    .pixel-label {
+      font-size: 13px;
+      font-weight: 800;
+      fill: #1f252b;
+      paint-order: stroke;
+      stroke: #fff;
+      stroke-width: 4px;
+    }
+    .map-marker {
+      cursor: pointer;
+    }
+    .map-marker rect {
+      stroke: #fff;
+      stroke-width: 3;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,.22));
+      shape-rendering: crispEdges;
+    }
+    .map-marker text { font-size: 12px; font-weight: 800; fill: #1f252b; paint-order: stroke; stroke: #fff; stroke-width: 4px; }
+    .map-marker.active rect { stroke: #1f252b; stroke-width: 4; }
+    .map-marker:focus-visible rect {
+      stroke: #111827;
+      stroke-width: 5;
+    }
+    .map-marker:focus-visible text {
+      fill: #111827;
+      text-decoration: underline;
+    }
+    .map-detail { min-height: 560px; display: grid; align-content: start; gap: 12px; }
+    .detail-kicker { color: var(--muted); font-size: 13px; }
+    .detail-title { font-size: 28px; font-weight: 800; line-height: 1.15; }
+    .detail-list { margin: 0; padding-left: 20px; color: #384653; }
+    .detail-list li { margin: 6px 0; }
+
+    .control-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      padding: 12px;
+      margin-bottom: 14px;
+    }
+    .segmented { display: flex; flex-wrap: wrap; gap: 6px; }
+    .segmented button, .small-button {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: #3e4b56;
+      padding: 7px 10px;
+      cursor: pointer;
+      min-height: 34px;
+    }
+    .segmented button.active, .small-button.active {
+      background: #24313f;
+      border-color: #24313f;
+      color: #fff;
+    }
+    select {
+      min-height: 34px;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: #303a43;
+    }
+
+    .timeline-shell { overflow: hidden; }
+    .timeline-track {
+      position: relative;
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(168px, 1fr);
+      gap: 10px;
+      overflow-x: auto;
+      padding: 8px 4px 14px;
+    }
+    .milestone {
+      border: 1px solid var(--line);
+      border-top: 5px solid var(--blue);
+      border-radius: var(--radius);
+      background: #fff;
+      padding: 12px;
+      cursor: pointer;
+      text-align: left;
+      min-height: 150px;
+    }
+    .milestone[data-type="origins"] { border-top-color: var(--red); }
+    .milestone[data-type="regional"] { border-top-color: var(--teal); }
+    .milestone[data-type="warfare"] { border-top-color: var(--gold); }
+    .milestone[data-type="unification"] { border-top-color: var(--green); }
+    .milestone[data-type="settlement"] { border-top-color: var(--violet); }
+    .milestone.is-hidden { display: none; }
+    .milestone.active { outline: 3px solid rgba(36,49,63,.18); }
+    .milestone time { display: block; color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+    .milestone strong { display: block; font-size: 15px; line-height: 1.3; margin-bottom: 6px; }
+    .timeline-detail {
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+      display: grid;
+      grid-template-columns: .75fr 1.25fr;
+      gap: 14px;
+    }
+
+    .pre-grid {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+    .era-stack {
+      display: grid;
+      gap: 10px;
+    }
+    .era-node {
+      display: grid;
+      grid-template-columns: 118px 1fr;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+    .era-node time {
+      color: var(--teal);
+      font-weight: 800;
+      font-size: 14px;
+    }
+    .power-matrix {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .power-card {
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      min-height: 158px;
+    }
+    .power-card b { display: block; margin-bottom: 6px; }
+    .power-card p { color: #3a4650; }
+    .why-list {
+      margin: 10px 0 0;
+      padding-left: 20px;
+      color: #384653;
+    }
+    .why-list li { margin: 7px 0; }
+
+    .daimyo-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .daimyo-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      min-height: 268px;
+    }
+    .daimyo-card.is-hidden { display: none; }
+    .daimyo-card .name { font-size: 20px; font-weight: 800; line-height: 1.2; }
+    .daimyo-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+    .metric-row {
+      display: grid;
+      grid-template-columns: 76px 1fr 48px;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .bar { height: 8px; border-radius: 999px; background: #e8e2d8; overflow: hidden; }
+    .bar i { display: block; height: 100%; background: var(--blue); }
+    .metric-value { color: #37424d; text-align: right; font-variant-numeric: tabular-nums; }
+    .empty-state {
+      display: none;
+      margin-top: 12px;
+      padding: 14px;
+      border: 1px dashed var(--line-dark);
+      border-radius: var(--radius);
+      background: #fffdf7;
+      color: var(--muted);
+    }
+    .empty-state.visible { display: block; }
+
+    .society-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .flowchart {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      align-items: stretch;
+    }
+    .flowchart-step {
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      position: relative;
+      min-height: 132px;
+    }
+    .flowchart-step::after {
+      content: "";
+      position: absolute;
+      right: -12px;
+      top: 42px;
+      width: 12px;
+      height: 2px;
+      background: var(--line-dark);
+    }
+    .flowchart-step:last-child::after { display: none; }
+    .stack {
+      display: grid;
+      grid-template-rows: 1.1fr .9fr .9fr .8fr;
+      min-height: 430px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #fff;
+    }
+    .stack-layer {
+      padding: 14px;
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 12px;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,.55);
+      color: #17202a;
+    }
+    .stack-layer:last-child { border-bottom: 0; }
+    .stack-layer b { font-size: 18px; }
+    .stack-layer span { color: rgba(31,37,43,.82); }
+    .layer-daimyo { background: #f5d6cc; }
+    .layer-samurai { background: #d8e8f6; }
+    .layer-common { background: #d9eadf; }
+    .layer-fluid { background: #fff2c6; }
+
+    .caveat-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .caveat-card {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--warn);
+      border-radius: var(--radius);
+      background: #fff;
+      cursor: pointer;
+      text-align: left;
+      min-height: 210px;
+    }
+    .caveat-card.active { outline: 3px solid rgba(154,103,0,.22); }
+    .caveat-target {
+      margin-top: 14px;
+      padding: 16px;
+      border: 1px solid rgba(154,103,0,.32);
+      border-radius: var(--radius);
+      background: #fff8e1;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th { color: #37424d; background: #f7f3eb; font-size: 13px; }
+    td { color: #3a4650; }
+    .source-list { margin: 0; padding-left: 20px; }
+    .source-list li { margin: 7px 0; }
+    .muted { color: var(--muted); }
+    .note {
+      padding: 12px;
+      border: 1px dashed var(--line-dark);
+      border-radius: var(--radius);
+      background: #fffdf7;
+      color: #4b5660;
+    }
+
+    @media (max-width: 980px) {
+      .hero-grid, .map-wrap, .timeline-detail, .society-grid, .pre-grid { grid-template-columns: 1fr; }
+      .cols-3, .cols-4, .daimyo-grid, .caveat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .cause-map, .flowchart { grid-template-columns: 1fr; }
+      .cause-node::after, .flowchart-step::after { display: none; }
+      .map-detail, .japan-map { min-height: auto; }
+    }
+    @media (max-width: 640px) {
+      main, .masthead, .nav-inner { width: min(100% - 20px, 1180px); }
+      .cols-2, .cols-3, .cols-4, .daimyo-grid, .caveat-grid { grid-template-columns: 1fr; }
+      .panel, .system-map, .timeline-shell, .table-wrap { padding: 14px; }
+      .timeline-track { grid-auto-columns: minmax(174px, 1fr); }
+      .era-node, .power-matrix { grid-template-columns: 1fr; }
+      .stack-layer { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="masthead">
+      <div class="eyebrow">
+        <span class="tag red">전국시대 기원</span>
+        <span class="tag blue">다이묘 지도</span>
+        <span class="tag green">사회 구조</span>
+        <span class="status caveat">쟁점 주석 포함</span>
+      </div>
+      <h1>전국시대는 왜 시작되었고, 누가 일본을 다시 묶었나</h1>
+      <p class="lead">오닌의 난을 단일 원인으로 보지 않고, 무로마치 막부의 구조적 약화, 슈고 권력의 지방화, 교토 전쟁의 파괴, 하극상, 성곽 도시와 동원 경제를 하나의 상호작용 체계로 정리한 독립형 인터랙티브 문서다.</p>
+      <div class="hero-grid">
+        <div class="system-map">
+          <h2>한 화면 요약</h2>
+          <div class="cause-map" aria-label="전국시대 발생 원인 흐름">
+            <div class="cause-node"><b>막부 권위의 균열</b><small>아시카가 쇼군은 명목상 전국 질서를 대표했지만 지방 군사력과 재정을 완전히 통제하지 못했다.</small></div>
+            <div class="cause-node"><b>슈고의 지역 권력화</b><small>군사 지휘권과 조세 기반을 가진 슈고 및 유력 가문이 독자적 이해관계를 추구했다.</small></div>
+            <div class="cause-node"><b>상속·파벌 위기</b><small>아시카가 요시마사의 후계 문제와 호소카와·야마나 세력 경쟁이 교토 전쟁으로 번졌다.</small></div>
+            <div class="cause-node"><b>오닌의 난</b><small>1467-1477년의 장기전은 교토를 파괴하고 중앙 조정 능력을 거의 비웠다.</small></div>
+            <div class="cause-node"><b>하극상과 전국 다이묘</b><small>지방 무사, 가신, 촌락 연합이 기존 질서를 밀어내며 지역 국가를 세웠다.</small></div>
+          </div>
+        </div>
+        <div class="grid">
+          <div class="key-card"><strong>1467</strong><span>전국시대의 가장 흔한 출발점: 오닌의 난 발발</span></div>
+          <div class="key-card"><strong>1590</strong><span>도요토미 히데요시가 오다와라 전역 뒤 군사적 통일을 사실상 완성</span></div>
+          <div class="key-card"><strong>1600 / 1615</strong><span>세키가하라와 오사카 전역은 도쿠가와 질서의 확정 단계</span></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="sticky-nav" aria-label="문서 목차">
+    <div class="nav-inner">
+      <a href="#origins">기원</a>
+      <a href="#timeline">연표</a>
+      <a href="#pre-nobunaga">1477-1560</a>
+      <a href="#regions">지역 지도</a>
+      <a href="#daimyo">다이묘</a>
+      <a href="#society">사회</a>
+      <a href="#caveats">쟁점</a>
+      <a href="#sources">출처</a>
+    </div>
+  </nav>
+
+  <main>
+    <section id="origins">
+      <h2>기원: 오닌의 난은 방아쇠였고, 구조적 약화가 화약이었다</h2>
+      <div class="grid cols-3">
+        <article class="panel">
+          <span class="status confirmed">확인된 큰 흐름</span>
+          <h3>무로마치 체제의 취약성</h3>
+          <p>아시카가 막부는 전국적 명분을 가졌지만 각 지방의 군사·재정 기반을 직접 지배하지 못했다. 쇼군 권위가 흔들릴 때마다 유력 무가의 파벌 경쟁은 중앙 정치의 문제가 아니라 지방 동원과 군사 충돌로 확대될 수 있었다.</p>
+        </article>
+        <article class="panel">
+          <span class="status confirmed">정치·군사 전환</span>
+          <h3>슈고에서 전국 다이묘로</h3>
+          <p>슈고는 원래 막부의 지방 군사 행정자였으나, 15세기에는 독자적인 영지 운영자와 군사 후원자로 변했다. 오닌의 난 뒤에는 슈고 가문, 가신, 분가, 지방 무사가 서로를 밀어내며 더 직접적인 지역 권력이 등장했다.</p>
+        </article>
+        <article class="panel">
+          <span class="status caveat">단일 원인 경계</span>
+          <h3>경제·촌락 불안</h3>
+          <p>기근, 부채, 장원 수입 감소, 촌락 연합의 저항은 전쟁의 배경 압력을 키웠다. 전국시대는 단순히 귀족 상속 분쟁의 결과가 아니라 조세, 군사 동원, 지방 안전망이 동시에 재편된 장기 위기였다.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="timeline">
+      <h2>인터랙티브 연표: 시작과 끝은 관점에 따라 달라진다</h2>
+      <div class="control-strip" aria-label="연표 필터">
+        <span class="muted">범주 선택</span>
+        <div class="segmented" id="timelineFilters">
+          <button class="active" data-filter="all" aria-pressed="true">전체</button>
+          <button data-filter="origins" aria-pressed="false">기원</button>
+          <button data-filter="regional" aria-pressed="false">1477-1560</button>
+          <button data-filter="warfare" aria-pressed="false">전쟁·기술</button>
+          <button data-filter="unification" aria-pressed="false">통일</button>
+          <button data-filter="settlement" aria-pressed="false">정착</button>
+        </div>
+      </div>
+      <div class="timeline-shell">
+        <div class="timeline-track" id="timelineTrack" aria-label="전국시대 주요 연표"></div>
+        <div class="timeline-detail" id="timelineDetail" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section id="pre-nobunaga">
+      <h2>1477-1560: 노부나가 이전의 전국화는 이미 깊게 진행되고 있었다</h2>
+      <div class="pre-grid">
+        <div class="panel">
+          <h3>교토 권위의 껍질과 지방 권력의 실질</h3>
+          <div class="era-stack">
+            <article class="era-node">
+              <time>1477-1493</time>
+              <div><b>전후 파편화와 하극상의 제도화</b><p>오닌의 난이 끝난 뒤 교토의 명령은 지방을 묶지 못했다. 슈고, 슈고다이, 분가, 토착 무사가 각자의 군사·조세 기반을 굳혔고, 1488년 가가 잇코 잇키는 도가시 마사치카를 무너뜨려 다이묘가 아닌 종교·촌락 연합도 한 지방을 장기 지배할 수 있음을 보였다.</p></div>
+            </article>
+            <article class="era-node">
+              <time>1493-1518</time>
+              <div><b>메이오 정변과 호소카와 체제</b><p>호소카와 마사모토의 메이오 정변은 쇼군을 폐위·교체할 수 있음을 보여 주었다. 이후 아시카가 쇼군은 전국 명령권자가 아니라 교토 정권을 장악한 유력자의 정통성 자산에 가까워졌고, 1508년 오우치 요시오키의 교토 개입은 서국 다이묘도 수도 정치에 손을 뻗을 수 있음을 드러냈다.</p></div>
+            </article>
+            <article class="era-node">
+              <time>1518-1549</time>
+              <div><b>호소카와 내분과 기나이 만성전</b><p>오우치가 본거지 문제로 물러난 뒤 호소카와 내부 승계와 가신 충돌이 기나이를 소모시켰다. 수도를 잡은 세력도 지방 경쟁자, 사찰·잇키, 주변 다이묘를 동시에 제압하지 못해 전국 지배로 확장하지 못했다.</p></div>
+            </article>
+            <article class="era-node">
+              <time>1549-1560</time>
+              <div><b>미요시의 수도권 준패권</b><p>미요시 나가요시는 호소카와 하루모토를 밀어내고 교토와 기나이에 강한 영향력을 행사했다. 그러나 이 힘은 전국 정복이 아니라 아와·시코쿠 기반, 기나이 연합, 쇼군 통제에 의존한 수도권 패권이었다.</p></div>
+            </article>
+          </div>
+        </div>
+        <div class="grid">
+          <article class="panel">
+            <h3>서국·동국·규슈의 동시 경쟁</h3>
+            <div class="power-matrix">
+              <div class="power-card"><b>오우치·아마고·모리</b><p>오우치는 야마구치, 하카타 교역, 대명·조선 외교를 활용했지만 1551년 다이네이지 사건으로 흔들렸다. 1555년 이쓰쿠시마 전투 뒤 모리 모토나리가 서부 혼슈의 새 강자로 떠올랐다.</p></div>
+              <div class="power-card"><b>후호조·다케다·이마가와·우에스기</b><p>후호조는 오다와라를 중심으로 간토 지역 국가를 세웠고, 다케다는 시나노로 확장했으며, 이마가와는 스루가·도토미·미카와를 장악했다. 우에스기 겐신은 간토 관령 명분과 에치고 기반으로 이들을 견제했다.</p></div>
+              <div class="power-card"><b>규슈와 남만 교류</b><p>규슈는 오토모, 시마즈, 류조지, 지역 세력이 얽힌 다극 구도였다. 1543년 다네가시마 조총과 1549년 프란시스코 하비에르의 도착은 무역, 항구 수입, 무기 조달, 기독교 후원을 정치 선택지로 만들었다.</p></div>
+              <div class="power-card"><b>도카이 회랑과 오케하자마</b><p>이마가와 요시모토의 1560년 원정은 전통적으로 상경 가능성과 연결해 설명되지만, 이를 확정된 전국 정복 계획으로 단정하기보다는 도카이 회랑 확장이 교토 진입 가능성을 열 수 있었다는 해석으로 다루는 편이 안전하다. 오케하자마 패배는 이마가와의 서진 압력을 끊고 오다 노부나가와 마쓰다이라 이에야스의 재편 공간을 열었다.</p></div>
+            </div>
+          </article>
+          <article class="panel">
+            <h3>왜 노부나가 이전에는 전국 패권자가 나오지 않았나</h3>
+            <ul class="why-list">
+              <li>교토와 쇼군은 정통성을 주었지만 지방 군사력과 조세를 자동으로 동원하지 못했다.</li>
+              <li>산지, 해로, 성곽, 통행 회랑이 장거리 투사를 어렵게 만들었고, 본거지를 비운 다이묘는 후방 반란과 경쟁자의 공격을 감수해야 했다.</li>
+              <li>동국, 서국, 규슈, 기나이의 강자들은 서로를 견제했지만 누구도 모든 전역을 동시에 압도하지 못했다.</li>
+              <li>호소카와, 오우치, 이마가와처럼 큰 가문도 승계 분쟁, 가신 쿠데타, 한 번의 결정적 패배로 균열될 수 있었다.</li>
+              <li>잇코 잇키, 사찰 세력, 촌락 자치, 상업 도시와 항구 세력은 다이묘 권력의 외부 저항축으로 작동했다.</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="regions">
+      <h2>비트맵식 지역 인포그래픽: 경쟁은 교토만의 일이 아니었다</h2>
+      <div class="map-wrap">
+        <svg class="japan-map" viewBox="0 0 760 760" role="group" aria-labelledby="mapTitle mapDesc">
+          <title id="mapTitle">전국시대 주요 지역과 다이묘 세력의 비트맵식 일본 개념도</title>
+          <desc id="mapDesc">정사각형 타일로 일본 열도의 방향과 주요 경쟁권을 단순화한 도식이며, 각 사각 표식은 선택 가능한 다이묘 세력권이다.</desc>
+          <rect x="0" y="0" width="760" height="760" fill="#f8fbfc"></rect>
+          <g id="tileGrid" aria-hidden="true"></g>
+          <g id="baseLandTiles" class="land-underlay" aria-hidden="true" pointer-events="none"></g>
+          <g id="mapTiles" role="group" aria-label="클릭 가능한 비트맵 지역 타일"></g>
+          <text class="map-water-label" x="84" y="112">일본해</text>
+          <text class="map-water-label" x="548" y="646">태평양</text>
+          <text class="pixel-label" x="585" y="92">도호쿠</text>
+          <text class="pixel-label" x="494" y="246">간토</text>
+          <text class="pixel-label" x="368" y="314">중부</text>
+          <text class="pixel-label" x="292" y="444">기나이</text>
+          <text class="pixel-label" x="198" y="510">주고쿠</text>
+          <text class="pixel-label" x="144" y="590">시코쿠</text>
+          <text class="pixel-label" x="70" y="664">규슈</text>
+          <g id="mapMarkers" role="group" aria-label="선택 가능한 다이묘 세력권 표식"></g>
+        </svg>
+        <aside class="panel map-detail" id="mapDetail" aria-live="polite"></aside>
+      </div>
+    </section>
+
+    <section id="daimyo">
+      <h2>주요 다이묘 카드: 군사 명성만큼 행정 능력이 중요했다</h2>
+      <div class="control-strip">
+        <span class="muted">지역</span>
+        <select id="regionFilter" aria-label="다이묘 지역 필터">
+          <option value="all">전체 지역</option>
+          <option value="central">기나이·중부</option>
+          <option value="east">동국·간토</option>
+          <option value="west">서국·주고쿠</option>
+          <option value="kyushu">규슈</option>
+          <option value="north">도호쿠</option>
+          <option value="shikoku">시코쿠</option>
+        </select>
+        <span class="muted">강조</span>
+        <select id="roleFilter" aria-label="다이묘 역할 필터">
+          <option value="all">전체 역할</option>
+          <option value="unifier">통일자</option>
+          <option value="rival">강력한 경쟁자</option>
+          <option value="regional">지역 국가 건설자</option>
+          <option value="foreign">대외 교류</option>
+        </select>
+      </div>
+      <div class="daimyo-grid" id="daimyoGrid"></div>
+      <div class="empty-state" id="daimyoEmpty" role="status" aria-live="polite">선택한 필터 조합과 일치하는 다이묘 카드가 없습니다.</div>
+    </section>
+
+    <section id="society">
+      <h2>사회 시스템: 전쟁은 농촌, 병력, 시장, 성곽 도시를 한 체계로 묶었다</h2>
+      <div class="society-grid">
+        <div class="panel">
+          <h3>동원 경제 흐름</h3>
+          <div class="flowchart" aria-label="농촌에서 전쟁 체제로 이어지는 흐름">
+            <div class="flowchart-step"><h4>촌락</h4><p>쌀, 노동, 운송, 관개 조직. 일부는 잇키로 방어와 협상을 조직했다.</p></div>
+            <div class="flowchart-step"><h4>조세·검지</h4><p>다이묘는 토지 조사, 법령, 수취 기준을 통해 군사 재정을 안정화했다.</p></div>
+            <div class="flowchart-step"><h4>아시가루·무사단</h4><p>창, 활, 조총을 든 대규모 보병과 가신단이 성과 전장을 움직였다.</p></div>
+            <div class="flowchart-step"><h4>성곽 도시</h4><p>조카마치는 행정, 상업, 무기 생산, 사무라이 거주, 사찰 구역을 결합했다.</p></div>
+          </div>
+        </div>
+        <div class="stack" aria-label="전국시대 사회 계층과 유동성">
+          <div class="stack-layer layer-daimyo"><b>다이묘 권력</b><span>군사 지휘, 분국법, 성곽, 가신단, 시장 통제. 지방 국가는 전쟁 기계이자 행정 조직이었다.</span></div>
+          <div class="stack-layer layer-samurai"><b>사무라이·가신</b><span>상급 무사부터 하급 가신까지 폭넓었다. 충성과 봉토, 인질, 혼인, 배신이 정치 도구였다.</span></div>
+          <div class="stack-layer layer-common"><b>농민·상인·장인</b><span>농업 생산과 물자 유통 없이는 전쟁이 지속될 수 없었다. 상인과 장인은 무기, 갑옷, 건설, 군수 보급을 맡았다.</span></div>
+          <div class="stack-layer layer-fluid"><b>유동성과 경계</b><span>하극상과 전시 동원은 상승 가능성을 열었지만, 히데요시의 검지·도검 몰수·신분 분리는 그 통로를 점차 좁혔다.</span></div>
+        </div>
+      </div>
+      <div class="grid cols-3" style="margin-top:14px">
+        <article class="panel">
+          <h3>종교 세력</h3>
+          <p>불교 사원과 잇코 잇키는 정치·군사 세력으로 행동할 수 있었다. 노부나가는 적대적 사원 세력을 억압했고, 서일본 일부 다이묘는 포르투갈 무역과 기독교를 정치 자원으로 활용했다.</p>
+        </article>
+        <article class="panel">
+          <h3>조총과 생산</h3>
+          <p>1540년대 이후 조총은 전술만 바꾸지 않았다. 대량 생산, 탄약, 훈련, 방책, 성곽 방어, 보급 체계를 함께 요구해 전쟁의 조직화를 밀어붙였다.</p>
+        </article>
+        <article class="panel">
+          <h3>농촌의 능동성</h3>
+          <p>농민은 피해자이자 납세자였지만, 때로는 병력·운송·촌락 자치·잇키의 주체였다. 전국시대 사회를 상층 무장의 전쟁만으로 설명하면 핵심 동원이 빠진다.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="caveats">
+      <h2>필수 쟁점 패널: 널리 알려진 설명일수록 단정하면 위험하다</h2>
+      <div class="caveat-grid" id="caveatGrid"></div>
+      <div class="caveat-target" id="caveatDetail" aria-live="polite"></div>
+    </section>
+
+    <section id="sources">
+      <h2>출처 부록과 추적성</h2>
+      <div class="table-wrap">
+        <table class="traceability">
+          <thead>
+            <tr><th>문서 내 주장</th><th>근거로 사용한 연구·출처</th><th>주의 수준</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1467년 오닌의 난을 흔한 출발점으로 삼되 단일 원인으로 보지 않는다.</td><td>Encyclopaedia Britannica, “Sengoku period” — https://www.britannica.com/topic/Sengoku-period; Encyclopaedia Britannica, “Ōnin War” — https://www.britannica.com/event/Onin-War; Princeton University, “The Ōnin War” — https://commons.princeton.edu/onin/; research packet carrier:803a8116-cd60-4ec2-bede-fbf113b42178</td><td><span class="status caveat">기간·원인 주석 필요</span></td></tr>
+            <tr><td>1488년 가가 잇코 잇키는 다이묘가 아닌 종교·촌락·지역 무사 연합도 지방 권력을 장악할 수 있음을 보여 준다.</td><td>Japan Reference, “Ikkō-ikki” — https://jref.com/articles/ikk%C5%8D-ikki-%E4%B8%80%E5%90%91%E4%B8%80%E6%8F%86-religious-leagues-and-uprisings-in-sengoku-japan.1016/; World History Encyclopedia, “Sengoku Period” — https://www.worldhistory.org/Sengoku_Period/; reconnaissance packet carrier:ea8eb0c8-561e-4f47-a967-229e0bb3ef23</td><td><span class="status confirmed">잇키 권력</span></td></tr>
+            <tr><td>후호조 형성은 이즈·니라야마 기반과 오다와라 장악을 구분해 1490년대 단계적 확장으로 설명해야 한다.</td><td>Kanagawa Prefectural Archives, “The History of Odawara Castle and the Later Hōjō Clan” — https://archives.pref.kanagawa.jp/2024/10/03/english-9.pdf; World History Encyclopedia, “Sengoku Period” — https://www.worldhistory.org/Sengoku_Period/; reconnaissance packet carrier:ea8eb0c8-561e-4f47-a967-229e0bb3ef23</td><td><span class="status caveat">연대 구분</span></td></tr>
+            <tr><td>메이오 정변 이후 호소카와와 미요시의 수도권 지배는 강력했지만 전국 통일과는 다른 기나이 준패권이었다.</td><td>Japan Reference, “Miyoshi Clan” — https://jref.com/articles/miyoshi-clan.841/; Cambridge History of Japan chapter, “The sixteenth-century unification” — https://www.cambridge.org/core/services/aop-cambridge-core/content/view/0C30DC47EA85258875CFB8F4AE5DA821/9781139055086c2_p40-95_CBO.pdf; reconnaissance packet carrier:ea8eb0c8-561e-4f47-a967-229e0bb3ef23</td><td><span class="status confirmed">기나이 정치</span></td></tr>
+            <tr><td>오우치·아마고·모리의 서국 경쟁은 1551년 오우치 붕괴와 1555년 모리 부상으로 재편되었다.</td><td>SamuraiWiki, “Ōuchi clan” — https://samurai-archives.com/wiki/Ouchi_clan; Cambridge History of Japan chapter, “The sixteenth-century unification” — https://www.cambridge.org/core/services/aop-cambridge-core/content/view/0C30DC47EA85258875CFB8F4AE5DA821/9781139055086c2_p40-95_CBO.pdf; reconnaissance packet carrier:ea8eb0c8-561e-4f47-a967-229e0bb3ef23</td><td><span class="status confirmed">서국 재편</span></td></tr>
+            <tr><td>후호조·다케다·이마가와·우에스기의 동국 균형과 오케하자마의 의미는 상호 견제 및 이마가와 서진 해석으로 다루어야 한다.</td><td>SamuraiWiki, “Hōjō-Takeda-Imagawa Alliance” — https://samurai-archives.com/wiki/Hojo-Takeda-Imagawa_Alliance; Aichi Now, “Okehazama Battlefield” — https://aichinow.pref.aichi.jp/en/spots/detail/311/; reconnaissance packet carrier:ea8eb0c8-561e-4f47-a967-229e0bb3ef23</td><td><span class="status caveat">해석 주석</span></td></tr>
+            <tr><td>1568, 1573, 1590, 1600, 1615는 서로 다른 종료·정착 기준이다.</td><td>Encyclopaedia Britannica, “Sengoku period” — https://www.britannica.com/topic/Sengoku-period; World History Encyclopedia, “Sengoku Period” — https://www.worldhistory.org/Sengoku_Period/; chronology packet carrier:c3bca83a-3193-4c4d-8d52-da377858d4d9</td><td><span class="status caveat">단일 종점 금지</span></td></tr>
+            <tr><td>히데요시는 1590년에 군사적 통일을 사실상 완성했으나 안정된 막부 체제는 도쿠가와가 제도화했다.</td><td>Encyclopaedia Britannica, “Japan: Early modern Japan, 1550-1850” — https://www.britannica.com/place/Japan/Early-modern-Japan-1550-1850; chronology packet carrier:c3bca83a-3193-4c4d-8d52-da377858d4d9; QA review carrier:33a463d0-1b8d-4da5-b26c-fc14753f7a61</td><td><span class="status confirmed">구분 필요</span></td></tr>
+            <tr><td>나가시노 전투의 조총·방책 중요성은 인정하되 3단 사격과 3,000정 수치는 논쟁적이다.</td><td>Encyclopaedia Britannica, “Battle of Nagashino” — https://www.britannica.com/event/Battle-of-Nagashino; Japanese Wiki Corpus, “The Battle of Nagashino” — https://www.japanesewiki.com/history/The%20Battle%20of%20Nagashino.html; QA review carrier:33a463d0-1b8d-4da5-b26c-fc14753f7a61</td><td><span class="status caveat">신화 주석</span></td></tr>
+            <tr><td>다케다 기병은 순수 기병 돌격으로 단순화할 수 없고, mounted retainers와 지형·방책·화력의 결합으로 설명해야 한다.</td><td>Daimyo research packet carrier:3f33b9fb-156c-43b6-9bcd-3fd03d274b50; QA review carrier:33a463d0-1b8d-4da5-b26c-fc14753f7a61; Japanese Wiki Corpus, “The Battle of Nagashino” — https://www.japanesewiki.com/history/The%20Battle%20of%20Nagashino.html</td><td><span class="status caveat">군사 조직 주석</span></td></tr>
+            <tr><td>사회 유동성은 존재했으나 히데요시·도쿠가와 시기의 신분 경계 강화와 함께 이해해야 한다.</td><td>British Museum, “Who were the samurai?” — https://www.britishmuseum.org/blog/who-were-samurai; Columbia University Asia for Educators, “Toyotomi Hideyoshi: The Sword Hunt” — https://afe.easia.columbia.edu/ps/japan/tokugawa_edicts_swords.pdf; society packet carrier:8d044ad5-c7e1-4284-a5fd-01c7ed7bb96c; QA review carrier:33a463d0-1b8d-4da5-b26c-fc14753f7a61</td><td><span class="status caveat">낭만화 금지</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="grid cols-2" style="margin-top:14px">
+        <article class="panel">
+          <h3>웹 출처</h3>
+          <ul class="source-list">
+            <li>Encyclopaedia Britannica, “Sengoku period” — https://www.britannica.com/topic/Sengoku-period</li>
+            <li>Encyclopaedia Britannica, “Ōnin War” — https://www.britannica.com/event/Onin-War</li>
+            <li>Encyclopaedia Britannica, “Battle of Nagashino” — https://www.britannica.com/event/Battle-of-Nagashino</li>
+            <li>Encyclopaedia Britannica, “Japan: Early modern Japan, 1550-1850” — https://www.britannica.com/place/Japan/Early-modern-Japan-1550-1850</li>
+            <li>World History Encyclopedia, “Sengoku Period” — https://www.worldhistory.org/Sengoku_Period/</li>
+            <li>World History Encyclopedia, “Japanese Castles” — https://www.worldhistory.org/article/2112/japanese-castles/</li>
+            <li>Cambridge History of Japan chapter, “The sixteenth-century unification” — https://www.cambridge.org/core/services/aop-cambridge-core/content/view/0C30DC47EA85258875CFB8F4AE5DA821/9781139055086c2_p40-95_CBO.pdf</li>
+            <li>Princeton University, “The Ōnin War” — https://commons.princeton.edu/onin/</li>
+            <li>Kanagawa Prefectural Archives, “The History of Odawara Castle and the Later Hōjō Clan” — https://archives.pref.kanagawa.jp/2024/10/03/english-9.pdf</li>
+            <li>Japan Reference, “Miyoshi Clan” — https://jref.com/articles/miyoshi-clan.841/</li>
+            <li>Japan Reference, “Ikkō-ikki” — https://jref.com/articles/ikk%C5%8D-ikki-%E4%B8%80%E5%90%91%E4%B8%80%E6%8F%86-religious-leagues-and-uprisings-in-sengoku-japan.1016/</li>
+            <li>SamuraiWiki, “Ōuchi clan” — https://samurai-archives.com/wiki/Ouchi_clan</li>
+            <li>SamuraiWiki, “Hōjō-Takeda-Imagawa Alliance” — https://samurai-archives.com/wiki/Hojo-Takeda-Imagawa_Alliance</li>
+            <li>Aichi Now, “Okehazama Battlefield” — https://aichinow.pref.aichi.jp/en/spots/detail/311/</li>
+            <li>Japan Guide, “Castle Towns” — https://www.japan-guide.com/e/e2296.html</li>
+            <li>Khan Academy, “Matchlock gun and pistol” — https://en.khanacademy.org/humanities/art-asia/art-japan/edo-period/a/matchlock-gun-and-pistol</li>
+            <li>Encyclopaedia Britannica, “How did Oda Nobunaga make use of firearms?” — https://www.britannica.com/question/How-did-Oda-Nobunaga-make-use-of-firearms</li>
+            <li>British Museum, “Who were the samurai?” — https://www.britishmuseum.org/blog/who-were-samurai</li>
+            <li>Columbia University Asia for Educators, “Toyotomi Hideyoshi: The Sword Hunt” — https://afe.easia.columbia.edu/ps/japan/tokugawa_edicts_swords.pdf</li>
+            <li>Japanese Wiki Corpus, “The Battle of Nagashino” — https://www.japanesewiki.com/history/The%20Battle%20of%20Nagashino.html</li>
+          </ul>
+        </article>
+        <article class="panel">
+          <h3>이 파일의 범위</h3>
+          <p>이 문서는 제공된 prior research jobs와 공개 요약 출처를 기반으로 한 교육용 인포그래픽이다. 1477-1560년 절은 전역별 대표 흐름을 묶은 종합 개관이며, 모든 지방 전투와 가문 계보를 빠짐없이 나열하는 연표가 아니다. 사료 원문 전체 비평, 개별 전투 병력 수의 확정, 일본 중세 법제의 전문 주석은 범위 밖이며, 논쟁적인 통설은 별도 쟁점 패널로 표시했다.</p>
+          <p class="note" style="margin-top:12px">네트워크 호출, 외부 이미지, CDN, 외부 폰트, fetch를 사용하지 않는다. 모든 시각 요소는 HTML, CSS, 인라인 SVG, 바닐라 JavaScript로 구성되어 있다.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const timelineEvents = [
+      { year: "1467", title: "오닌의 난 발발", type: "origins", thesis: "전국시대의 가장 흔한 출발점", detail: "아시카가 요시마사의 후계 문제와 호소카와 가쓰모토, 야마나 소젠을 중심으로 한 파벌 경쟁이 교토 전쟁으로 폭발했다. 이 전쟁은 구조적 약화가 이미 진행된 막부 체제에 결정적 충격을 주었다.", caveat: "오닌의 난은 촉발점이지 단독 원인은 아니다." },
+      { year: "1477", title: "오닌의 난 종결", type: "origins", thesis: "전쟁은 끝났지만 중앙 권위는 회복되지 않음", detail: "교토는 크게 파괴되었고 지방에서는 기존 슈고, 가신, 촌락, 신흥 무사가 권력을 재조합했다. 이 시기 이후 하극상과 분국 지배가 전국시대의 기본 문법이 된다.", caveat: "전후 상황은 무질서만이 아니라 더 직접적인 지방 행정의 성장도 포함한다." },
+      { year: "1488", title: "가가 잇코 잇키", type: "regional", thesis: "비다이묘 세력의 지방 지배", detail: "가가의 잇코 잇키는 도가시 마사치카를 무너뜨리고 종교 조직, 촌락, 지역 무사, 상업 네트워크가 결합한 독자 질서를 만들었다. 이는 전국시대 권력이 반드시 전통 슈고나 단일 무가에서만 나오는 것이 아니었음을 보여 준다.", caveat: "잇키는 단순 농민 반란이 아니라 종교·지역·무사 세력이 섞인 정치 군사 연합으로 봐야 한다." },
+      { year: "1491 / 1495", title: "호조 소운의 이즈·오다와라 단계", type: "regional", thesis: "후호조 지역 국가의 출발", detail: "호조 소운은 1491년 무렵 이즈·니라야마 기반을 확보하고, 1495년 오다와라를 장악한 것으로 정리하는 편이 안전하다. 이 두 단계를 합쳐 1490년대 후호조 형성으로 보면, 이후 성곽망, 세제, 도시 운영을 결합한 동국 지역 국가의 출발점이 보인다.", caveat: "이즈 확보와 오다와라 장악은 별도 단계로 구분해야 하며, 세부 연대에는 자료별 차이가 있을 수 있다." },
+      { year: "1493", title: "메이오 정변", type: "regional", thesis: "쇼군 권위의 조작 가능성", detail: "호소카와 마사모토가 아시카가 요시타네를 폐위하면서 교토 정치는 쇼군의 명령보다 쇼군을 장악한 유력자의 군사력에 좌우되었다. 이후 호소카와 체제는 수도를 지배했지만 전국을 지배하지 못했다.", caveat: "아시카가 막부는 사라진 것이 아니라 정통성 자산으로 남아 계속 쟁탈되었다." },
+      { year: "1508-1518", title: "오우치 요시오키의 교토 개입", type: "regional", thesis: "서국 다이묘도 수도를 움직일 수 있었음", detail: "오우치 요시오키는 아시카가 요시타네를 복귀시키며 교토 정치에 깊이 개입했다. 그러나 야마구치와 서국 본거지, 아마고와의 경쟁, 대외 교역 관리가 중요했기 때문에 장기적인 전국 지배로 이어지지 않았다.", caveat: "교토 점유는 전국 패권의 필요조건일 수 있었지만 충분조건은 아니었다." },
+      { year: "1543", title: "조총과 남만 교류", type: "warfare", thesis: "포르투갈 접촉과 화기 확산", detail: "조총은 전장뿐 아니라 생산, 탄약, 훈련, 방책, 성곽 방어와 결합했다. 서일본 다이묘 일부는 무역과 기독교를 외교·군사 자원으로 삼았다.", caveat: "화기는 즉시 모든 전투를 결정한 마법의 기술이 아니라 기존 전술·조직과 결합했다." },
+      { year: "1549", title: "미요시 나가요시의 기나이 준패권", type: "regional", thesis: "호소카와 이후 수도권 강자", detail: "미요시 나가요시는 호소카와 하루모토를 밀어내고 아시카가 요시하루·요시테루를 압박하며 기나이에서 사실상 최강자가 되었다. 하지만 이 권력은 수도권 연합과 아와·시코쿠 기반에 기대어 전국적 정복 능력으로 확장되지 못했다.", caveat: "미요시는 노부나가 이전의 강력한 수도권 패권자였지만 전국 통일자는 아니었다." },
+      { year: "1549", title: "프란시스코 하비에르 도착", type: "warfare", thesis: "기독교와 남만 무역의 정치화", detail: "하비에르의 가고시마 도착 뒤 기독교 선교와 남만 무역은 규슈와 서일본 다이묘에게 항구 수입, 무기 접근, 외교 채널과 연결된 선택지가 되었다. 개종은 신앙만이 아니라 무역과 군사 전략의 맥락에서도 이해해야 한다.", caveat: "오토모 소린 같은 기독교 다이묘의 전성기는 1560년 이후까지 이어지므로 시기 구분이 필요하다." },
+      { year: "1551-1555", title: "오우치 붕괴와 모리 부상", type: "regional", thesis: "서부 혼슈 권력 재편", detail: "다이네이지 사건으로 오우치 요시타카가 몰락하고, 모리 모토나리는 이쓰쿠시마 전투에서 스에 하루카타를 꺾었다. 서국의 부와 교역로, 이와미 은산을 둘러싼 경쟁은 모리의 성장과 오우치 질서의 해체를 동시에 만들었다.", caveat: "서국은 중앙 통일자 주변부가 아니라 자체 패권 경쟁을 벌인 핵심 전장이다." },
+      { year: "1553-1554", title: "동국 사각 균형", type: "regional", thesis: "후호조·다케다·이마가와·우에스기의 상호 견제", detail: "다케다 신겐은 시나노로 진출하며 나가오 가게토라, 훗날 우에스기 겐신과 가와나카지마에서 충돌했다. 1554년 후호조·다케다·이마가와 혼인 동맹은 동국의 삼각 균형을 안정시키면서도 각 세력이 전국을 향해 단독 돌파하기 어렵게 만들었다.", caveat: "동맹은 평화를 보장한 것이 아니라 확장 방향을 조정한 전략적 휴지에 가까웠다." },
+      { year: "1560", title: "오케하자마", type: "unification", thesis: "오다 노부나가의 급부상", detail: "노부나가는 이마가와 요시모토를 격파해 중부 일본의 힘의 균형을 바꿨다. 이 승리는 이후 교토 진입과 통일 전쟁의 출발점이 되었다.", caveat: "노부나가의 부상은 군사 승리와 지역 행정 기반이 함께 만든 결과다." },
+      { year: "1568", title: "노부나가의 교토 진입", type: "unification", thesis: "좁은 의미의 전국시대 종료점 후보", detail: "노부나가는 아시카가 요시아키를 세워 교토 정치에 개입했다. 일부 시대 구분은 이 사건을 전국시대에서 아즈치·모모야마 시대로 넘어가는 기준으로 본다.", caveat: "전국적 전쟁은 계속되었으므로 1568은 정치적 기준이지 전쟁 종료가 아니다." },
+      { year: "1573", title: "아시카가 막부의 종말", type: "unification", thesis: "명목상 막부의 퇴장", detail: "노부나가는 요시아키를 추방해 아시카가 막부를 사실상 끝냈다. 중앙 명분의 오래된 틀은 사라졌지만 통일은 아직 완성되지 않았다.", caveat: "막부 종료와 일본 통일은 같은 사건이 아니다." },
+      { year: "1575", title: "나가시노", type: "warfare", thesis: "화기와 방책의 상징적 전투", detail: "오다·도쿠가와 연합은 다케다군을 상대로 조총, 방책, 지형, 연합 지휘를 활용했다. 대중적 설명은 종종 조총 3,000정과 3단 교대 사격을 강조한다.", caveat: "정확한 총수와 교대 사격 연출은 논쟁적이며, 다케다군도 순수 기병만으로 이해하면 안 된다." },
+      { year: "1582", title: "혼노지의 변", type: "unification", thesis: "노부나가의 미완성 통일", detail: "아케치 미쓰히데의 배신으로 노부나가가 사망했다. 이후 도요토미 히데요시가 오다 정권의 계승 경쟁에서 우위를 확보했다.", caveat: "노부나가는 통일의 문을 열었지만 완성하지 못했다." },
+      { year: "1590", title: "오다와라 전역", type: "unification", thesis: "히데요시의 군사적 통일", detail: "히데요시는 후호조를 굴복시켜 전국 주요 다이묘를 자신의 질서 안에 넣었다. 이 시점은 군사적 통일의 강력한 이정표다.", caveat: "정권 안정, 세키가하라, 도쿠가와 막부 수립, 도요토미 멸망과 구분해야 한다." },
+      { year: "1600-1615", title: "도쿠가와 정착", type: "settlement", thesis: "전쟁의 정치적·군사적 마감", detail: "세키가하라에서 도쿠가와 이에야스가 우위를 확정했고, 1603년 쇼군이 되었으며, 1615년 오사카 전역으로 도요토미 가문이 멸망했다.", caveat: "1600, 1603, 1615는 각각 전투 승리, 제도 수립, 최종 군사 폐쇄라는 서로 다른 기준이다." }
+    ];
+
+    const regions = [
+      { id: "oda", x: 338, y: 392, color: "#a7362d", name: "오다·도요토미 핵심권", area: "오와리, 미노, 교토·오사카", leader: "오다 노부나가 / 도요토미 히데요시", points: ["교토 진입과 아시카가 막부 종결의 중심.", "성곽 도시, 시장 정책, 군사 동원의 결합.", "1590년 군사적 통일의 행정 기반."] },
+      { id: "takeda", x: 438, y: 330, color: "#a46f1b", name: "다케다 세력권", area: "가이와 내륙 중부", leader: "다케다 신겐", points: ["강력한 가신단과 내륙 행정.", "기병 이미지가 강하지만 순수 기병 돌격으로 단순화하면 안 됨.", "도쿠가와와 오다에게 중대한 위협."] },
+      { id: "uesugi", x: 470, y: 244, color: "#2f6597", name: "우에스기 세력권", area: "에치고와 일본해 연안", leader: "우에스기 겐신", points: ["다케다와의 장기 경쟁.", "무역로와 기동력 활용.", "북쪽에서 중앙 세력을 견제."] },
+      { id: "hojo", x: 540, y: 370, color: "#34775a", name: "후호조 세력권", area: "간토, 오다와라", leader: "호조 우지야스와 후대 호조", points: ["성곽 네트워크와 방어 체계.", "동국의 강력한 지역 국가.", "1590년 히데요시 통일의 마지막 큰 장애물."] },
+      { id: "mori", x: 224, y: 498, color: "#6d5b9c", name: "모리 세력권", area: "아키와 주고쿠", leader: "모리 모토나리", points: ["해상 동맹과 혼인·인질 외교.", "서일본의 주요 블록 형성.", "오다·도요토미·도쿠가와 전환기의 핵심 세력."] },
+      { id: "shimazu", x: 98, y: 635, color: "#a46f1b", name: "시마즈 세력권", area: "사쓰마, 오스미, 남부 규슈", leader: "시마즈 요시히사", points: ["규슈 통일에 근접한 군사 세력.", "매복 전술과 조총 운용.", "히데요시의 규슈 개입으로 굴복."] },
+      { id: "date", x: 628, y: 124, color: "#247b7b", name: "다테 세력권", area: "도호쿠, 무쓰, 센다이", leader: "다테 마사무네", points: ["늦은 전국기의 북방 유력 다이묘.", "빠른 지역 확장과 외교적 유연성.", "통일 전쟁의 주도권을 잡기에는 늦었지만 도쿠가와 시대 대영주가 됨."] },
+      { id: "chosokabe", x: 168, y: 590, color: "#a7362d", name: "조소카베 세력권", area: "도사와 시코쿠", leader: "조소카베 모토치카", points: ["시코쿠 통일에 근접.", "토지 조사와 보병 조직.", "히데요시의 섬 지역 통합을 보여 주는 사례."] }
+    ];
+
+    const tileMap = { x: 42, y: 42, size: 16, cols: 42, rows: 42, sourceCols: 28, sourceRows: 28 };
+    const baseLandTiles = [
+      "23,1","24,1","25,1","26,1",
+      "22,2","23,2","24,2","25,2","26,2","27,2",
+      "22,3","23,3","24,3","25,3","26,3","27,3",
+      "21,4","22,4","23,4","24,4","25,4","26,4",
+      "20,5","21,5","22,5","23,5","24,5","25,5",
+      "18,6","19,6","20,6","21,6","22,6","23,6","24,6",
+      "17,7","18,7","19,7","20,7","21,7","22,7","23,7",
+      "16,8","17,8","18,8","19,8","20,8","21,8","22,8",
+      "15,9","16,9","17,9","18,9","19,9","20,9","21,9","22,9",
+      "14,10","15,10","16,10","17,10","18,10","19,10","20,10","21,10","22,10",
+      "13,11","14,11","15,11","16,11","17,11","18,11","19,11","20,11","21,11","22,11","23,11",
+      "12,12","13,12","14,12","15,12","16,12","17,12","18,12","19,12","20,12","21,12","22,12","23,12",
+      "11,13","12,13","13,13","14,13","15,13","16,13","17,13","18,13","19,13","20,13","21,13","22,13",
+      "10,14","11,14","12,14","13,14","14,14","15,14","16,14","17,14","18,14","19,14","20,14","21,14","22,14",
+      "9,15","10,15","11,15","12,15","13,15","14,15","15,15","16,15","17,15","18,15","19,15","20,15","21,15",
+      "7,16","8,16","9,16","10,16","11,16","12,16","13,16","14,16","15,16","16,16","17,16","18,16","19,16","20,16",
+      "5,17","6,17","7,17","8,17","9,17","10,17","11,17","12,17","13,17","14,17","15,17","16,17","17,17","18,17",
+      "4,18","5,18","6,18","7,18","8,18","9,18","10,18","11,18","12,18","13,18","14,18","15,18","16,18",
+      "4,19","5,19","6,19","7,19","8,19","9,19","10,19","11,19","12,19","13,19","14,19",
+      "5,20","6,20","7,20","8,20","9,20","10,20","11,20","12,20",
+      "1,21","2,21","3,21","4,21","5,21","6,21","7,21","8,21","9,21","10,21",
+      "1,22","2,22","3,22","4,22","5,22","6,22","7,22","8,22","9,22","10,22","11,22",
+      "0,23","1,23","2,23","3,23","4,23","5,23","6,23","7,23","8,23","9,23","10,23",
+      "0,24","1,24","2,24","3,24","4,24","5,24","6,24","7,24","8,24","9,24",
+      "0,25","1,25","2,25","3,25","4,25",
+      "1,26","2,26","3,26",
+      "2,27"
+    ];
+    const mapTiles = [
+      { region: "date", weight: "core", cells: ["23,1","24,1","25,1","26,1","22,2","23,2","24,2","25,2","26,2","27,2","22,3","23,3","24,3","25,3","26,3","23,4","24,4","25,4","24,5"] },
+      { region: "date", weight: "coast", cells: ["21,4","22,5","23,5","24,6","23,6","22,7","23,7"] },
+      { region: "uesugi", weight: "core", cells: ["18,6","19,6","20,6","18,7","19,7","20,7","17,8","18,8","19,8","20,8","17,9","18,9","19,9"] },
+      { region: "takeda", weight: "core", cells: ["15,10","16,10","17,10","16,11","17,11","18,11","15,12","16,12","17,12","18,12","16,13","17,13"] },
+      { region: "hojo", weight: "core", cells: ["20,11","21,11","22,11","19,12","20,12","21,12","22,12","20,13","21,13","22,13","21,14","22,14"] },
+      { region: "oda", weight: "core", cells: ["12,13","13,13","14,13","13,14","14,14","15,14","12,15","13,15","14,15","15,15","11,16","12,16","13,16","14,16"] },
+      { region: "oda", weight: "coast", cells: ["10,17","11,17","12,17","10,18","11,18"] },
+      { region: "mori", weight: "core", cells: ["6,17","7,17","8,17","9,17","5,18","6,18","7,18","8,18","9,18","4,19","5,19","6,19","7,19","8,19","5,20","6,20","7,20"] },
+      { region: "chosokabe", weight: "core", cells: ["5,22","6,22","7,22","8,22","4,23","5,23","6,23","7,23","8,23","9,23","5,24","6,24","7,24","8,24"] },
+      { region: "shimazu", weight: "core", cells: ["1,23","2,23","3,23","1,24","2,24","3,24","0,25","1,25","2,25","3,25","1,26","2,26","2,27"] },
+      { region: "mori", weight: "coast", cells: ["9,16","10,16","11,15","12,14"] },
+      { region: "hojo", weight: "coast", cells: ["18,13","19,14","20,15"] }
+    ];
+
+    const daimyo = [
+      { name: "오다 노부나가", region: "central", role: "unifier", base: "오와리, 기나이", strength: "조총 운용, 보병 전술, 시장 정책, 사원 세력 제압", impact: 96, admin: 82, caveat: "나가시노의 3단 사격 통설은 신중히 다룬다." },
+      { name: "도요토미 히데요시", region: "central", role: "unifier", base: "오사카·교토 중심", strength: "검지, 도검 몰수, 신분 분리, 대규모 포위전", impact: 98, admin: 94, caveat: "1590년은 군사적 통일이며 안정된 막부 수립은 아니다." },
+      { name: "도쿠가와 이에야스", region: "east", role: "unifier", base: "미카와, 간토, 에도", strength: "동맹 관리, 인내, 세키가하라, 막부 제도화", impact: 100, admin: 96, caveat: "1603년 막부 수립 뒤에도 1615년까지 군사적 정리가 남았다." },
+      { name: "다케다 신겐", region: "east", role: "rival", base: "가이와 내륙 중부", strength: "가신단, 내륙 행정, 치수, 금 자원, mounted retainers", impact: 88, admin: 80, caveat: "다케다를 순수 기병 군단으로만 설명하면 과장이다." },
+      { name: "우에스기 겐신", region: "east", role: "rival", base: "에치고", strength: "기동전, 지휘력, 일본해 교역, 종교적 이미지", impact: 82, admin: 72, caveat: "무장 신화보다 지역 교역과 지휘 체계를 함께 봐야 한다." },
+      { name: "후호조", region: "east", role: "regional", base: "간토, 오다와라", strength: "성곽 네트워크, 세제 개혁, 방어전, 도시 운영", impact: 84, admin: 90, caveat: "히데요시 통일의 마지막 큰 지역 장애물이었다." },
+      { name: "모리 모토나리", region: "west", role: "regional", base: "아키, 주고쿠", strength: "해상 동맹, 혼인 외교, 가문 결속, 전략", impact: 78, admin: 78, caveat: "서일본 블록은 중앙 통일자만큼 전국 질서에 중요했다." },
+      { name: "시마즈 요시히사", region: "kyushu", role: "regional", base: "사쓰마, 남부 규슈", strength: "매복, 조총, 강한 가신단, 규슈 전역", impact: 76, admin: 70, caveat: "규슈 통합은 히데요시 개입으로 중단됐다." },
+      { name: "다테 마사무네", region: "north", role: "regional", base: "도호쿠, 센다이", strength: "지역 확장, 외교 유연성, 도시 개발, 대외 관심", impact: 68, admin: 78, caveat: "전국 주도권을 잡기엔 등장이 늦었다." },
+      { name: "이마가와 요시모토", region: "east", role: "rival", base: "스루가, 도토미, 미카와", strength: "지방 행정, 궁정적 권위, 대군 동원", impact: 65, admin: 76, caveat: "오케하자마 패배가 노부나가 부상의 변곡점이다." },
+      { name: "오토모 소린", region: "kyushu", role: "foreign", base: "분고, 북부 규슈", strength: "포르투갈 무역, 기독교 후원, 화기 획득", impact: 62, admin: 68, caveat: "대외 교류는 신앙만이 아니라 정치·군사 선택이었다." },
+      { name: "조소카베 모토치카", region: "shikoku", role: "regional", base: "도사, 시코쿠", strength: "보병 동원, 토지 조사, 섬 지역 통합", impact: 63, admin: 72, caveat: "히데요시 통일이 시코쿠까지 확장된 사례다." }
+    ];
+
+    const caveats = [
+      { title: "기간의 끝점", short: "전국시대는 1467-1568, 1467-1600, 1467-1615 등으로 달리 잡힌다.", detail: "1568은 노부나가의 교토 진입, 1573은 아시카가 막부의 종말, 1590은 히데요시의 군사적 통일, 1600은 세키가하라 승리, 1615는 오사카 전역의 최종 군사 폐쇄다. 어느 기준을 쓰는지 먼저 밝히는 것이 정확하다." },
+      { title: "나가시노 화기 신화", short: "조총과 방책은 중요하지만 3,000정·3단 사격은 확정 사실처럼 쓰면 안 된다.", detail: "대중 서술은 나가시노를 근대적 총병 전술의 극적인 승리로 그리지만, 정확한 총수와 교대 사격 방식은 사료와 연구에서 논쟁적이다. 화력, 방책, 지형, 연합군 운용, 다케다의 공격 방식이 함께 작용했다." },
+      { title: "다케다 기병 단순화", short: "다케다군을 순수 기병 군단으로 보는 표현은 군사 조직을 납작하게 만든다.", detail: "다케다는 mounted retainers와 강한 가신단으로 유명했지만 전국시대 군대는 보병, 활, 창, 말 탄 무사, 하급 병력이 섞인 조직이었다. 나가시노도 '총이 기병을 쓸어버렸다'보다 복합 전투로 설명해야 한다." },
+      { title: "히데요시 통일 이정표", short: "1590년 통일은 군사적 복속의 완성에 가깝다.", detail: "히데요시는 후호조를 꺾고 전국 다이묘를 자신의 질서에 편입했다. 그러나 정권 안정은 조선 침략의 부담, 후계 위기, 세키가하라, 도쿠가와 막부 수립, 오사카 전역을 거쳐야 했다." },
+      { title: "사회 유동성", short: "하극상과 출세 가능성은 있었지만 보편적 meritocracy는 아니다.", detail: "히데요시의 상승은 상징적이지만 예외성도 크다. 전쟁은 일부 상승 통로를 만들었고 동시에 히데요시의 검지, 도검 몰수, 신분 분리와 도쿠가와 질서는 그 통로를 제도적으로 좁혔다." }
+    ];
+
+    function byId(id) {
+      return document.getElementById(id);
+    }
+
+    function clearNode(node) {
+      if (!node) return;
+      while (node.firstChild) node.removeChild(node.firstChild);
+    }
+
+    function makeElement(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+
+    function makeSvgElement(tag, attrs = {}) {
+      const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
+      Object.entries(attrs).forEach(([key, value]) => setSafeSvgAttribute(node, key, value));
+      return node;
+    }
+
+    function setSafeSvgAttribute(node, key, value) {
+      if (key === "class") node.setAttribute("class", value);
+      else if (key === "x") node.setAttribute("x", value);
+      else if (key === "y") node.setAttribute("y", value);
+      else if (key === "width") node.setAttribute("width", value);
+      else if (key === "height") node.setAttribute("height", value);
+      else if (key === "fill") node.setAttribute("fill", value);
+      else if (key === "rx") node.setAttribute("rx", value);
+      else if (key === "x1") node.setAttribute("x1", value);
+      else if (key === "y1") node.setAttribute("y1", value);
+      else if (key === "x2") node.setAttribute("x2", value);
+      else if (key === "y2") node.setAttribute("y2", value);
+      else if (key === "role") node.setAttribute("role", value);
+      else if (key === "tabindex") node.setAttribute("tabindex", value);
+      else if (key === "aria-label") node.setAttribute("aria-label", value);
+      else if (key === "aria-pressed") node.setAttribute("aria-pressed", value);
+      else if (key === "aria-current") node.setAttribute("aria-current", value);
+      else if (key === "data-region") node.setAttribute("data-region", value);
+      else throw new Error(`Unsupported SVG attribute: ${key}`);
+    }
+
+    function clampPercent(value) {
+      return Math.max(0, Math.min(100, Number(value) || 0));
+    }
+
+    function renderTimeline(filter = "all") {
+      const track = byId("timelineTrack");
+      if (!track) return;
+      clearNode(track);
+      timelineEvents.forEach((event, index) => {
+        const button = document.createElement("button");
+        button.className = "milestone";
+        button.dataset.type = event.type;
+        button.setAttribute("aria-pressed", "false");
+        button.setAttribute("aria-current", "false");
+        const time = makeElement("time", "", event.year);
+        const title = makeElement("strong", "", event.title);
+        const thesis = makeElement("span", "", event.thesis);
+        button.append(time, title, thesis);
+        if (filter !== "all" && event.type !== filter) button.classList.add("is-hidden");
+        button.addEventListener("click", () => selectTimeline(index));
+        track.appendChild(button);
+      });
+      const firstVisible = timelineEvents.findIndex((event) => filter === "all" || event.type === filter);
+      selectTimeline(firstVisible >= 0 ? firstVisible : 0);
+    }
+
+    function selectTimeline(index) {
+      document.querySelectorAll(".milestone").forEach((node, nodeIndex) => {
+        const selected = nodeIndex === index;
+        node.classList.toggle("active", selected);
+        node.setAttribute("aria-pressed", String(selected));
+        node.setAttribute("aria-current", selected ? "step" : "false");
+      });
+      const event = timelineEvents[index];
+      const detail = byId("timelineDetail");
+      if (!event || !detail) return;
+      clearNode(detail);
+      const meta = makeElement("div");
+      const tagColor = event.type === "origins" ? "red" : event.type === "regional" ? "green" : event.type === "warfare" ? "gold" : event.type === "settlement" ? "violet" : "green";
+      meta.append(
+        makeElement("span", `tag ${tagColor}`, event.year),
+        makeElement("h3", "", event.title),
+        makeElement("p", "muted", event.thesis)
+      );
+      const body = makeElement("div");
+      body.appendChild(makeElement("p", "", event.detail));
+      const note = makeElement("p", "note");
+      note.style.marginTop = "10px";
+      const noteLead = makeElement("b", "", "주의: ");
+      note.append(noteLead, document.createTextNode(event.caveat));
+      body.appendChild(note);
+      detail.append(meta, body);
+    }
+
+    function renderMap() {
+      const markerGroup = byId("mapMarkers");
+      if (!markerGroup) return;
+      renderTileGrid();
+      renderBaseLandTiles();
+      renderMapTiles();
+      clearNode(markerGroup);
+      regions.forEach((region, index) => {
+        const group = makeSvgElement("g");
+        group.setAttribute("class", "map-marker" + (index === 0 ? " active" : ""));
+        group.setAttribute("tabindex", "-1");
+        group.setAttribute("role", "button");
+        group.setAttribute("aria-label", `${region.name} 위치 표시`);
+        group.setAttribute("aria-pressed", index === 0 ? "true" : "false");
+        group.setAttribute("aria-current", index === 0 ? "true" : "false");
+        const markerSize = 22;
+        const square = makeSvgElement("rect", { x: region.x - markerSize / 2, y: region.y - markerSize / 2, width: markerSize, height: markerSize, fill: region.color, rx: 0 });
+        const label = makeSvgElement("text", { x: region.x + 18, y: region.y + 5 });
+        label.textContent = region.leader.split(" ")[0];
+        group.append(square, label);
+        group.addEventListener("click", () => selectRegion(region.id));
+        markerGroup.appendChild(group);
+      });
+      selectRegion("oda");
+    }
+
+    function renderTileGrid() {
+      const grid = byId("tileGrid");
+      if (!grid) return;
+      clearNode(grid);
+      for (let col = 0; col <= tileMap.cols; col += 1) {
+        const x = tileMap.x + col * tileMap.size;
+        grid.appendChild(makeSvgElement("line", { class: "tile-grid-line", x1: x, y1: tileMap.y, x2: x, y2: tileMap.y + tileMap.rows * tileMap.size }));
+      }
+      for (let row = 0; row <= tileMap.rows; row += 1) {
+        const y = tileMap.y + row * tileMap.size;
+        grid.appendChild(makeSvgElement("line", { class: "tile-grid-line", x1: tileMap.x, y1: y, x2: tileMap.x + tileMap.cols * tileMap.size, y2: y }));
+      }
+    }
+
+    function renderMapTiles() {
+      const tileLayer = byId("mapTiles");
+      if (!tileLayer) return;
+      clearNode(tileLayer);
+      const regionById = Object.fromEntries(regions.map((region) => [region.id, region]));
+      const regionGroups = new Map();
+      const occupiedCells = new Map();
+      mapTiles.forEach((group) => {
+        const region = regionById[group.region];
+        if (!region) return;
+        if (!regionGroups.has(group.region)) {
+          const regionGroup = makeSvgElement("g", {
+            class: "map-tile-region",
+            role: "button",
+            tabindex: "0",
+            "aria-label": `${region.name} 타일 영역`,
+            "aria-pressed": "false",
+            "aria-current": "false",
+            "data-region": group.region
+          });
+          regionGroup.addEventListener("click", () => selectRegion(group.region));
+          regionGroup.addEventListener("keydown", (event) => selectRegionFromKey(event, group.region));
+          regionGroups.set(group.region, regionGroup);
+          tileLayer.appendChild(regionGroup);
+        }
+        const regionGroup = regionGroups.get(group.region);
+        expandDenseCells(group.cells).forEach(([col, row]) => {
+          const cellKey = `${col},${row}`;
+          if (occupiedCells.has(cellKey)) return;
+          occupiedCells.set(cellKey, group.region);
+          const tile = makeSvgElement("rect", {
+            class: `map-tile ${group.weight}`,
+            x: tileMap.x + col * tileMap.size,
+            y: tileMap.y + row * tileMap.size,
+            width: tileMap.size,
+            height: tileMap.size,
+            fill: region.color,
+            "data-region": group.region
+          });
+          regionGroup.appendChild(tile);
+        });
+      });
+    }
+
+    function renderBaseLandTiles() {
+      const landLayer = byId("baseLandTiles");
+      if (!landLayer) return;
+      clearNode(landLayer);
+      expandDenseCells(baseLandTiles).forEach(([col, row]) => {
+        landLayer.appendChild(makeSvgElement("rect", {
+          class: "land-tile",
+          x: tileMap.x + col * tileMap.size,
+          y: tileMap.y + row * tileMap.size,
+          width: tileMap.size,
+          height: tileMap.size
+        }));
+      });
+    }
+
+    function expandDenseCells(cells) {
+      const dense = new Map();
+      cells.forEach((cell) => {
+        const [sourceCol, sourceRow] = cell.split(",").map(Number);
+        const startCol = Math.floor(sourceCol * tileMap.cols / tileMap.sourceCols);
+        const endCol = Math.floor((sourceCol + 1) * tileMap.cols / tileMap.sourceCols) - 1;
+        const startRow = Math.floor(sourceRow * tileMap.rows / tileMap.sourceRows);
+        const endRow = Math.floor((sourceRow + 1) * tileMap.rows / tileMap.sourceRows) - 1;
+        for (let col = startCol; col <= endCol; col += 1) {
+          for (let row = startRow; row <= endRow; row += 1) {
+            if (col >= 0 && col < tileMap.cols && row >= 0 && row < tileMap.rows) {
+              dense.set(`${col},${row}`, [col, row]);
+            }
+          }
+        }
+      });
+      return [...dense.values()];
+    }
+
+    function selectRegionFromKey(event, regionId) {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        selectRegion(regionId);
+      }
+    }
+
+    function selectRegion(id) {
+      const region = regions.find((item) => item.id === id) || regions[0];
+      document.querySelectorAll(".map-marker").forEach((node, index) => {
+        const selected = regions[index].id === region.id;
+        node.classList.toggle("active", selected);
+        node.setAttribute("aria-pressed", String(selected));
+        node.setAttribute("aria-current", selected ? "true" : "false");
+      });
+      document.querySelectorAll(".map-tile-region").forEach((node) => {
+        const selected = node.dataset.region === region.id;
+        node.classList.toggle("active", selected);
+        node.setAttribute("aria-pressed", String(selected));
+        node.setAttribute("aria-current", selected ? "true" : "false");
+      });
+      document.querySelectorAll(".map-tile").forEach((node) => {
+        node.classList.toggle("active", node.dataset.region === region.id);
+      });
+      const detail = byId("mapDetail");
+      if (!detail) return;
+      clearNode(detail);
+      const list = makeElement("ul", "detail-list");
+      region.points.forEach((point) => list.appendChild(makeElement("li", "", point)));
+      detail.append(
+        makeElement("div", "detail-kicker", region.area),
+        makeElement("div", "detail-title", region.name),
+        makeElement("span", "tag blue", region.leader),
+        list,
+        makeElement("p", "note", "이 지도는 정사각형 타일로 열도 방향과 경쟁권을 압축한 비트맵식 개념도다. 실제 해안선·국경·세력권 면적이 아니며, 시기별 최대 확장과 핵심 거점은 구분해야 한다.")
+      );
+    }
+
+    function renderDaimyo() {
+      const grid = byId("daimyoGrid");
+      const regionSelect = byId("regionFilter");
+      const roleSelect = byId("roleFilter");
+      const empty = byId("daimyoEmpty");
+      if (!grid || !regionSelect || !roleSelect) return;
+      const regionFilter = regionSelect.value;
+      const roleFilter = roleSelect.value;
+      clearNode(grid);
+      let visibleCount = 0;
+      daimyo.forEach((item) => {
+        const hidden = (regionFilter !== "all" && item.region !== regionFilter) || (roleFilter !== "all" && item.role !== roleFilter);
+        if (!hidden) visibleCount += 1;
+        const card = document.createElement("article");
+        card.className = "daimyo-card" + (hidden ? " is-hidden" : "");
+        card.append(
+          makeElement("div", "name", item.name),
+          makeDaimyoMeta(item),
+          makeElement("p", "", item.strength),
+          makeMetricRow("영향력", item.impact, "var(--blue)"),
+          makeMetricRow("행정성", item.admin, "var(--green)"),
+          makeCaveatNote(item.caveat)
+        );
+        grid.appendChild(card);
+      });
+      if (empty) empty.classList.toggle("visible", visibleCount === 0);
+    }
+
+    function makeDaimyoMeta(item) {
+      const meta = makeElement("div", "daimyo-meta");
+      meta.append(
+        makeElement("span", "tag blue", item.base),
+        makeElement("span", `tag ${item.role === "unifier" ? "green" : item.role === "foreign" ? "violet" : "gold"}`, roleLabel(item.role))
+      );
+      return meta;
+    }
+
+    function makeMetricRow(labelText, value, color) {
+      const numericValue = clampPercent(value);
+      const row = makeElement("div", "metric-row");
+      const label = makeElement("span", "", labelText);
+      const bar = makeElement("div", "bar");
+      bar.setAttribute("role", "progressbar");
+      bar.setAttribute("aria-label", `${labelText} ${numericValue}점`);
+      bar.setAttribute("aria-valuemin", "0");
+      bar.setAttribute("aria-valuemax", "100");
+      bar.setAttribute("aria-valuenow", String(numericValue));
+      const fill = makeElement("i");
+      fill.style.width = `${numericValue}%`;
+      fill.style.background = color;
+      bar.appendChild(fill);
+      row.append(label, bar, makeElement("span", "metric-value", `${numericValue}`));
+      return row;
+    }
+
+    function makeCaveatNote(text) {
+      const note = makeElement("p", "note");
+      note.append(makeElement("b", "", "주석: "), document.createTextNode(text));
+      return note;
+    }
+
+    function roleLabel(role) {
+      return { unifier: "통일자", rival: "경쟁자", regional: "지역 국가", foreign: "대외 교류" }[role] || role;
+    }
+
+    function renderCaveats() {
+      const grid = byId("caveatGrid");
+      if (!grid) return;
+      clearNode(grid);
+      caveats.forEach((item, index) => {
+        const button = document.createElement("button");
+        button.className = "caveat-card";
+        button.setAttribute("aria-pressed", "false");
+        button.append(
+          makeElement("span", "status caveat", `쟁점 ${index + 1}`),
+          makeElement("h3", "", item.title),
+          makeElement("p", "", item.short)
+        );
+        button.addEventListener("click", () => selectCaveat(index));
+        grid.appendChild(button);
+      });
+      selectCaveat(0);
+    }
+
+    function selectCaveat(index) {
+      document.querySelectorAll(".caveat-card").forEach((node, nodeIndex) => {
+        const selected = nodeIndex === index;
+        node.classList.toggle("active", selected);
+        node.setAttribute("aria-pressed", String(selected));
+        node.setAttribute("aria-current", selected ? "true" : "false");
+      });
+      const item = caveats[index];
+      const detail = byId("caveatDetail");
+      if (!item || !detail) return;
+      clearNode(detail);
+      detail.append(makeElement("h3", "", item.title), makeElement("p", "", item.detail));
+    }
+
+    function bindControls() {
+      const timelineFilters = byId("timelineFilters");
+      const regionFilter = byId("regionFilter");
+      const roleFilter = byId("roleFilter");
+      if (timelineFilters) {
+        timelineFilters.addEventListener("click", (event) => {
+          if (!event.target.matches("button")) return;
+          document.querySelectorAll("#timelineFilters button").forEach((button) => {
+            const selected = button === event.target;
+            button.classList.toggle("active", selected);
+            button.setAttribute("aria-pressed", String(selected));
+          });
+          renderTimeline(event.target.dataset.filter);
+        });
+      }
+      if (regionFilter) regionFilter.addEventListener("change", renderDaimyo);
+      if (roleFilter) roleFilter.addEventListener("change", renderDaimyo);
+    }
+
+    bindControls();
+    renderTimeline();
+    renderMap();
+    renderDaimyo();
+    renderCaveats();
+  </script>
+</body>
+</html>
