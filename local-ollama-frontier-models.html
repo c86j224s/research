@@ -1,0 +1,823 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; media-src 'none'; font-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Local Ollama vs Frontier Model Interactive Report</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --ink: #17202a;
+      --muted: #5d6a75;
+      --line: #dce2ea;
+      --panel: #ffffff;
+      --panel-2: #eef4f8;
+      --local: #167c70;
+      --cloud: #5c5fbd;
+      --vision: #b55b1f;
+      --code: #2563a9;
+      --agent: #7b4aa1;
+      --risk: #b42318;
+      --warn: #a16207;
+      --ok: #1a7f37;
+      --shadow: 0 12px 30px rgba(23, 32, 42, .08);
+      --radius: 8px;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.55;
+    }
+    a { color: #1d4ed8; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+    main { width: min(1180px, calc(100vw - 32px)); margin: 0 auto; }
+    header {
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+    .masthead {
+      width: min(1180px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 34px 0 24px;
+      display: grid;
+      gap: 18px;
+    }
+    .eyebrow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    h1 {
+      margin: 0;
+      max-width: 980px;
+      font-size: clamp(30px, 5vw, 58px);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+    h2 { margin: 0 0 14px; font-size: 24px; letter-spacing: 0; }
+    h3 { margin: 0 0 10px; font-size: 17px; letter-spacing: 0; }
+    p { margin: 0; }
+    .lead { max-width: 920px; color: var(--muted); font-size: 17px; }
+    .tag, .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 24px;
+      padding: 3px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .tag.local { border-color: rgba(22,124,112,.35); color: var(--local); background: #eaf7f4; }
+    .tag.cloud { border-color: rgba(92,95,189,.35); color: var(--cloud); background: #f0f1ff; }
+    .tag.vision { border-color: rgba(181,91,31,.35); color: var(--vision); background: #fff4ec; }
+    .tag.code { border-color: rgba(37,99,169,.35); color: var(--code); background: #eef6ff; }
+    .tag.agent { border-color: rgba(123,74,161,.35); color: var(--agent); background: #f7efff; }
+    .status.confirmed { color: var(--ok); background: #ecfdf3; border-color: rgba(26,127,55,.3); }
+    .status.inferred { color: var(--warn); background: #fffbeb; border-color: rgba(161,98,7,.35); }
+    .status.risk { color: var(--risk); background: #fff1f0; border-color: rgba(180,35,24,.3); }
+    section { padding: 28px 0; }
+    .system-map, .panel, .card, .controls, .table-wrap {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .system-map { padding: 18px; }
+    .map-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      align-items: stretch;
+    }
+    .node {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      min-height: 126px;
+      background: #fff;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+    .node.local { border-color: rgba(22,124,112,.4); }
+    .node.cloud { border-color: rgba(92,95,189,.4); }
+    .node.risk { border-color: rgba(180,35,24,.35); }
+    .node strong { font-size: 18px; }
+    .edge-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr;
+      gap: 10px;
+      align-items: center;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .edge {
+      height: 2px;
+      min-width: 48px;
+      background: var(--line);
+      position: relative;
+    }
+    .edge::after {
+      content: "";
+      position: absolute;
+      right: -1px;
+      top: -4px;
+      border-left: 8px solid var(--line);
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+    }
+    .finding-grid, .card-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .panel, .card { padding: 16px; }
+    .metric {
+      display: block;
+      font-size: 32px;
+      line-height: 1;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+    .muted { color: var(--muted); }
+    .controls {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 3;
+    }
+    .control-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    button, input, select {
+      font: inherit;
+    }
+    .chip {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 8px 11px;
+      min-height: 36px;
+      cursor: pointer;
+    }
+    .chip[aria-pressed="true"] {
+      background: #17202a;
+      color: #fff;
+      border-color: #17202a;
+    }
+    .search {
+      min-width: min(100%, 280px);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: #fff;
+    }
+    .model-card {
+      display: grid;
+      gap: 12px;
+      min-height: 310px;
+    }
+    .model-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: start;
+    }
+    .model-title { font-size: 18px; font-weight: 800; }
+    .score {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--panel-2);
+      font-weight: 800;
+    }
+    .bar {
+      height: 11px;
+      border-radius: 999px;
+      background: #e8edf3;
+      overflow: hidden;
+    }
+    .bar > span {
+      display: block;
+      height: 100%;
+      width: var(--w);
+      background: var(--c, var(--local));
+    }
+    .kv {
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 6px 10px;
+      font-size: 13px;
+    }
+    .kv dt { color: var(--muted); }
+    .kv dd { margin: 0; }
+    .meta-line, .variant-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .variant-chip {
+      display: inline-flex;
+      min-height: 22px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 2px 7px;
+      background: #f8fafc;
+      color: #40505f;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .context-viz {
+      display: grid;
+      gap: 10px;
+    }
+    .context-row {
+      display: grid;
+      grid-template-columns: 160px 1fr 72px;
+      gap: 10px;
+      align-items: center;
+      font-size: 13px;
+    }
+    .context-track {
+      height: 18px;
+      border-radius: 999px;
+      background: #e8edf3;
+      overflow: hidden;
+    }
+    .context-fill {
+      height: 100%;
+      width: var(--w);
+      border-radius: 999px;
+      background: var(--c);
+    }
+    .table-wrap { overflow: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1180px;
+      font-size: 13px;
+    }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    th {
+      background: #f1f5f9;
+      color: #334155;
+      position: sticky;
+      top: 0;
+    }
+    .matrix td:first-child, .matrix th:first-child { font-weight: 700; }
+    .callout {
+      border-left: 4px solid var(--warn);
+      background: #fffbeb;
+      padding: 12px 14px;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      color: #4b3b10;
+    }
+    .flowchart {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(120px, 1fr));
+      gap: 10px;
+      align-items: stretch;
+    }
+    .flowchart-step, .decision-node, .terminal-node {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      background: #fff;
+      min-height: 112px;
+    }
+    .decision-node { border-color: rgba(161,98,7,.45); background: #fffbeb; }
+    .terminal-node { border-color: rgba(26,127,55,.35); background: #f0fdf4; }
+    .sources {
+      display: grid;
+      gap: 10px;
+    }
+    .source-item {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+    }
+    footer {
+      padding: 34px 0 50px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    @media (max-width: 860px) {
+      .map-grid, .finding-grid, .card-grid, .flowchart { grid-template-columns: 1fr; }
+      .edge-row { grid-template-columns: 1fr; }
+      .edge { display: none; }
+      .context-row { grid-template-columns: 1fr; }
+      .source-item { grid-template-columns: 1fr; }
+      .controls { position: static; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="masthead">
+      <div class="eyebrow">
+        <span class="tag local">로컬 Ollama</span>
+        <span class="tag cloud">클라우드/프론티어</span>
+        <span class="status inferred">작성일 2026-06-03</span>
+        <span class="status inferred">공개 페이지 기반, 벤치마크 미검증 항목 포함</span>
+        <span class="status inferred">추정 표기는 모델 카드 업데이트/소스 확인 시점 기반</span>
+      </div>
+      <h1>로컬 Ollama 모델과 프론티어 모델 비교 리포트</h1>
+      <p class="lead">이 문서는 이전 조사 목록의 모델을 한 화면에서 비교하기 위한 자체 포함 HTML 리포트다. 핵심 구분은 실행 위치다. 로컬 태그는 사용자가 모델 가중치를 내려받아 Ollama 런타임에서 실행할 수 있음을 뜻하고, 클라우드 태그는 Ollama Cloud 또는 외부 API 의존을 뜻한다.</p>
+    </div>
+  </header>
+
+  <main>
+    <section aria-labelledby="map-title">
+      <h2 id="map-title">요약 지도</h2>
+      <div class="system-map">
+        <div class="map-grid">
+          <article class="node local">
+            <span class="tag local">Local-first</span>
+            <strong>개인 장비/워크스테이션</strong>
+            <p class="muted">gpt-oss, qwen3.6, qwen3-vl, gemma4, devstral, lfm2.5, olmo-3, granite3.3, mistral-small3.1, MiniCPM5 계열은 로컬 실행 후보로 분류했다. 실제 가능성은 VRAM, 양자화, 컨텍스트 설정에 좌우된다.</p>
+          </article>
+          <article class="node cloud">
+            <span class="tag cloud">Cloud-only or cloud-assisted</span>
+            <strong>프론티어 API와 Ollama Cloud</strong>
+            <p class="muted">GPT-4.1, Claude, Gemini, Grok 같은 프론티어 모델은 긴 컨텍스트와 멀티모달/도구 품질에서 앞서지만, 데이터 경계와 비용은 클라우드 정책을 따른다.</p>
+          </article>
+          <article class="node risk">
+            <span class="status risk">불확실성</span>
+            <strong>명목 컨텍스트 != 유효 성능</strong>
+            <p class="muted">128K, 256K, 500K, 1M, 10M 같은 수치는 입력 허용량이다. 장문 검색, 다중 홉 추론, 비디오/오디오 처리 품질은 별도 검증이 필요하다.</p>
+          </article>
+        </div>
+        <div class="edge-row" aria-label="decision flow">
+          <span>민감 데이터, 반복 실험</span><span class="edge"></span><span>로컬 후보 우선</span><span class="edge"></span><span>초장문/고난도 에이전트는 프론티어 보강</span>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="findings-title">
+      <h2 id="findings-title">핵심 판단</h2>
+      <div class="finding-grid">
+        <article class="panel">
+          <span class="metric">128K</span>
+          <h3>로컬 기본 상한의 중심</h3>
+          <p class="muted">gpt-oss, devstral, mistral-small3.1 같은 후보는 128K급 장문 작업의 실용 구간에 놓인다. 로컬 RAG, 문서 요약, 중형 코드베이스 탐색에 맞다.</p>
+        </article>
+        <article class="panel">
+          <span class="metric">256K</span>
+          <h3>로컬 장문/비전의 상위권</h3>
+          <p class="muted">qwen3-vl과 qwen3-coder-next는 Ollama 페이지 기준 256K 컨텍스트다. 이미지 이해와 저장소 단위 코드 작업을 로컬 또는 클라우드 태그 혼합으로 다룬다.</p>
+        </article>
+        <article class="panel">
+          <span class="metric">1M+</span>
+          <h3>프론티어 장문 클러스터</h3>
+          <p class="muted">OpenAI GPT-4.1 1M, Claude 일부 1M, Grok 4.3 1M / Grok Build 256K, Llama 4 Scout 10M 주장처럼 초장문은 대체로 클라우드/호스팅 품질과 정책 확인이 필요하다.</p>
+        </article>
+      </div>
+    </section>
+
+    <section aria-labelledby="filters-title">
+      <h2 id="filters-title">모델 카드 필터</h2>
+      <div class="controls" aria-label="model filters">
+        <div class="control-row">
+          <input class="search" id="search" type="search" aria-label="모델 검색" title="모델명 또는 메모 검색">
+          <button class="chip" data-filter="all" aria-pressed="true">전체</button>
+          <button class="chip" data-filter="research" aria-pressed="false">리서치</button>
+          <button class="chip" data-filter="multimodal" aria-pressed="false">멀티모달</button>
+          <button class="chip" data-filter="coding" aria-pressed="false">코딩</button>
+          <button class="chip" data-filter="agentic" aria-pressed="false">에이전트</button>
+          <button class="chip" data-filter="frontier" aria-pressed="false">프론티어</button>
+          <button class="chip" data-filter="local-only" aria-pressed="false">로컬 전용</button>
+          <button class="chip" data-filter="local-cloud" aria-pressed="false">로컬+클라우드</button>
+          <button class="chip" data-filter="cloud-only" aria-pressed="false">클라우드 전용</button>
+        </div>
+        <p class="muted" id="count">모델을 표시합니다.</p>
+      </div>
+      <div class="card-grid" id="cards" aria-live="polite"></div>
+    </section>
+
+    <section aria-labelledby="context-title">
+      <h2 id="context-title">컨텍스트 윈도우 시각화</h2>
+      <div class="panel context-viz" id="contextViz"></div>
+    </section>
+
+    <section aria-labelledby="compare-title">
+      <h2 id="compare-title">비교 테이블</h2>
+      <div class="table-wrap">
+        <table class="matrix" id="modelTable">
+          <thead>
+            <tr>
+              <th>모델</th>
+              <th>제공자</th>
+              <th>출시/확인</th>
+              <th>실행 구분</th>
+              <th>주요 용도</th>
+              <th>컨텍스트</th>
+              <th>입력</th>
+              <th>변형</th>
+              <th>주의점</th>
+              <th>출처</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section aria-labelledby="workflow-title">
+      <h2 id="workflow-title">사용처별 선택 흐름</h2>
+      <div class="flowchart">
+        <div class="terminal-node">
+          <h3>리서치</h3>
+          <p class="muted">기밀 문서면 로컬 gpt-oss/qwen3.6/olmo-3. 초장문 원문 전체 투입은 GPT-4.1, Claude, Gemini급 API 검토.</p>
+        </div>
+        <div class="flowchart-step">
+          <h3>멀티모달 이미지</h3>
+          <p class="muted">qwen3-vl, gemma4, mistral-small3.1을 후보로 두되 OCR/차트/스크린샷은 샘플셋으로 검증. MiniCPM5의 Ollama row는 Text-only로 분류한다.</p>
+        </div>
+        <div class="decision-node">
+          <h3>비디오/오디오</h3>
+          <p class="muted">nemotron3와 gemma4는 오디오/비디오 관련 태그나 설명이 있지만, 로컬 런타임의 실제 입출력 지원은 모델 태그만으로 확정하지 않는다.</p>
+        </div>
+        <div class="flowchart-step">
+          <h3>코딩</h3>
+          <p class="muted">qwen3-coder-next/qwen3-coder/devstral을 우선 비교. 대형 리팩터링은 툴콜 품질과 패치 안정성 테스트가 필요하다.</p>
+        </div>
+        <div class="terminal-node">
+          <h3>복합 에이전트</h3>
+          <p class="muted">로컬은 비용/프라이버시가 장점이고, 프론티어는 장기 계획 유지와 도구 오케스트레이션 품질에서 보강재가 된다.</p>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="caveats-title">
+      <h2 id="caveats-title">멀티모달 caveat</h2>
+      <div class="card-grid">
+        <article class="card">
+          <span class="tag vision">Image</span>
+          <h3>이미지 입력은 태그와 런타임 모두 확인</h3>
+          <p class="muted">Ollama 카드의 `Text, Image` 또는 `vision` 표기는 후보 선별에는 충분하지만, 실제 클라이언트가 이미지를 넘기는 방식과 최대 이미지 수, OCR 성능은 별도 테스트 대상이다.</p>
+        </article>
+        <article class="card">
+          <span class="tag vision">Video</span>
+          <h3>비디오는 프레임 샘플링 정책이 핵심</h3>
+          <p class="muted">nemotron3처럼 비디오 이해를 언급하는 모델도 로컬 실행에서는 디코딩, 프레임 선택, 시간 정보 보존 로직이 성능 대부분을 좌우한다.</p>
+        </article>
+        <article class="card">
+          <span class="tag vision">Audio</span>
+          <h3>오디오는 STT 파이프라인과 분리해서 판단</h3>
+          <p class="muted">오디오 태그가 있더라도 회의록, 통화 분석, 다국어 음성은 전처리 모델과 결합된다. 로컬-only 요구가 있으면 음성 인식 단계도 로컬이어야 한다.</p>
+        </article>
+      </div>
+    </section>
+
+    <section aria-labelledby="source-title">
+      <h2 id="source-title">출처와 불확실성 노트</h2>
+      <div class="panel sources" id="sources"></div>
+      <div class="callout" style="margin-top:12px">
+        <strong>검증 경계:</strong> 이 파일은 공개 모델 카드와 공급자 문서를 근거로 한 비교 브리핑이다. 동일 프롬프트, 동일 하드웨어, 동일 에이전트 scaffold에서 재측정한 벤치마크가 아니므로 순위는 추천 우선순위가 아니라 후보군 분류로 읽어야 한다.
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <main>단일 파일 HTML. 외부 CSS, 폰트, 이미지, 스크립트, API 호출 없음. 링크 클릭 시에만 브라우저가 외부 URL로 이동한다.</main>
+  </footer>
+
+  <script>
+    const models = [
+      {name:"gpt-oss 20B", provider:"OpenAI", released:"2025-08", run:"local+cloud", tags:["research","coding","agentic","local","cloud"], ctx:128000, input:"Text", score:82, variants:["20B/latest 14GB","20B-cloud","MXFP4"], note:"OpenAI open-weight 20B tier. 낮은 지연시간, 로컬 또는 특화 use case에 맞춘 gpt-oss 소형 tier다.", caveat:"cloud chip은 로컬 전용이 아니며, 로컬 실행도 16GB급 메모리 여유와 Ollama 엔진 지원을 전제로 한다.", source:"https://ollama.com/library/gpt-oss"},
+      {name:"gpt-oss 120B", provider:"OpenAI", released:"2025-08", run:"local+cloud", tags:["research","coding","agentic","local","cloud"], ctx:128000, input:"Text", score:87, variants:["120B 65GB","120B-cloud","MXFP4"], note:"OpenAI open-weight 120B tier. 같은 128K지만 품질과 메모리 요구가 20B와 materially 다르다.", caveat:"단일 80GB GPU급 또는 그에 준하는 메모리 구성이 필요해 로컬 후보라도 일반 노트북 tier가 아니다.", source:"https://ollama.com/library/gpt-oss"},
+      {name:"qwen3.6 27B", provider:"Alibaba / Qwen", released:"2026-05 추정", run:"local", tags:["research","coding","agentic","multimodal","local"], ctx:256000, input:"Text, Image", score:80, variants:["27B 17GB","27B-MLX text-only"], note:"qwen3.6 27B tier. 256K와 Text/Image 입력을 갖춘 중형 로컬 agentic coding/research 후보로 분리한다.", caveat:"MLX 변형은 모델 카드상 Text-only로 분리 표시되므로 비전 작업에는 기본 GGUF 계열을 확인한다.", source:"https://ollama.com/library/qwen3.6"},
+      {name:"qwen3.6 35B", provider:"Alibaba / Qwen", released:"2026-05 추정", run:"local", tags:["research","coding","agentic","multimodal","local"], ctx:256000, input:"Text, Image", score:82, variants:["35B/latest 24GB","35B-MLX text-only"], note:"qwen3.6 35B tier. 27B보다 큰 패키지와 같은 256K 컨텍스트를 가진 로컬 상위 tier다.", caveat:"입력 modality와 메모리 요구는 size 및 MLX 여부에 따라 달라진다.", source:"https://ollama.com/library/qwen3.6"},
+      {name:"qwen3-vl edge 2B/4B/8B", provider:"Alibaba / Qwen", released:"2025-11", run:"local+cloud", tags:["research","multimodal","agentic","local","cloud"], ctx:256000, input:"Text, Image", score:80, variants:["2B 1.9GB","4B 3.3GB","8B/latest 6.1GB"], note:"Qwen3-VL 소형 edge tier. 256K와 Text/Image 입력을 유지하면서 로컬 VRAM 부담을 낮춘다.", caveat:"동영상 이해 claim은 provider/readme 쪽 설명이며 Ollama 표의 직접 입력은 Text/Image로 해석한다.", source:"https://ollama.com/library/qwen3-vl"},
+      {name:"qwen3-vl workstation 30B/32B", provider:"Alibaba / Qwen", released:"2025-11", run:"local+cloud", tags:["research","multimodal","agentic","local","cloud"], ctx:256000, input:"Text, Image", score:85, variants:["30B 20GB","32B 21GB"], note:"Qwen3-VL 중대형 workstation tier. 이미지/OCR/문서 이해에서 edge tier보다 품질 여지를 둔다.", caveat:"20GB급 패키지라 양자화, 컨텍스트 길이, 이미지 수에 따라 실제 처리량이 크게 달라진다.", source:"https://ollama.com/library/qwen3-vl"},
+      {name:"qwen3-vl 235B large/cloud", provider:"Alibaba / Qwen", released:"2025-11", run:"local+cloud", tags:["research","multimodal","agentic","local","cloud"], ctx:256000, input:"Text, Image", score:88, variants:["235B 143GB","235B-cloud","235B-instruct-cloud"], note:"Qwen3-VL 대형 tier. 235B 로컬 패키지와 cloud variant가 모두 있어 로컬+클라우드 경계를 명시해야 한다.", caveat:"로컬 143GB 패키지는 일반 로컬 후보가 아니며, cloud variant는 민감 데이터 경계가 달라진다.", source:"https://ollama.com/library/qwen3-vl"},
+      {name:"gemma4 E2B/E4B edge", provider:"Google DeepMind", released:"2026-04", run:"local+cloud", tags:["research","multimodal","coding","agentic","local","cloud"], ctx:128000, input:"Text, Image, Audio 후보", score:78, variants:["E2B 7.2GB","E4B/latest 9.6GB","MLX text-only"], note:"Gemma4 edge tier. E2B/E4B는 Text/Image/Audio-capable로 조사되었고 128K급 소형 멀티모달 후보로 둔다.", caveat:"Ollama 런타임의 실제 오디오 입출력 경계와 MLX text-only 변형을 구분해야 한다.", source:"https://ollama.com/library/gemma4"},
+      {name:"gemma4 26B MoE", provider:"Google DeepMind", released:"2026-04", run:"local+cloud", tags:["research","multimodal","coding","agentic","local","cloud"], ctx:256000, input:"Text, Image", score:82, variants:["26B 18GB","4B active","26B-MLX text-only"], note:"Gemma4 26B MoE tier. edge tier와 달리 256K 컨텍스트를 갖춘 중형 reasoning/coding 후보로 분리한다.", caveat:"MLX 변형은 Text-only로 표시되며 오디오 가능 edge tier와 혼동하지 않는다.", source:"https://ollama.com/library/gemma4"},
+      {name:"gemma4 31B dense", provider:"Google DeepMind", released:"2026-04", run:"local+cloud", tags:["research","multimodal","coding","agentic","local","cloud"], ctx:256000, input:"Text, Image", score:83, variants:["31B 20GB","dense","31B-MLX text-only"], note:"Gemma4 31B dense tier. 26B MoE와 architecture가 달라 별도 비교 card로 둔다.", caveat:"패키지 크기는 비슷하지만 dense/MoE 차이는 latency와 품질에 영향을 줄 수 있어 같은 row로 접지 않는다.", source:"https://ollama.com/library/gemma4"},
+      {name:"nemotron3 33B Nano Omni", provider:"NVIDIA", released:"2026-05 추정", run:"local", tags:["research","multimodal","agentic","local"], ctx:128000, input:"Text, Image", score:76, variants:["33B 28GB","video/audio described","Ollama table Text/Image"], note:"NVIDIA Nemotron 3 Nano Omni. readme는 video/audio/image/text 이해를 설명하지만 Ollama 표는 Text/Image 입력으로 표시한다.", caveat:"비디오/오디오는 런타임 파이프라인과 실제 입력 API를 별도 검증해야 한다.", source:"https://ollama.com/library/nemotron3"},
+      {name:"qwen3-coder-next 80B-A3B", provider:"Alibaba / Qwen", released:"2026-02", run:"local+cloud", tags:["coding","agentic","local","cloud"], ctx:256000, input:"Text", score:88, variants:["80B total","3B active","q4_K_M 52GB","q8_0 85GB","cloud"], note:"Qwen3-Coder-Next는 agentic coding workflow용 80B total/3B active 모델로, quantization 차이는 compact chip으로 둔다.", caveat:"non-thinking mode only로 장기 추론형 설계 작업에는 별도 보강이 필요할 수 있다.", source:"https://ollama.com/library/qwen3-coder-next"},
+      {name:"qwen3-coder 30B", provider:"Alibaba / Qwen", released:"2025-07", run:"local", tags:["coding","agentic","local"], ctx:256000, input:"Text", score:83, variants:["30B/latest 19GB","3.3B active"], note:"Qwen3-Coder 30B local-efficient tier. 480B와 요구 메모리가 크게 달라 별도 card로 둔다.", caveat:"local IDE agent에 적합한 후보지만 scaffold와 tool 권한에 따른 패치 안정성 검증이 필요하다.", source:"https://ollama.com/library/qwen3-coder"},
+      {name:"qwen3-coder 480B", provider:"Alibaba / Qwen", released:"2025-07", run:"local+cloud", tags:["coding","agentic","local","cloud"], ctx:256000, input:"Text", score:90, variants:["480B 290GB","480B-cloud","250GB+ memory"], note:"Qwen3-Coder 480B extreme tier. 30B와 품질/요구 메모리가 materially 달라 cloud chip과 함께 분리한다.", caveat:"로컬 가능 표기가 있어도 250GB 이상 메모리급 환경이 필요하므로 일반 로컬 전용 선택지로 보지 않는다.", source:"https://ollama.com/library/qwen3-coder"},
+      {name:"devstral 24B", provider:"Mistral AI + All Hands AI", released:"2025-05", run:"local", tags:["coding","agentic","local"], ctx:128000, input:"Text", score:86, variants:["24B/latest 14GB","vision encoder removed"], note:"Devstral은 Mistral Small 3.1에서 fine-tune된 software engineering agent 모델이며 24B/latest는 alias로 처리한다.", caveat:"저장소 수정 품질은 scaffold와 도구 권한에 강하게 의존한다.", source:"https://ollama.com/library/devstral"},
+      {name:"lfm2.5 8B-A1B", provider:"Liquid AI", released:"2026-05", run:"local", tags:["research","coding","agentic","local"], ctx:125000, input:"Text", score:74, variants:["8B/latest 5.2GB","1.5B active","Ollama 125K","official 131072"], note:"LFM2.5-8B-A1B는 consumer hardware의 빠른 tool calling edge model로 소개되며 Ollama 표는 125K 컨텍스트를 표시한다.", caveat:"초고난도 코딩보다 빠른 도구 호출/엣지 자동화 후보로 분류한다.", source:"https://ollama.com/library/lfm2.5"},
+      {name:"olmo-3 7B", provider:"Allen Institute for AI / AI2", released:"2025-12", run:"local", tags:["research","local"], ctx:64000, input:"Text", score:70, variants:["7B/latest 4.5GB","64K"], note:"OLMo 3 7B tier. 투명성/재현성 지향 연구 보조용 소형 로컬 후보로 분리한다.", caveat:"64K라 128K/256K 로컬 모델과 같은 장문 tier로 보지 않는다.", source:"https://ollama.com/library/olmo-3"},
+      {name:"olmo-3 32B", provider:"Allen Institute for AI / AI2", released:"2025-12", run:"local", tags:["research","local"], ctx:64000, input:"Text", score:73, variants:["32B 19GB","64K"], note:"OLMo 3 32B tier. 같은 64K라도 7B와 성능/메모리 tier가 달라 별도 card로 둔다.", caveat:"대형 문서 전체 투입보다 재현성 실험, 요약, 리서치 보조에 보수적으로 배치한다.", source:"https://ollama.com/library/olmo-3"},
+      {name:"granite3.3 2B/8B", provider:"IBM", released:"2025-04", run:"local", tags:["research","coding","agentic","local"], ctx:128000, input:"Text", score:72, variants:["2B 1.5GB","8B/latest 4.9GB"], note:"IBM Granite 3.3은 2B edge와 8B general local tier를 compact chips로 표시한다.", caveat:"소형 모델은 빠르지만 복합 에이전트 안정성은 제한적일 수 있다.", source:"https://ollama.com/library/granite3.3"},
+      {name:"mistral-small3.1 24B", provider:"Mistral AI", released:"2025-03", run:"local", tags:["research","multimodal","coding","agentic","local"], ctx:128000, input:"Text, Image", score:81, variants:["24B/latest 15GB","RTX 4090/Mac 32GB note"], note:"Mistral Small 3.1은 vision과 128K를 갖춘 24B 로컬 멀티모달/코딩 후보이며 alias만 compact 처리한다.", caveat:"비전 품질은 qwen3-vl과 별도 샘플셋 비교가 필요하다.", source:"https://ollama.com/library/mistral-small3.1"},
+      {name:"MiniCPM5 1B", provider:"OpenBMB", released:"2026-06 추정", run:"local", tags:["research","local"], ctx:128000, input:"Text", score:69, variants:["q4_K_M/latest 688MB","q8_0 1.2GB","fp16 2.2GB","131072 source context"], note:"openbmb/minicpm5는 1B급 초경량 Text-only Ollama 후보이며 quantization-only 차이는 variant chip으로 표시한다.", caveat:"Ollama 표 입력이 Text이므로 이미지/OCR workflow 후보로 분류하지 않는다.", source:"https://ollama.com/openbmb/minicpm5"},
+      {name:"GPT-4.1", provider:"OpenAI", released:"2025-04", run:"cloud-only", tags:["research","coding","agentic","frontier","cloud"], ctx:1000000, input:"Text/Image(API 계열)", score:94, variants:["gpt-4.1","2025-04-14 snapshot","1,047,576 tokens"], note:"OpenAI GPT-4.1은 1M급 context와 Text/Image input을 제공하는 frontier API 후보로 둔다.", caveat:"ChatGPT 제품 한도와 API 모델 한도는 다를 수 있다.", source:"https://platform.openai.com/docs/models/gpt-4.1"},
+      {name:"Claude chat 500K/200K", provider:"Anthropic", released:"2026-05", run:"cloud-only", tags:["research","coding","agentic","frontier","cloud"], ctx:500000, input:"Text/Image", score:91, variants:["Opus/Sonnet 일부 500K","기타 paid 200K"], note:"Claude paid chat context는 모델/플랜별 500K 또는 200K로 나뉘므로 1M Claude Code와 분리한다.", caveat:"모델명과 플랜 조건에 따라 실제 context가 달라진다.", source:"https://support.claude.com/en/articles/8606394-how-large-is-the-context-window-on-paid-claude-plans"},
+      {name:"Claude Code 1M", provider:"Anthropic", released:"2026-05", run:"cloud-only", tags:["research","coding","agentic","frontier","cloud"], ctx:1000000, input:"Text/Image", score:93, variants:["Opus/Sonnet eligible","Claude Code","plan/credits 조건"], note:"Claude Code는 조건을 만족하는 Opus/Sonnet 모델에서 1M context를 노출할 수 있어 chat context와 별도 card로 둔다.", caveat:"Claude Code, 플랜, 크레딧 조건에 따라 1M 가용성이 달라진다.", source:"https://support.claude.com/en/articles/8606394-how-large-is-the-context-window-on-paid-claude-plans"},
+      {name:"Gemini 3 reasoning/coding", provider:"Google DeepMind", released:"2025-11", run:"cloud-only", tags:["research","multimodal","coding","agentic","frontier","cloud"], ctx:1000000, input:"Text/Image/Video", score:92, variants:["Gemini 3 Pro 계열","reasoning/coding"], note:"Gemini 3 tier는 frontier reasoning/coding과 장문 멀티모달 후보로 분리한다.", caveat:"정확한 모델별 입력 한도, 가격, region은 API 문서에서 확인해야 한다.", source:"https://ai.google.dev/gemini-api/docs/models"},
+      {name:"Gemini 2.5 Pro/Flash", provider:"Google DeepMind", released:"2025-03 / GA 2025-06", run:"cloud-only", tags:["research","multimodal","coding","agentic","frontier","cloud"], ctx:1000000, input:"Text/Image/Video", score:90, variants:["2.5 Pro","2.5 Flash","2.5 Flash-Lite","2025-03 preview","2025-06 GA"], note:"Gemini 2.5 API family는 Pro/Flash/Flash-Lite를 compact chips로 표시한다.", caveat:"속도/가격/품질이 tier별로 다르므로 한 모델처럼 비교하지 않는다.", source:"https://ai.google.dev/gemini-api/docs/models", dateSources:["https://blog.google/innovation-and-ai/models-and-research/google-deepmind/gemini-model-thinking-updates-march-2025/","https://developers.googleblog.com/en/gemini-2-5-thinking-model-updates/"]},
+      {name:"Gemini Live API", provider:"Google DeepMind", released:"2025-11", run:"cloud-only", tags:["research","multimodal","frontier","cloud"], ctx:null, contextChart:false, input:"Audio/Video 실시간", score:87, variants:["Live audio/video","native audio output","context chart 제외"], note:"Gemini Live API는 실시간 audio/video-agent 계열이며 일반 1M text context 모델로 차트화하지 않는다.", caveat:"Live 모델별 context는 Live API capabilities 문서를 따르며 이 row는 비컨텍스트/별도 API로 표시한다.", source:"https://ai.google.dev/gemini-api/docs/live-api/capabilities"},
+      {name:"Gemini media generation APIs", provider:"Google DeepMind", released:"2025-11", run:"cloud-only", tags:["research","multimodal","frontier","cloud"], ctx:null, contextChart:false, input:"TTS/Image/Video 생성", score:88, variants:["TTS","Veo video","Nano Banana image","context chart 제외"], note:"Gemini TTS, Veo, Nano Banana는 text context model의 size variant가 아니라 별도 media generation API family로 분리한다.", caveat:"음성/이미지/비디오 생성 API는 모델별 입력 정책과 과금이 다르므로 1M context 비교에서 제외한다.", source:"https://ai.google.dev/gemini-api/docs/models"},
+      {name:"Grok 4.3", provider:"xAI", released:"2026-03 추정", run:"cloud-only", tags:["research","coding","agentic","frontier","cloud"], ctx:1000000, input:"Text/Tool", score:90, variants:["Grok 4.3","1M context"], note:"Grok 4.3은 xAI text/tool frontier API tier로, 1M context 계열로 분리한다.", caveat:"X 제품 한도와 API 모델 context는 별도 확인 대상이다.", source:"https://docs.x.ai/developers/models"},
+      {name:"Grok Build 0.1", provider:"xAI", released:"2026-03 추정", run:"cloud-only", tags:["research","coding","agentic","frontier","cloud"], ctx:256000, input:"Text/Tool", score:87, variants:["Grok Build 0.1","256K context"], note:"Grok Build 0.1은 xAI의 coding/build API tier이며 256K context를 이 row에만 적용한다.", caveat:"별도 media API row와 분리했으므로 이 context 수치를 다른 product API에 적용하지 않는다.", source:"https://docs.x.ai/developers/models"},
+      {name:"Grok Voice / Imagine APIs", provider:"xAI", released:"2026-03 추정", run:"cloud-only", tags:["research","multimodal","frontier","cloud"], ctx:null, contextChart:false, input:"Voice/Image/Video API 계열", score:84, variants:["Voice API","Imagine API","context chart 제외"], note:"Grok Voice와 Imagine은 text context model의 size variant가 아니라 별도 real-time/media API로 분리한다.", caveat:"공식 모델 표의 256K context는 Grok Build 0.1에 적용되며 이 media row는 context chart에서 제외한다.", source:"https://docs.x.ai/developers/models"},
+      {name:"Llama 4 Scout", provider:"Meta", released:"2025-04", run:"hosted/open-weight claim", tags:["research","multimodal","frontier","cloud"], ctx:10000000, input:"Text/Image", score:75, variants:["109B total","17B active","16 experts","10M claim"], note:"Llama 4 Scout 10M context claim은 초장문 비교의 상한선으로 별도 표시한다.", caveat:"10M은 명목 claim으로, 호스팅 제공자와 실제 유효 장문 추론 품질 검증이 필요하다.", source:"https://www.llama.com/models/llama-4/"}
+    ];
+
+    const maxCtx = 10000000;
+    const cards = document.querySelector("#cards");
+    const count = document.querySelector("#count");
+    const tableBody = document.querySelector("#modelTable tbody");
+    const contextViz = document.querySelector("#contextViz");
+    const sources = document.querySelector("#sources");
+    const search = document.querySelector("#search");
+    let active = "all";
+
+    function fmtCtx(value) {
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric) || numeric <= 0) return "비컨텍스트/별도 API";
+      if (numeric >= 10000000) return "10M";
+      if (numeric >= 1000000) return (numeric / 1000000) + "M";
+      return Math.round(numeric / 1000) + "K";
+    }
+
+    const allowedSourceHosts = new Set([
+      "ollama.com",
+      "registry.ollama.com",
+      "platform.openai.com",
+      "support.claude.com",
+      "ai.google.dev",
+      "blog.google",
+      "developers.googleblog.com",
+      "docs.x.ai",
+      "www.llama.com"
+    ]);
+
+    function el(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+
+    function clear(node) {
+      while (node.firstChild) node.removeChild(node.firstChild);
+    }
+
+    function safePercent(value, fallback) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return fallback;
+      return Math.min(100, Math.max(0, number));
+    }
+
+    function safeSourceUrl(source) {
+      try {
+        const url = new URL(String(source));
+        if (url.protocol !== "https:") return null;
+        if (!allowedSourceHosts.has(url.hostname)) return null;
+        return url.href;
+      } catch {
+        return null;
+      }
+    }
+
+    function appendRunTags(parent, run) {
+      if (run.includes("local")) parent.appendChild(el("span", "tag local", "로컬"));
+      if (run.includes("cloud")) parent.appendChild(el("span", "tag cloud", "클라우드"));
+      if (run.includes("hosted")) parent.appendChild(el("span", "tag cloud", "호스팅 확인"));
+    }
+
+    function createSourceLink(source) {
+      const href = safeSourceUrl(source);
+      if (!href) return el("span", "status risk", "허용되지 않은 출처 URL");
+      const anchor = el("a", "", href);
+      anchor.href = href;
+      anchor.rel = "noreferrer noopener";
+      anchor.referrerPolicy = "no-referrer";
+      anchor.setAttribute("referrerpolicy", "no-referrer");
+      return anchor;
+    }
+
+    function appendDefinition(list, key, valueNode) {
+      list.appendChild(el("dt", "", key));
+      const dd = el("dd");
+      if (valueNode instanceof Node) dd.appendChild(valueNode);
+      else dd.textContent = String(valueNode);
+      list.appendChild(dd);
+    }
+
+    function categoryText(model, excluded) {
+      return model.tags.filter(t => !excluded.includes(t)).join(", ");
+    }
+
+    function variantText(model) {
+      return Array.isArray(model.variants) ? model.variants.join(", ") : "";
+    }
+
+    function createVariantList(model) {
+      const wrap = el("div", "variant-list");
+      if (!Array.isArray(model.variants) || model.variants.length === 0) {
+        wrap.appendChild(el("span", "variant-chip", "단일 tier"));
+        return wrap;
+      }
+      model.variants.forEach(variant => {
+        wrap.appendChild(el("span", "variant-chip", variant));
+      });
+      return wrap;
+    }
+
+    function matchesFilter(model) {
+      if (active === "all") return true;
+      if (active === "local-only") return model.tags.includes("local") && !model.tags.includes("cloud");
+      if (active === "local-cloud") return model.tags.includes("local") && model.tags.includes("cloud");
+      if (active === "cloud-only") return model.run === "cloud-only";
+      return model.tags.includes(active);
+    }
+
+    function filterLabel() {
+      const labels = {
+        all: "전체",
+        research: "리서치",
+        multimodal: "멀티모달",
+        coding: "코딩",
+        agentic: "에이전트",
+        frontier: "프론티어",
+        "local-only": "로컬 전용",
+        "local-cloud": "로컬+클라우드",
+        "cloud-only": "클라우드 전용"
+      };
+      return labels[active] || active;
+    }
+
+    function filtered() {
+      const q = search.value.trim().toLowerCase();
+      return models.filter(m => {
+        const filterOk = matchesFilter(m);
+        const textOk = !q || [m.name, m.provider, m.released, m.note, m.caveat, m.input, m.run, variantText(m)].join(" ").toLowerCase().includes(q);
+        return filterOk && textOk;
+      });
+    }
+
+    function renderCards(list) {
+      clear(cards);
+      list.forEach(m => {
+        const article = el("article", "card model-card");
+        const head = el("div", "model-head");
+        const titleWrap = el("div");
+        titleWrap.appendChild(el("div", "model-title", m.name));
+        const metaLine = el("div", "meta-line");
+        metaLine.appendChild(el("span", "tag", m.provider));
+        metaLine.appendChild(el("span", "tag", m.released));
+        titleWrap.appendChild(metaLine);
+        const tagWrap = el("div");
+        appendRunTags(tagWrap, m.run);
+        titleWrap.appendChild(tagWrap);
+        const score = el("div", "score", String(m.score));
+        score.title = "상대 적합도";
+        head.append(titleWrap, score);
+
+        const defs = el("dl", "kv");
+        appendDefinition(defs, "제공자", m.provider);
+        appendDefinition(defs, "출시/확인", m.released);
+        appendDefinition(defs, "용도", categoryText(m, ["local", "cloud", "frontier"]));
+        appendDefinition(defs, "컨텍스트", fmtCtx(m.ctx));
+        appendDefinition(defs, "입력", m.input);
+        appendDefinition(defs, "변형", createVariantList(m));
+        appendDefinition(defs, "출처", createSourceLink(m.source));
+
+        const barWrap = el("div");
+        const bar = el("div", "bar");
+        bar.setAttribute("aria-hidden", "true");
+        const fill = el("span");
+        fill.style.setProperty("--w", safePercent(m.score, 0) + "%");
+        fill.style.setProperty("--c", m.run.includes("cloud-only") ? "var(--cloud)" : "var(--local)");
+        bar.appendChild(fill);
+        barWrap.appendChild(bar);
+
+        const note = el("p", "muted", m.note);
+        const caveat = el("p");
+        caveat.appendChild(el("span", "status inferred", "주의"));
+        caveat.appendChild(document.createTextNode(" "));
+        caveat.appendChild(el("span", "muted", m.caveat));
+
+        article.append(head, defs, barWrap, note, caveat);
+        cards.appendChild(article);
+      });
+    }
+
+    function renderTable(list) {
+      clear(tableBody);
+      list.forEach(m => {
+        const row = el("tr");
+        const name = el("td", "", m.name);
+        const provider = el("td", "", m.provider);
+        const released = el("td", "", m.released);
+        const run = el("td");
+        appendRunTags(run, m.run);
+        const tags = el("td", "", categoryText(m, ["local", "cloud"]));
+        const ctx = el("td", "", fmtCtx(m.ctx));
+        const input = el("td", "", m.input);
+        const variants = el("td");
+        variants.appendChild(createVariantList(m));
+        const caveat = el("td", "", m.caveat);
+        const source = el("td");
+        source.appendChild(createSourceLink(m.source));
+        row.append(name, provider, released, run, tags, ctx, input, variants, caveat, source);
+        tableBody.appendChild(row);
+      });
+    }
+
+    function renderContext(list) {
+      clear(contextViz);
+      const rows = [...list]
+        .filter(m => m.contextChart !== false && Number.isFinite(Number(m.ctx)) && Number(m.ctx) > 0)
+        .sort((a,b) => b.ctx - a.ctx);
+      if (rows.length === 0) {
+        contextViz.appendChild(el("p", "muted", "현재 필터에는 컨텍스트 차트에 표시할 수치형 context row가 없습니다."));
+        return;
+      }
+      rows.forEach(m => {
+        const pct = Math.max(1.5, (Number(m.ctx) / maxCtx) * 100);
+        const color = m.run.includes("cloud-only") || m.run.includes("hosted") ? "var(--cloud)" : "var(--local)";
+        const row = el("div", "context-row");
+        row.appendChild(el("strong", "", m.name));
+        const track = el("div", "context-track");
+        track.setAttribute("aria-label", `${m.name} ${fmtCtx(m.ctx)}`);
+        const fill = el("div", "context-fill");
+        fill.style.setProperty("--w", safePercent(pct, 1.5) + "%");
+        fill.style.setProperty("--c", color);
+        track.appendChild(fill);
+        row.appendChild(track);
+        row.appendChild(el("span", "", fmtCtx(m.ctx)));
+        contextViz.appendChild(row);
+      });
+    }
+
+    function renderSources() {
+      clear(sources);
+      models.forEach(m => {
+        const item = el("div", "source-item");
+        item.appendChild(el("strong", "", m.name));
+        const body = el("span");
+        body.appendChild(createSourceLink(m.source));
+        if (Array.isArray(m.dateSources) && m.dateSources.length > 0) {
+          body.appendChild(document.createElement("br"));
+          body.appendChild(el("span", "muted", "날짜 근거: "));
+          m.dateSources.forEach((source, index) => {
+            if (index > 0) body.appendChild(document.createTextNode(" / "));
+            body.appendChild(createSourceLink(source));
+          });
+        }
+        body.appendChild(document.createElement("br"));
+        body.appendChild(el("span", "muted", `근거: 제공자 ${m.provider}, 출시/확인 ${m.released}, ${m.note} 컨텍스트 ${fmtCtx(m.ctx)}, 입력 ${m.input}, 실행 구분 ${m.run}, 변형 ${variantText(m)}. 주의: ${m.caveat}`));
+        item.appendChild(body);
+        sources.appendChild(item);
+      });
+    }
+
+    function render() {
+      const list = filtered();
+      count.textContent = `${list.length}개 모델 표시 중. 필터: ${filterLabel()}`;
+      renderCards(list);
+      renderTable(list);
+      renderContext(list);
+    }
+
+    document.querySelectorAll(".chip").forEach(btn => {
+      btn.addEventListener("click", () => {
+        active = btn.dataset.filter;
+        document.querySelectorAll(".chip").forEach(b => b.setAttribute("aria-pressed", String(b === btn)));
+        render();
+      });
+    });
+    search.addEventListener("input", render);
+    renderSources();
+    render();
+  </script>
+</body>
+</html>
