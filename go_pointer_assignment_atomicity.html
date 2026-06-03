@@ -1,0 +1,1814 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Go 포인터 대입의 원자성 — 인포그래픽</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   CSS Variables & Theme
+   ═══════════════════════════════════════════ */
+:root {
+  --bg: #0a0e17;
+  --bg-surface: #111827;
+  --bg-card: #151c2c;
+  --bg-card-hover: #1a2540;
+  --bg-code: #0d1117;
+  --bg-tooltip: #1c2438;
+  --border: #1e293b;
+  --border-active: #3b82f6;
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --text-bright: #f8fafc;
+  --text-muted: #64748b;
+  --accent: #3b82f6;
+  --accent-light: #60a5fa;
+  --accent-dim: #1d4ed8;
+  --red: #ef4444;
+  --red-dim: #991b1b;
+  --green: #22c55e;
+  --green-dim: #166534;
+  --yellow: #eab308;
+  --yellow-dim: #854d0e;
+  --orange: #f97316;
+  --cyan: #06b6d4;
+  --purple: #8b5cf6;
+  --pink: #ec4899;
+  --radius: 8px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --shadow-glow: 0 0 30px rgba(59,130,246,0.15);
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --nav-height: 56px;
+}
+
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-card: #f1f5f9;
+  --bg-card-hover: #e2e8f0;
+  --bg-code: #f1f5f9;
+  --bg-tooltip: #ffffff;
+  --border: #e2e8f0;
+  --border-active: #3b82f6;
+  --text: #1e293b;
+  --text-dim: #64748b;
+  --text-bright: #0f172a;
+  --text-muted: #94a3b8;
+  --shadow: 0 4px 24px rgba(0,0,0,0.08);
+  --shadow-glow: 0 0 30px rgba(59,130,246,0.08);
+}
+
+/* ═══════════════════════════════════════════
+   Reset & Base
+   ═══════════════════════════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; scroll-padding-top: calc(var(--nav-height) + 20px); }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.75;
+  overflow-x: hidden;
+  transition: background var(--transition), color var(--transition);
+}
+
+::selection { background: rgba(59,130,246,0.3); }
+
+/* ═══════════════════════════════════════════
+   Scrollbar
+   ═══════════════════════════════════════════ */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ═══════════════════════════════════════════
+   Navigation
+   ═══════════════════════════════════════════ */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10, 14, 23, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  height: var(--nav-height);
+  transition: background var(--transition);
+}
+[data-theme="light"] .nav {
+  background: rgba(248, 250, 252, 0.88);
+}
+.nav-inner {
+  display: flex;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 100%;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.nav-inner::-webkit-scrollbar { display: none; }
+.nav-btn {
+  padding: 8px 16px;
+  font-size: 0.82em;
+  font-weight: 500;
+  color: var(--text-dim);
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  font-family: var(--font-sans);
+  position: relative;
+}
+.nav-btn:hover { color: var(--text); background: rgba(59,130,246,0.08); }
+.nav-btn.active { color: var(--accent); background: rgba(59,130,246,0.12); }
+.nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.theme-toggle {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+.theme-toggle:hover { border-color: var(--accent); background: var(--bg-card-hover); }
+
+/* ═══════════════════════════════════════════
+   Hero
+   ═══════════════════════════════════════════ */
+.hero {
+  position: relative;
+  padding: 80px 24px 60px;
+  text-align: center;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -60%;
+  left: -30%;
+  width: 160%;
+  height: 220%;
+  background: radial-gradient(ellipse at 50% 30%, rgba(59,130,246,0.1) 0%, rgba(139,92,246,0.05) 30%, transparent 60%);
+  animation: heroPulse 10s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes heroPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.78em;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-dim);
+  margin-bottom: 24px;
+  position: relative;
+}
+.hero-badge .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--red);
+  animation: blink 2s ease-in-out infinite;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.hero h1 {
+  font-size: clamp(2em, 5vw, 3.2em);
+  font-weight: 900;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.2;
+  margin-bottom: 16px;
+  position: relative;
+  letter-spacing: -0.02em;
+}
+.hero .subtitle {
+  font-size: 1.1em;
+  color: var(--text-dim);
+  max-width: 700px;
+  margin: 0 auto;
+  position: relative;
+}
+.hero .subtitle code {
+  background: var(--bg-code);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  color: var(--accent-light);
+  border: 1px solid var(--border);
+}
+
+/* ═══════════════════════════════════════════
+   Container & Sections
+   ═══════════════════════════════════════════ */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.section {
+  padding: 60px 0;
+  border-bottom: 1px solid var(--border);
+}
+.section:last-child { border-bottom: none; }
+.section-header {
+  margin-bottom: 40px;
+}
+.section-label {
+  font-size: 0.75em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.section-title {
+  font-size: 1.8em;
+  font-weight: 800;
+  color: var(--text-bright);
+  letter-spacing: -0.02em;
+}
+
+/* ═══════════════════════════════════════════
+   Reveal Animation
+   ═══════════════════════════════════════════ */
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ═══════════════════════════════════════════
+   TL;DR Cards
+   ═══════════════════════════════════════════ */
+.tldr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+.tldr-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  transition: all var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+.tldr-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+.tldr-card:nth-child(1)::before { background: linear-gradient(90deg, var(--red), var(--orange)); }
+.tldr-card:nth-child(2)::before { background: linear-gradient(90deg, var(--yellow), var(--orange)); }
+.tldr-card:nth-child(3)::before { background: linear-gradient(90deg, var(--green), var(--cyan)); }
+.tldr-card:hover {
+  border-color: var(--border-active);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-glow);
+}
+.tldr-icon {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  margin-bottom: 16px;
+}
+.tldr-card:nth-child(1) .tldr-icon { background: rgba(239,68,68,0.12); }
+.tldr-card:nth-child(2) .tldr-icon { background: rgba(234,179,8,0.12); }
+.tldr-card:nth-child(3) .tldr-icon { background: rgba(34,197,94,0.12); }
+.tldr-card h3 {
+  font-size: 1.05em;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 10px;
+}
+.tldr-card p {
+  font-size: 0.88em;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+.tldr-card code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--bg-code);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--accent-light);
+  border: 1px solid var(--border);
+}
+
+/* ═══════════════════════════════════════════
+   Guarantee Table
+   ═══════════════════════════════════════════ */
+.guarantee-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.guarantee-table thead th {
+  background: var(--bg-surface);
+  padding: 14px 20px;
+  font-size: 0.82em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.guarantee-table tbody tr {
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.guarantee-table tbody tr:hover {
+  background: var(--bg-card-hover);
+}
+.guarantee-table tbody tr.active {
+  background: rgba(59,130,246,0.08);
+}
+.guarantee-table tbody td {
+  padding: 14px 20px;
+  font-size: 0.9em;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.guarantee-table tbody tr:last-child td { border-bottom: none; }
+.status-icon {
+  font-size: 1.2em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-yes { color: var(--green); }
+.status-no { color: var(--red); }
+.detail-panel {
+  display: none;
+  margin-top: 12px;
+  padding: 14px 18px;
+  background: var(--bg-code);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  font-size: 0.85em;
+  color: var(--text-dim);
+  line-height: 1.7;
+  animation: slideDown 0.3s ease;
+}
+.detail-panel.show { display: block; }
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════
+   Code Block
+   ═══════════════════════════════════════════ */
+.code-container {
+  position: relative;
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.78em;
+  color: var(--text-dim);
+}
+.code-header .lang {
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+.copy-btn {
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-dim);
+  font-size: 0.85em;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-sans);
+}
+.copy-btn:hover { border-color: var(--accent); color: var(--text); }
+.copy-btn.copied { border-color: var(--green); color: var(--green); }
+pre.code-block {
+  padding: 20px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  line-height: 1.9;
+  tab-size: 4;
+}
+pre.code-block .line {
+  display: block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+  position: relative;
+}
+pre.code-block .line:hover {
+  background: rgba(59,130,246,0.08);
+}
+pre.code-block .line.highlighted {
+  background: rgba(59,130,246,0.12);
+  border-left: 3px solid var(--accent);
+  padding-left: 12px;
+}
+.line-tooltip {
+  display: none;
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 16px;
+  background: var(--bg-tooltip);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font-size: 0.85em;
+  color: var(--text-dim);
+  font-family: var(--font-sans);
+  white-space: normal;
+  width: 280px;
+  z-index: 50;
+  box-shadow: var(--shadow);
+  line-height: 1.5;
+}
+.line.highlighted .line-tooltip { display: block; }
+
+/* Syntax colors */
+.kw { color: #ff7b72; }
+.typ { color: #79c0ff; }
+.fn { color: #d2a8ff; }
+.str { color: #a5d6ff; }
+.cm { color: #8b949e; font-style: italic; }
+.op { color: #ff7b72; }
+.num { color: #79c0ff; }
+.pkg { color: #ffa657; }
+.var { color: #e2e8f0; }
+
+/* ═══════════════════════════════════════════
+   Comparison Layer Diagram
+   ═══════════════════════════════════════════ */
+.layer-diagram {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-width: 700px;
+  margin: 0 auto;
+}
+.layer {
+  border: 1px solid var(--border);
+  padding: 24px 28px;
+  position: relative;
+  transition: all var(--transition);
+  cursor: pointer;
+}
+.layer:first-child { border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+.layer:last-child { border-radius: 0 0 var(--radius-lg) var(--radius-lg); border-top: none; }
+.layer:hover { border-color: var(--accent); z-index: 2; }
+.layer-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.72em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+}
+.layer.hw { background: rgba(6,182,212,0.06); }
+.layer.hw .layer-tag { background: rgba(6,182,212,0.15); color: var(--cyan); }
+.layer.lang { background: rgba(139,92,246,0.06); }
+.layer.lang .layer-tag { background: rgba(139,92,246,0.15); color: var(--purple); }
+.layer h4 { font-size: 1.05em; font-weight: 700; color: var(--text-bright); margin-bottom: 6px; }
+.layer p { font-size: 0.88em; color: var(--text-dim); }
+.layer .detail-expand {
+  display: none;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 0.85em;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+.layer.expanded .detail-expand { display: block; animation: slideDown 0.3s ease; }
+.layer-connector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 0;
+  position: relative;
+  z-index: 3;
+}
+.layer-connector::before {
+  content: '';
+  width: 2px;
+  height: 24px;
+  background: var(--border);
+}
+.layer-connector-label {
+  position: absolute;
+  background: var(--bg);
+  padding: 2px 12px;
+  border-radius: 10px;
+  font-size: 0.72em;
+  font-weight: 600;
+  color: var(--red);
+  border: 1px solid var(--red-dim);
+}
+
+/* ═══════════════════════════════════════════
+   Flow Diagram (Store → happens-before → Load)
+   ═══════════════════════════════════════════ */
+.flow-diagram {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  flex-wrap: wrap;
+  padding: 30px 0;
+}
+.flow-node {
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 24px;
+  text-align: center;
+  min-width: 160px;
+  transition: all var(--transition);
+}
+.flow-node:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 20px rgba(59,130,246,0.15);
+}
+.flow-node.store { border-color: var(--green); }
+.flow-node.load { border-color: var(--cyan); }
+.flow-node .flow-label {
+  font-size: 0.72em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+.flow-node.store .flow-label { color: var(--green); }
+.flow-node.load .flow-label { color: var(--cyan); }
+.flow-node .flow-code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  color: var(--text-bright);
+}
+.flow-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 16px;
+  color: var(--accent);
+}
+.flow-arrow .arrow-line {
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--green), var(--cyan));
+  position: relative;
+}
+.flow-arrow .arrow-line::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: -5px;
+  border: 6px solid transparent;
+  border-left-color: var(--cyan);
+}
+.flow-arrow-label {
+  font-size: 0.72em;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ═══════════════════════════════════════════
+   Accordion Cards (Concurrency Issues)
+   ═══════════════════════════════════════════ */
+.accordion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.accordion-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all var(--transition);
+}
+.accordion-card:hover { border-color: var(--border-active); }
+.accordion-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 22px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+.accordion-header:hover { background: var(--bg-card-hover); }
+.severity-badge {
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.72em;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.severity-critical { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid var(--red-dim); }
+.severity-warning { background: rgba(234,179,8,0.15); color: var(--yellow); border: 1px solid var(--yellow-dim); }
+.severity-info { background: rgba(59,130,246,0.15); color: var(--accent); border: 1px solid var(--accent-dim); }
+.accordion-title {
+  font-size: 0.95em;
+  font-weight: 600;
+  color: var(--text-bright);
+  flex-grow: 1;
+}
+.accordion-chevron {
+  font-size: 0.9em;
+  color: var(--text-muted);
+  transition: transform 0.3s;
+  flex-shrink: 0;
+}
+.accordion-card.open .accordion-chevron { transform: rotate(180deg); }
+.accordion-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease;
+}
+.accordion-card.open .accordion-body { max-height: 2000px; }
+.accordion-content {
+  padding: 0 22px 20px;
+  font-size: 0.88em;
+  color: var(--text-dim);
+  line-height: 1.8;
+}
+.accordion-content code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--bg-code);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--accent-light);
+  border: 1px solid var(--border);
+}
+
+/* ═══════════════════════════════════════════
+   Quote Cards
+   ═══════════════════════════════════════════ */
+.quote-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+.quote-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  transition: all var(--transition);
+  position: relative;
+}
+.quote-card:hover {
+  border-color: var(--border-active);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow);
+}
+.quote-card::before {
+  content: '\201C';
+  font-size: 4em;
+  color: var(--accent);
+  opacity: 0.15;
+  position: absolute;
+  top: 8px;
+  left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.quote-text {
+  font-size: 0.88em;
+  color: var(--text);
+  line-height: 1.7;
+  font-style: italic;
+  margin-bottom: 16px;
+  position: relative;
+}
+.quote-author {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.quote-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1em;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.quote-card:nth-child(1) .quote-avatar { background: rgba(59,130,246,0.15); color: var(--accent); }
+.quote-card:nth-child(2) .quote-avatar { background: rgba(34,197,94,0.15); color: var(--green); }
+.quote-card:nth-child(3) .quote-avatar { background: rgba(234,179,8,0.15); color: var(--yellow); }
+.quote-card:nth-child(4) .quote-avatar { background: rgba(139,92,246,0.15); color: var(--purple); }
+.quote-name {
+  font-size: 0.88em;
+  font-weight: 700;
+  color: var(--text-bright);
+}
+.quote-role {
+  font-size: 0.75em;
+  color: var(--text-muted);
+}
+
+/* ═══════════════════════════════════════════
+   Timeline
+   ═══════════════════════════════════════════ */
+.timeline {
+  position: relative;
+  padding: 20px 0;
+}
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 24px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, var(--accent), var(--purple), var(--green));
+}
+.timeline-item {
+  position: relative;
+  padding-left: 64px;
+  margin-bottom: 36px;
+}
+.timeline-item:last-child { margin-bottom: 0; }
+.timeline-dot {
+  position: absolute;
+  left: 16px;
+  top: 4px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 3px solid var(--accent);
+  z-index: 2;
+  transition: all 0.3s;
+}
+.timeline-item:hover .timeline-dot {
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(59,130,246,0.4);
+}
+.timeline-year {
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.timeline-text {
+  font-size: 0.9em;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+.timeline-text strong { color: var(--text-bright); }
+
+/* ═══════════════════════════════════════════
+   Myth Busting Cards
+   ═══════════════════════════════════════════ */
+.myth-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.myth-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all var(--transition);
+  perspective: 1000px;
+}
+.myth-card:hover { border-color: var(--border-active); }
+.myth-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100px;
+}
+.myth-side {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.myth-side.wrong {
+  background: rgba(239,68,68,0.04);
+  border-right: 1px solid var(--border);
+}
+.myth-side.right {
+  background: rgba(34,197,94,0.04);
+}
+.myth-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.myth-side.wrong .myth-label { color: var(--red); }
+.myth-side.right .myth-label { color: var(--green); }
+.myth-text {
+  font-size: 0.88em;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+/* ═══════════════════════════════════════════
+   Comparison (Recommended vs Anti-pattern)
+   ═══════════════════════════════════════════ */
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.compare-column {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.compare-header {
+  padding: 14px 20px;
+  font-size: 0.85em;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.compare-column.good .compare-header { background: rgba(34,197,94,0.08); color: var(--green); border-bottom: 1px solid var(--border); }
+.compare-column.bad .compare-header { background: rgba(239,68,68,0.08); color: var(--red); border-bottom: 1px solid var(--border); }
+.compare-body { padding: 0; }
+
+/* ═══════════════════════════════════════════
+   Caveat Cards
+   ═══════════════════════════════════════════ */
+.caveat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+.caveat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  border-left: 3px solid var(--yellow);
+}
+.caveat-card h4 {
+  font-size: 0.92em;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 8px;
+}
+.caveat-card p {
+  font-size: 0.85em;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+.caveat-card code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--bg-code);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--accent-light);
+}
+
+/* ═══════════════════════════════════════════
+   Conclusion Banner
+   ═══════════════════════════════════════════ */
+.conclusion-banner {
+  background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(139,92,246,0.08));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 40px;
+  text-align: center;
+  margin: 40px 0 0;
+}
+.conclusion-banner h3 {
+  font-size: 1.4em;
+  font-weight: 800;
+  color: var(--text-bright);
+  margin-bottom: 14px;
+}
+.conclusion-banner p {
+  font-size: 0.95em;
+  color: var(--text-dim);
+  max-width: 700px;
+  margin: 0 auto;
+  line-height: 1.8;
+}
+.conclusion-banner code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--bg-code);
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: var(--accent-light);
+  border: 1px solid var(--border);
+}
+
+/* ═══════════════════════════════════════════
+   Back to Top
+   ═══════════════════════════════════════════ */
+.back-to-top {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 4px 16px rgba(59,130,246,0.3);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s;
+  z-index: 50;
+}
+.back-to-top.visible { opacity: 1; transform: translateY(0); }
+.back-to-top:hover { transform: translateY(-3px); box-shadow: 0 6px 24px rgba(59,130,246,0.4); }
+
+/* ═══════════════════════════════════════════
+   Responsive
+   ═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .hero { padding: 50px 16px 40px; }
+  .hero h1 { font-size: 1.8em; }
+  .container { padding: 0 16px; }
+  .section { padding: 40px 0; }
+  .myth-inner { grid-template-columns: 1fr; }
+  .myth-side.wrong { border-right: none; border-bottom: 1px solid var(--border); }
+  .compare-grid { grid-template-columns: 1fr; }
+  .flow-diagram { flex-direction: column; }
+  .flow-arrow { transform: rotate(90deg); padding: 12px 0; }
+  .nav-btn { padding: 8px 12px; font-size: 0.75em; }
+  .line-tooltip { position: static; transform: none; margin: 8px 0 0; width: 100%; }
+  .quote-grid { grid-template-columns: 1fr; }
+  .tldr-grid { grid-template-columns: 1fr; }
+  .caveat-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     Navigation
+     ═══════════════════════════════════════════ -->
+<nav class="nav" role="navigation" aria-label="주요 내비게이션">
+  <div class="nav-inner">
+    <button class="nav-btn active" data-target="tldr">TL;DR</button>
+    <button class="nav-btn" data-target="guarantees">보장 테이블</button>
+    <button class="nav-btn" data-target="code-example">코드 예시</button>
+    <button class="nav-btn" data-target="hw-vs-lang">HW vs 언어</button>
+    <button class="nav-btn" data-target="atomic-pointer">atomic.Pointer</button>
+    <button class="nav-btn" data-target="issues">동시성 이슈</button>
+    <button class="nav-btn" data-target="quotes">전문가 의견</button>
+    <button class="nav-btn" data-target="timeline">타임라인</button>
+    <button class="nav-btn" data-target="myths">잘못된 가정</button>
+    <button class="nav-btn" data-target="patterns">패턴 비교</button>
+    <button class="nav-btn" data-target="caveats">주의사항</button>
+    <div class="nav-controls">
+      <button class="theme-toggle" id="themeToggle" aria-label="테마 전환" title="다크/라이트 모드 전환">🌙</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════
+     Hero
+     ═══════════════════════════════════════════ -->
+<header class="hero" id="top">
+  <div class="hero-badge">
+    <span class="dot"></span>
+    Go Memory Model Deep Dive
+  </div>
+  <h1>Go 포인터 대입의<br>원자성(Atomicity) 조사</h1>
+  <p class="subtitle"><code>p = q</code> 한 줄이 정말 안전한가? Go Memory Model이 말하는 진실</p>
+</header>
+
+<main class="container">
+
+<!-- ═══════════════════════════════════════════
+     Section: TL;DR
+     ═══════════════════════════════════════════ -->
+<section class="section" id="tldr">
+  <div class="section-header reveal">
+    <div class="section-label">핵심 요약</div>
+    <h2 class="section-title">TL;DR — 세 가지 핵심</h2>
+  </div>
+  <div class="tldr-grid">
+    <div class="tldr-card reveal">
+      <div class="tldr-icon">🚫</div>
+      <h3>포인터 대입은 Atomic이 아니다</h3>
+      <p>Go 언어 스펙 차원에서 <code>p = q</code> 같은 평범한 포인터 대입은 atomic operation으로 보장되지 않습니다. 동기화 없이 한 goroutine에서 쓰고 다른 goroutine에서 읽으면 <strong>data race</strong>이며, 미정의 동작을 초래합니다.</p>
+    </div>
+    <div class="tldr-card reveal">
+      <div class="tldr-icon">⚠️</div>
+      <h3>Torn Read 방지 ≠ 가시성 보장</h3>
+      <p>단일 워드 크기 읽기에서 찢어진 값은 보이지 않지만, 이는 <strong>happens-before 보장이 아닙니다.</strong> 포인터를 통해 읽은 구조체 필드들이 일관되게 보인다는 보장은 전혀 없습니다.</p>
+    </div>
+    <div class="tldr-card reveal">
+      <div class="tldr-icon">✅</div>
+      <h3>sync/atomic을 반드시 사용</h3>
+      <p><code>atomic.Pointer[T]</code> (Go 1.19+), <code>atomic.Value</code>, 또는 mutex/channel을 반드시 사용해야 합니다. 이들은 데이터 레이스를 제거하고 happens-before 엣지를 만들어 줍니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     Section: Guarantee Table
+     ═══════════════════════════════════════════ -->
+<section class="section" id="guarantees">
+  <div class="section-header reveal">
+    <div class="section-label">Go Memory Model</div>
+    <h2 class="section-title">보장 여부 한눈에 보기</h2>
+  </div>
+  <div class="reveal">
+    <table class="guarantee-table" role="grid" aria-label="Go Memory Model 보장 테이블">
+      <thead>
+        <tr>
+          <th>보장 항목</th>
+          <th style="width:120px;text-align:center;">상태</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr data-detail="race가 있어도 단일 워드(보통 8바이트) 크기의 메모리 읽기에서 '절반만 쓰인' 값이 보이지는 않습니다. Java/JavaScript와 유사한 모델이지만, 이것이 happens-before를 의미하지는 않습니다.">
+          <td>
+            단일 워드 크기 읽기에서 torn read 방지
+            <div class="detail-panel"></div>
+          </td>
+          <td style="text-align:center;"><span class="status-icon status-yes">✅ 보장됨</span></td>
+        </tr>
+        <tr data-detail="평범한 포인터 대입(p = q)은 'ordinary data write'로 분류됩니다. sync/atomic 연산만이 happens-before 엣지를 형성합니다. 즉 다른 goroutine이 새 포인터를 '언제' 볼 수 있는지에 대한 어떠한 보장도 없습니다.">
+          <td>
+            포인터 대입이 동기화 연산 (happens-before 엣지 형성)
+            <div class="detail-panel"></div>
+          </td>
+          <td style="text-align:center;"><span class="status-icon status-no">❌ 미보장</span></td>
+        </tr>
+        <tr data-detail="Go Memory Model의 대표 예시: setup() 함수에서 구조체 필드를 채운 후 포인터를 대입해도, main()이 새 포인터를 관찰하면서 필드의 초기화된 값을 보지 못할 수 있습니다. 이것이 publication 문제의 핵심입니다.">
+          <td>
+            새 포인터가 보일 때 가리키는 객체 필드도 초기화 상태로 보임
+            <div class="detail-panel"></div>
+          </td>
+          <td style="text-align:center;"><span class="status-icon status-no">❌ 미보장</span></td>
+        </tr>
+        <tr data-detail="컴파일러는 단일 goroutine의 의미만 보존하면 됩니다. 다른 goroutine의 관점에서 보이는 순서는 고려하지 않으며, CPU도 store buffer, 캐시 일관성 프로토콜 등으로 인해 재정렬합니다. sync/atomic만이 메모리 펜스를 삽입합니다.">
+          <td>
+            컴파일러/CPU가 포인터 대입 주변 코드를 재배열하지 않음
+            <div class="detail-panel"></div>
+          </td>
+          <td style="text-align:center;"><span class="status-icon status-no">❌ 미보장</span></td>
+        </tr>
+        <tr data-detail="interface{}는 (타입, 포인터), 슬라이스는 (포인터, 길이, 용량), string은 (포인터, 길이)로 구성됩니다. 이 다중 워드 값의 race는 쌍이 어긋나면서 타입 안전성을 깨뜨려 임의의 메모리 corruption이나 보안 취약점으로 이어질 수 있습니다.">
+          <td>
+            <code>interface{}</code>/슬라이스/문자열 대입이 원자적
+            <div class="detail-panel"></div>
+          </td>
+          <td style="text-align:center;"><span class="status-icon status-no">❌ 미보장</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     Section: Code Example
+     ═══════════════════════════════════════════ -->
+<section class="section" id="code-example">
+  <div class="section-header reveal">
+    <div class="section-label">Go Memory Model 공식 예시</div>
+    <h2 class="section-title">왜 위험한가 — 코드로 보기</h2>
+  </div>
+  <div class="reveal">
+    <p style="color:var(--text-dim);margin-bottom:20px;font-size:0.92em;">각 코드 줄을 클릭하면 해당 줄의 위험성을 확인할 수 있습니다.</p>
+    <div class="code-container">
+      <div class="code-header">
+        <span class="lang">Go</span>
+        <button class="copy-btn" onclick="copyCode(this, 'codeMain')">복사</button>
+      </div>
+      <pre class="code-block" id="codeMain"><span class="line" data-tip="구조체 T는 msg 필드를 가집니다. 이 필드의 초기화 순서가 핵심 문제입니다."><span class="kw">type</span> <span class="typ">T</span> <span class="kw">struct</span>{ <span class="var">msg</span> <span class="typ">string</span> }</span>
+<span class="line" data-tip="전역 포인터 g — 여러 goroutine이 동기화 없이 접근하는 공유 변수입니다. 이것이 data race의 근원입니다."><span class="kw">var</span> <span class="var">g</span> <span class="op">*</span><span class="typ">T</span></span>
+<span class="line" data-tip="">&nbsp;</span>
+<span class="line" data-tip="새 구조체를 할당하고 msg 필드를 설정한 뒤 전역 포인터에 대입합니다. 문제: 컴파일러가 g = t를 t.msg 대입 이전으로 재정렬할 수 있습니다!"><span class="kw">func</span> <span class="fn">setup</span>() {</span>
+<span class="line" data-tip="새 T 구조체를 힙에 할당합니다.">    <span class="var">t</span> <span class="op">:=</span> <span class="fn">new</span>(<span class="typ">T</span>)</span>
+<span class="line" data-tip="⚠️ 이 대입과 아래 g = t의 순서가 다른 goroutine 관점에서 보존되지 않을 수 있습니다. 컴파일러는 단일 goroutine의 의미만 유지하면 됩니다.">    <span class="var">t</span>.<span class="var">msg</span> <span class="op">=</span> <span class="str">"hello, world"</span></span>
+<span class="line" data-tip="🔴 CRITICAL: 동기화 없는 포인터 대입. 다른 goroutine이 g != nil을 보더라도 t.msg가 초기화되었다는 보장이 없습니다. Go Memory Model이 명시적으로 경고하는 패턴입니다.">    <span class="var">g</span> <span class="op">=</span> <span class="var">t</span></span>
+<span class="line" data-tip="">}</span>
+<span class="line" data-tip="">&nbsp;</span>
+<span class="line" data-tip="setup()을 새 goroutine에서 실행하고, g가 nil이 아닌지 확인한 뒤 g.msg를 읽습니다."><span class="kw">func</span> <span class="fn">main</span>() {</span>
+<span class="line" data-tip="setup()을 별도 goroutine에서 비동기 실행합니다.">    <span class="kw">go</span> <span class="fn">setup</span>()</span>
+<span class="line" data-tip="⚠️ 컴파일러가 이 루프를 최적화하여 무한 루프로 만들 수 있습니다. g는 이 goroutine에서 변하지 않으므로 hoisting이 가능합니다.">    <span class="kw">for</span> <span class="var">g</span> <span class="op">==</span> <span class="kw">nil</span> {}</span>
+<span class="line" data-tip="🔴 g != nil이더라도 g.msg가 &quot;hello, world&quot;로 보인다는 보장이 없습니다. 빈 문자열이나 부분적으로 초기화된 값이 보일 수 있습니다.">    <span class="fn">print</span>(<span class="var">g</span>.<span class="var">msg</span>)</span>
+<span class="line" data-tip="">}</span></pre>
+    </div>
+    <div style="margin-top:16px;padding:16px 20px;background:rgba(239,68,68,0.06);border:1px solid var(--red-dim);border-radius:var(--radius-lg);border-left:3px solid var(--red);">
+      <p style="font-size:0.88em;color:var(--text-dim);line-height:1.7;">
+        <strong style="color:var(--red);">Go Memory Model 공식 경고:</strong>
+        "Even if <code style="font-family:var(--font-mono);background:var(--bg-code);padding:1px 6px;border-radius:4px;font-size:0.9em;">main</code> observes <code style="font-family:var(--font-mono);background:var(--bg-code);padding:1px 6px;border-radius:4px;font-size:0.9em;">g != nil</code> and exits its loop, <strong>there is no guarantee that it will observe the initialized value for <code style="font-family:var(--font-mono);background:var(--bg-code);padding:1px 6px;border-radius:4px;font-size:0.9em;">g.msg</code></strong>."
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     Section: Hardware vs Language
+     ═══════════════════════════════════════════ -->
+<section class="section" id="hw-vs-lang">
+  <div class="section-header reveal">
+    <div class="section-label">두 가지 의미의 "Atomic"</div>
+    <h2 class="section-title">하드웨어 보장 vs 언어 보장</h2>
+  </div>
+  <div class="reveal">
+    <p style="color:var(--text-dim);margin-bottom:24px;font-size:0.92em;">Dave Cheney가 구분한 두 가지 다른 의미의 "atomic". 각 레이어를 클릭하면 상세 설명을 볼 수 있습니다.</p>
+    <div class="layer-diagram">
+      <div class="layer hw" onclick="toggleLayer(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleLayer(this)}" role="button" tabindex="0" aria-expanded="false">
+        <span class="layer-tag">하드웨어 레이어</span>
+        <h4>인스트럭션 차원의 Atomicity (1)</h4>
+        <p>정렬된 워드 크기 load/store는 찢어지지 않는다 — x86-64, ARMv8 모두 보장</p>
+        <div class="detail-expand">
+          <p>x86-64에서 정렬된 8바이트 store는 단일 인스트럭션으로 실행되어 torn write가 발생하지 않습니다. ARMv8 등 약한 메모리 모델에서도 정렬된 워드 단위의 atomicity 자체는 보장됩니다.</p>
+          <p style="margin-top:8px;"><strong style="color:var(--yellow);">그러나</strong> — 이는 다른 코어에 그 결과가 <em>언제</em> 가시화되는지, 주변 메모리 연산이 <em>재정렬</em>되지 않는지에 대해서는 아무 말도 하지 않습니다.</p>
+          <p style="margin-top:8px;"><strong style="color:var(--red);">추가 위험:</strong> 32-bit ARM, 32-bit MIPS에서는 64-bit 값(int64/uint64)이 8-byte 정렬되어야 atomic이 보장되며, 과거에는 호출자 책임이었습니다.</p>
+        </div>
+      </div>
+      <div class="layer-connector">
+        <div class="layer-connector-label">≠ 같지 않다!</div>
+      </div>
+      <div class="layer lang" onclick="toggleLayer(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleLayer(this)}" role="button" tabindex="0" aria-expanded="false">
+        <span class="layer-tag">언어/sync/atomic 레이어</span>
+        <h4>동기화(Synchronizing) Atomicity (2)</h4>
+        <p>다른 코어/goroutine에 즉각 가시화 + 주변 코드 재정렬 차단 — <code style="font-family:var(--font-mono);font-size:0.85em;color:var(--accent-light);">sync/atomic</code>만이 보장</p>
+        <div class="detail-expand">
+          <p><code>sync/atomic</code>이 보장하는 것은 sequentially-consistent atomics입니다. C++의 <code>memory_order_seq_cst</code>, Java의 <code>volatile</code>과 동등합니다.</p>
+          <p style="margin-top:8px;">이 연산은 메모리 펜스(memory barrier)를 삽입하여 atomic 연산 전후의 일반 read/write가 그 경계를 넘어 이동하지 못하게 합니다.</p>
+          <p style="margin-top:8px;"><strong style="color:var(--red);">평범한 포인터 대입은 (1)도 언어 차원에서는 약속되지 않았습니다.</strong> 하드웨어 보장에 의존하면 약한 모델(ARM, POWER 등)로 이식할 때 깨지며, 컴파일러 최적화는 하드웨어와 별개로 동기화 없는 코드를 마음대로 변형할 수 있습니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     Section: atomic.Pointer
+     ═══════════════════════════════════════════ -->
+<section class="section" id="atomic-pointer">
+  <div class="section-header reveal">
+    <div class="section-label">올바른 해결책</div>
+    <h2 class="section-title">atomic.Pointer[T] 사용법</h2>
+  </div>
+  <div class="reveal">
+    <p style="color:var(--text-dim);margin-bottom:16px;font-size:0.92em;">
+      <code style="font-family:var(--font-mono);background:var(--bg-code);padding:2px 8px;border-radius:4px;font-size:0.88em;color:var(--accent-light);border:1px solid var(--border);">atomic.Pointer[T]</code>를 사용해야 하는 5가지 이유:
+    </p>
+    <div class="accordion-list" style="margin-bottom:32px;">
+      <div class="accordion-card">
+        <div class="accordion-header" role="button" tabindex="0" onclick="toggleAccordion(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleAccordion(this)}">
+          <span class="severity-badge" style="background:rgba(59,130,246,0.15);color:var(--accent);border:1px solid var(--accent-dim);">1</span>
+          <span class="accordion-title">데이터 레이스 자체를 제거</span>
+          <span class="accordion-chevron">▼</span>
+        </div>
+        <div class="accordion-body"><div class="accordion-content">
+          Memory Model의 정의상 "모든 접근이 sync/atomic의 atomic 데이터 접근이라면" race가 아닙니다. race detector(<code>-race</code>)도 이 경우만 통과시킵니다.
+        </div></div>
+      </div>
+      <div class="accordion-card">
+        <div class="accordion-header" role="button" tabindex="0" onclick="toggleAccordion(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleAccordion(this)}">
+          <span class="severity-badge" style="background:rgba(59,130,246,0.15);color:var(--accent);border:1px solid var(--accent-dim);">2</span>
+          <span class="accordion-title">Sequentially-consistent happens-before 보장</span>
+          <span class="accordion-chevron">▼</span>
+        </div>
+        <div class="accordion-body"><div class="accordion-content">
+          갱신된 Memory Model: <em>"If the effect of an atomic operation A is observed by atomic operation B, then A is synchronized before B."</em> C++의 <code>memory_order_seq_cst</code> 및 Java의 <code>volatile</code>과 동등합니다.
+        </div></div>
+      </div>
+      <div class="accordion-card">
+        <div class="accordion-header" role="button" tabindex="0" onclick="toggleAccordion(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleAccordion(this)}">
+          <span class="severity-badge" style="background:rgba(59,130,246,0.15);color:var(--accent);border:1px solid var(--accent-dim);">3</span>
+          <span class="accordion-title">포인터가 가리키는 객체의 publication 보장</span>
+          <span class="accordion-chevron">▼</span>
+        </div>
+        <div class="accordion-body"><div class="accordion-content">
+          한 goroutine이 새 구조체의 모든 필드를 채운 뒤 <code>p.Store(newPtr)</code>을 호출하면, 다른 goroutine이 <code>p.Load()</code>로 그 포인터를 받았을 때 모든 필드를 일관되게 보게 됩니다. 평범한 대입에서는 이런 보장이 없습니다.
+        </div></div>
+      </div>
+      <div class="accordion-card">
+        <div class="accordion-header" role="button" tabindex="0" onclick="toggleAccordion(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleAccordion(this)}">
+          <span class="severity-badge" style="background:rgba(59,130,246,0.15);color:var(--accent);border:1px solid var(--accent-dim);">4</span>
+          <span class="accordion-title">컴파일러·CPU 재정렬 차단</span>
+          <span class="accordion-chevron">▼</span>
+        </div>
+        <div class="accordion-body"><div class="accordion-content">
+          메모리 펜스(memory barrier)를 삽입하여 atomic 연산 주위의 일반 read/write가 그 너머로 이동하지 못하게 합니다. 평범한 포인터 대입에는 그런 차단이 없으며, 컴파일러는 단일 스레드 의미가 보존되는 한 자유롭게 재배치할 수 있습니다.
+        </div></div>
+      </div>
+      <div class="accordion-card">
+        <div class="accordion-header" role="button" tabindex="0" onclick="toggleAccordion(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleAccordion(this)}">
+          <span class="severity-badge" style="background:rgba(59,130,246,0.15);color:var(--accent);border:1px solid var(--accent-dim);">5</span>
+          <span class="accordion-title">타입 안전성 + unsafe.Pointer 회피</span>
+          <span class="accordion-chevron">▼</span>
+        </div>
+        <div class="accordion-body"><div class="accordion-content">
+          <code>atomic.Value</code>는 <code>interface{}</code>를 받기 때문에 타입 단언이 필요하고, 옛 <code>LoadPointer/StorePointer</code>는 <code>unsafe.Pointer</code>를 요구했습니다. 제네릭 기반 <code>atomic.Pointer[T]</code>는 이 둘을 해결합니다.
+        </div></div>
+      </div>
+    </div>
+
+    <h3 style="font-size:1.1em;font-weight:700;color:var(--text-bright);margin-bottom:16px;">Store → happens-before → Load 플로우</h3>
+    <div class="flow-diagram">
+      <div class="flow-node store">
+        <div class="flow-label">Writer Goroutine</div>
+        <div class="flow-code">settings.Store(cfg)</div>
+      </div>
+      <div class="flow-arrow">
+        <div class="flow-arrow-label">happens-before</div>
+        <div class="arrow-line"></div>
+      </div>
+      <div class="flow-node load">
+        <div class="flow-label">Reader Goroutine</div>
+        <div class="flow-code">settings.Load()</div>
+      </div>
+    </div>
+    <p style="text-align:center;color:var(--text-muted);font-size:0.82em;margin-top:8px;">Load()가 Store()의 결과를 관찰하면, Store() 이전의 모든 쓰기가 Load() 이후에 가시적</p>
+
+    <div class="code-container" style="margin-top:28px;">
+      <div class="code-header">
+        <span class="lang">Go — Read-heavy 설정 핫스왑 예시</span>
+        <button class="copy-btn" onclick="copyCode(this, 'codeAtomic')">복사</button>
+      </div>
+      <pre class="code-block" id="codeAtomic"><span class="line"><span class="kw">type</span> <span class="typ">Settings</span> <span class="kw">struct</span>{ <span class="var">Port</span> <span class="typ">int</span>; <span class="var">Host</span> <span class="typ">string</span> }</span>
+<span class="line">&nbsp;</span>
+<span class="line"><span class="kw">var</span> <span class="var">settings</span> <span class="pkg">atomic</span>.<span class="typ">Pointer</span>[<span class="typ">Settings</span>]</span>
+<span class="line">&nbsp;</span>
+<span class="line"><span class="cm">// 갱신 측 (writer)</span></span>
+<span class="line"><span class="kw">func</span> <span class="fn">update</span>(<span class="var">p</span> <span class="typ">int</span>, <span class="var">h</span> <span class="typ">string</span>) {</span>
+<span class="line">    <span class="var">cfg</span> <span class="op">:=</span> <span class="op">&amp;</span><span class="typ">Settings</span>{<span class="var">Port</span>: <span class="var">p</span>, <span class="var">Host</span>: <span class="var">h</span>}</span>
+<span class="line">    <span class="var">settings</span>.<span class="fn">Store</span>(<span class="var">cfg</span>)  <span class="cm">// happens-before 엣지 생성</span></span>
+<span class="line">}</span>
+<span class="line">&nbsp;</span>
+<span class="line"><span class="cm">// 다수의 reader — lock-free</span></span>
+<span class="line"><span class="kw">func</span> <span class="fn">current</span>() <span class="op">*</span><span class="typ">Settings</span> { <span class="kw">return</span> <span class="var">settings</span>.<span class="fn">Load</span>() }</span></pre>
+    </div>
+
+    <div style="margin-top:20px;display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:12px;">
+      <div style="padding:16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);">
+        <div style="font-size:0.78em;font-weight:700;color:var(--green);margin-bottom:6px;">최적 사용 사례</div>
+        <p style="font-size:0.85em;color:var(--text-dim);">read-heavy + 가끔 write: 설정 핫리로드, 라우팅 테이블, copy-on-write 자료구조, 캐시된 컴파일 객체</p>
+      </div>
+      <div style="padding:16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);">
+        <div style="font-size:0.78em;font-weight:700;color:var(--cyan);margin-bottom:6px;">성능 이점</div>
+        <p style="font-size:0.85em;color:var(--text-dim);">Dmitry Vyukov: 80코어 머신에서 encoding/gob의 mutex → atomic 전환 시 16코어에서 2배, 80코어에서 ~20배 성능 향상 가능</p>
+      </div>
+      <div style="padding:16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);">
+        <div style="font-size:0.78em;font-weight:700;color:var(--yellow);margin-bottom:6px;">mutex가 나은 경우</div>
+        <p style="font-size:0.85em;color:var(--text-dim);">여러 필드의 일관된 갱신이 필요할 때는 mutex가 더 자연스러움 — atomic은 단일 위치만 보호</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     Section: Concurrency Issues
+     ═══════════════════════════════════════════ -->
+<section class="section" id="issues">
+  <div class="section-header reveal">
+    <div class="section-label">실제 문제</div>
+    <h2 class="section-title">동기화 없는 포인터 대입의 위험</h2>
+  </div>
+  <div class="accordion-list reveal">
+    <div class="accordion-card">
+      <div class="accordion-header" role="button" tabindex="0" onclick="toggleAccordion(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleAccordion(this)}">
+        <span class="severity-badge severity-critical">🔴 Critical</span>
+        <span class="accordion-title">인터페이스/슬라이스 메모리 Corruption</span>
+        <span class="accordion-chevron">▼</span>
+      </div>
+      <div class="accordion-body"><div class="accordion-content">
+        <code>interface{}</code>, <code>[]T</code>, <code>string</code>, <code>map</code> 등은 다중 워드 값입니다. 이런 값에 대한 race는 (포인터, 타입) 또는 (포인터, 길이) 쌍이 어긋나면서 <strong>타입 안전성을 깨뜨려 임의의 메모리 corruption</strong>이나 보안 취약점으로 이어질 수 있습니다. Dmitry Vyukov가 GoogleCTF 2019 finals의 gomium pwn challenge에서 시연한 바 있습니다.
+      </div></div>
+    </div>
+    <div class="accordion-card">
+      <div class="accordion-header" role="button" tabindex="0" onclick="toggleAccordion(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleAccordion(this)}">
+        <span class="severity-badge severity-critical">🔴 Critical</span>
+        <span class="accordion-title">부분 초기화된 객체 노출</span>
+        <span class="accordion-chevron">▼</span>
+      </div>
+      <div class="accordion-body"><div class="accordion-content">
+        새 구조체를 채운 후 포인터를 대입했더라도, 다른 goroutine이 새 포인터를 보면서 <em>옛</em> 필드 값이나 일부만 초기화된 상태를 볼 수 있습니다. nil pointer dereference panic으로 이어지기도 합니다. Go 블로그의 race detector 소개에서 timer 예시가 정확히 이 부류입니다.
+      </div></div>
+    </div>
+    <div class="accordion-card">
+      <div class="accordion-header" role="button" tabindex="0" onclick="toggleAccordion(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleAccordion(this)}">
+        <span class="severity-badge severity-warning">🟡 Warning</span>
+        <span class="accordion-title">Race Detector 경고</span>
+        <span class="accordion-chevron">▼</span>
+      </div>
+      <div class="accordion-body"><div class="accordion-content">
+        한 goroutine의 <code>l.c = newClient</code>와 다른 goroutine의 <code>return l.c</code>는 즉시 <code>WARNING: DATA RACE</code>를 띄웁니다. <code>-race</code> 플래그로 빌드할 때 보고되며, 프로덕션에서는 프로세스를 종료시킬 수도 있습니다.
+      </div></div>
+    </div>
+    <div class="accordion-card">
+      <div class="accordion-header" role="button" tabindex="0" onclick="toggleAccordion(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleAccordion(this)}">
+        <span class="severity-badge severity-warning">🟡 Warning</span>
+        <span class="accordion-title">Stale View — 무한 루프</span>
+        <span class="accordion-chevron">▼</span>
+      </div>
+      <div class="accordion-body"><div class="accordion-content">
+        컴파일러가 루프 안의 <code>for g == nil {}</code> 같은 코드를 "g는 이 루프 안에서 변하지 않는다"고 판단해 hoisting 하여 <strong>무한 루프가 끝나지 않을 수 있습니다.</strong> 이는 Go Memory Model이 직접 예시로 설명하는 패턴입니다.
+      </div></div>
+    </div>
+    <div class="accordion-card">
+      <div class="accordion-header" role="button" tabindex="0" onclick="toggleAccordion(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleAccordion(this)}">
+        <span class="severity-badge severity-info">🔵 Info</span>
+        <span class="accordion-title">GC와의 상호작용</span>
+        <span class="accordion-chevron">▼</span>
+      </div>
+      <div class="accordion-body"><div class="accordion-content">
+        포인터의 일부만 갱신된 상태가 GC에 노출되면 dangling pointer로 이어질 수 있어 Go 런타임이 write barrier를 사용합니다. 그러나 이는 <strong>race-free 프로그램을 가정한 설계</strong>이므로 동기화 없는 포인터 대입은 GC의 정확성도 위협합니다.
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     Section: Expert Quotes
+     ═══════════════════════════════════════════ -->
+<section class="section" id="quotes">
+  <div class="section-header reveal">
+    <div class="section-label">전문가 의견</div>
+    <h2 class="section-title">Go 팀 멤버들의 입장</h2>
+  </div>
+  <div class="quote-grid reveal">
+    <div class="quote-card">
+      <p class="quote-text">"Go guarantees almost nothing about memory accesses unless you explicitly synchronize with locks or channels."<br><br>"If you must read the rest of this document to understand the behavior of your program, you are being too clever. Don't be clever."</p>
+      <div class="quote-author">
+        <div class="quote-avatar">RC</div>
+        <div>
+          <div class="quote-name">Russ Cox</div>
+          <div class="quote-role">Go 언어 디자이너, Memory Model 저자</div>
+        </div>
+      </div>
+    </div>
+    <div class="quote-card">
+      <p class="quote-text">"If your program has a race condition, the behaviour is undefined."<br><br>"Even if it works correctly with your current compiler and platform, this is only a lucky accident."</p>
+      <div class="quote-author">
+        <div class="quote-avatar">IL</div>
+        <div>
+          <div class="quote-name">Ian Lance Taylor</div>
+          <div class="quote-role">Go core 메인테이너</div>
+        </div>
+      </div>
+    </div>
+    <div class="quote-card">
+      <p class="quote-text">"[Store/load 4 bytes는 atomic 아닌가?] This is not true."<br><br>겉보기에 무해해 보이는 race가 실제로 컴파일러 최적화로 인해 폭발할 수 있습니다.</p>
+      <div class="quote-author">
+        <div class="quote-avatar">DV</div>
+        <div>
+          <div class="quote-name">Dmitry Vyukov</div>
+          <div class="quote-role">Go race detector 구현자, ThreadSanitizer 저자</div>
+        </div>
+      </div>
+    </div>
+    <div class="quote-card">
+      <p class="quote-text">"There is no reason to believe that a currently working program with 'benign' data races will continue to work when it is recompiled."</p>
+      <div class="quote-author">
+        <div class="quote-avatar">HB</div>
+        <div>
+          <div class="quote-name">Hans Boehm</div>
+          <div class="quote-role">C++ Concurrency Memory Model 공동 저자</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     Section: Timeline
+     ═══════════════════════════════════════════ -->
+<section class="section" id="timeline">
+  <div class="section-header reveal">
+    <div class="section-label">역사</div>
+    <h2 class="section-title">Memory Model 갱신 타임라인</h2>
+  </div>
+  <div class="timeline reveal">
+    <div class="timeline-item">
+      <div class="timeline-dot"></div>
+      <div class="timeline-year">2009</div>
+      <div class="timeline-text"><strong>최초 Go Memory Model 문서 작성.</strong> 보수적 접근으로 시작.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot"></div>
+      <div class="timeline-year">2010</div>
+      <div class="timeline-text"><strong>Russ Cox "Off to the Races" 글</strong> — 어떤 변수 접근도 atomic이 아니라고 명시. "No variable access is guaranteed to be atomic."</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot"></div>
+      <div class="timeline-year">2014</div>
+      <div class="timeline-text"><strong><code style="font-family:var(--font-mono);font-size:0.9em;">atomic.Value</code> 도입 (Go 1.4).</strong> Dmitry Vyukov 제안. 80코어 머신에서의 mutex 병목 해결이 동기.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot"></div>
+      <div class="timeline-year">2021</div>
+      <div class="timeline-text"><strong>Russ Cox의 메모리 모델 3부작</strong> (research.swtch.com/mm). "Hardware Memory Models", "Programming Language Memory Models", "Updating the Go Memory Model".</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot"></div>
+      <div class="timeline-year">2022</div>
+      <div class="timeline-text"><strong>Go 1.19 — Memory Model 공식 갱신 (2022-06-06).</strong> sync/atomic의 happens-before가 명문화됨. <code style="font-family:var(--font-mono);font-size:0.9em;">atomic.Bool</code>, <code style="font-family:var(--font-mono);font-size:0.9em;">atomic.Int32/64</code>, <code style="font-family:var(--font-mono);font-size:0.9em;">atomic.Pointer[T]</code> 등 도입. 32-bit 플랫폼에서의 64-bit atomic alignment를 컴파일러가 자동 처리.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     Section: Myth Busting
+     ═══════════════════════════════════════════ -->
+<section class="section" id="myths">
+  <div class="section-header reveal">
+    <div class="section-label">잘못된 흔한 가정들</div>
+    <h2 class="section-title">미신 vs 사실</h2>
+  </div>
+  <div class="myth-list reveal">
+    <div class="myth-card">
+      <div class="myth-inner">
+        <div class="myth-side wrong">
+          <div class="myth-label">❌ 미신</div>
+          <div class="myth-text">"x86이니까 어차피 atomic 아닌가?"</div>
+        </div>
+        <div class="myth-side right">
+          <div class="myth-label">✅ 사실</div>
+          <div class="myth-text">명령어 차원에서 정렬된 워드 store는 찢어지지 않지만, <strong>컴파일러가 그 store를 다른 메모리 연산과 재배치</strong>할 수 있고, 다른 코어의 store buffer가 즉시 visibility를 보장하지 않습니다. ARM/POWER로 이식하면 깨집니다.</div>
+        </div>
+      </div>
+    </div>
+    <div class="myth-card">
+      <div class="myth-inner">
+        <div class="myth-side wrong">
+          <div class="myth-label">❌ 미신</div>
+          <div class="myth-text">"정렬되어 있고 8바이트니 race detector도 너그럽지 않나?"</div>
+        </div>
+        <div class="myth-side right">
+          <div class="myth-label">✅ 사실</div>
+          <div class="myth-text">Race detector는 <strong>Go Memory Model을 구현</strong>합니다. 하드웨어 의미가 아닙니다. 동기화가 없으면 워드 크기와 무관하게 race로 보고합니다.</div>
+        </div>
+      </div>
+    </div>
+    <div class="myth-card">
+      <div class="myth-inner">
+        <div class="myth-side wrong">
+          <div class="myth-label">❌ 미신</div>
+          <div class="myth-text">"Go에는 volatile이 없으니 자동으로 처리되겠지?"</div>
+        </div>
+        <div class="myth-side right">
+          <div class="myth-label">✅ 사실</div>
+          <div class="myth-text">Go에는 volatile 키워드가 없습니다. 동기화는 <code>sync</code>, <code>sync/atomic</code>, <code>channel</code> 중 하나로 <strong>명시적으로</strong> 수행해야 합니다.</div>
+        </div>
+      </div>
+    </div>
+    <div class="myth-card">
+      <div class="myth-inner">
+        <div class="myth-side wrong">
+          <div class="myth-label">❌ 미신</div>
+          <div class="myth-text">"구조체 자체는 안 바뀌고 포인터만 바뀌니 대입만 하면 되겠지?"</div>
+        </div>
+        <div class="myth-side right">
+          <div class="myth-label">✅ 사실</div>
+          <div class="myth-text">새 구조체의 필드 초기화 → 포인터 대입의 <strong>순서가 다른 goroutine 시점에서 보존된다는 보장이 없습니다.</strong> publishing을 위한 atomic store가 필요합니다.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     Section: Pattern Comparison
+     ═══════════════════════════════════════════ -->
+<section class="section" id="patterns">
+  <div class="section-header reveal">
+    <div class="section-label">코드 비교</div>
+    <h2 class="section-title">권장 패턴 vs 안티패턴</h2>
+  </div>
+  <div class="compare-grid reveal">
+    <div class="compare-column bad">
+      <div class="compare-header">❌ 안티패턴 — 동기화 없는 포인터 대입</div>
+      <div class="compare-body">
+        <div class="code-container" style="border:none;border-radius:0;">
+          <pre class="code-block"><span class="line"><span class="kw">var</span> <span class="var">g</span> <span class="op">*</span><span class="typ">T</span></span>
+<span class="line">&nbsp;</span>
+<span class="line"><span class="cm">// writer goroutine</span></span>
+<span class="line"><span class="var">t</span> <span class="op">:=</span> <span class="fn">new</span>(<span class="typ">T</span>)</span>
+<span class="line"><span class="var">t</span>.<span class="var">msg</span> <span class="op">=</span> <span class="str">"hello"</span></span>
+<span class="line"><span class="var">g</span> <span class="op">=</span> <span class="var">t</span>  <span class="cm">// ⚠️ data race!</span></span>
+<span class="line">&nbsp;</span>
+<span class="line"><span class="cm">// reader goroutine</span></span>
+<span class="line"><span class="kw">if</span> <span class="var">g</span> <span class="op">!=</span> <span class="kw">nil</span> {</span>
+<span class="line">    <span class="fn">print</span>(<span class="var">g</span>.<span class="var">msg</span>) <span class="cm">// 💥</span></span>
+<span class="line">}</span></pre>
+        </div>
+      </div>
+    </div>
+    <div class="compare-column good">
+      <div class="compare-header">✅ 권장 패턴 — atomic.Pointer[T]</div>
+      <div class="compare-body">
+        <div class="code-container" style="border:none;border-radius:0;">
+          <pre class="code-block"><span class="line"><span class="kw">var</span> <span class="var">g</span> <span class="pkg">atomic</span>.<span class="typ">Pointer</span>[<span class="typ">T</span>]</span>
+<span class="line">&nbsp;</span>
+<span class="line"><span class="cm">// writer goroutine</span></span>
+<span class="line"><span class="var">t</span> <span class="op">:=</span> <span class="fn">new</span>(<span class="typ">T</span>)</span>
+<span class="line"><span class="var">t</span>.<span class="var">msg</span> <span class="op">=</span> <span class="str">"hello"</span></span>
+<span class="line"><span class="var">g</span>.<span class="fn">Store</span>(<span class="var">t</span>) <span class="cm">// ✅ safe</span></span>
+<span class="line">&nbsp;</span>
+<span class="line"><span class="cm">// reader goroutine</span></span>
+<span class="line"><span class="kw">if</span> <span class="var">p</span> <span class="op">:=</span> <span class="var">g</span>.<span class="fn">Load</span>(); <span class="var">p</span> <span class="op">!=</span> <span class="kw">nil</span> {</span>
+<span class="line">    <span class="fn">print</span>(<span class="var">p</span>.<span class="var">msg</span>) <span class="cm">// ✅ 일관됨</span></span>
+<span class="line">}</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     Section: Caveats
+     ═══════════════════════════════════════════ -->
+<section class="section" id="caveats">
+  <div class="section-header reveal">
+    <div class="section-label">주의사항</div>
+    <h2 class="section-title">알아둬야 할 것들</h2>
+  </div>
+  <div class="caveat-grid reveal">
+    <div class="caveat-card">
+      <h4>Race Detector의 한계</h4>
+      <p>ThreadSanitizer 기반 동적 분석이라 실제 실행된 코드 경로의 race만 잡습니다. 테스트가 동시성을 충분히 커버하지 않으면 race를 놓칠 수 있습니다.</p>
+    </div>
+    <div class="caveat-card">
+      <h4>단일 워드 읽기 ≠ happens-before</h4>
+      <p>"race가 있어도 워드 단위 read는 어떤 실제 write 값을 본다"는 약속은 가시성 시점이나 주변 메모리의 일관성에 대해서는 아무것도 말하지 않습니다.</p>
+    </div>
+    <div class="caveat-card">
+      <h4><code>atomic.Value</code>의 타입 제약</h4>
+      <p>첫 Store 이후 같은 concrete 타입만 받습니다. 다른 타입을 넣으면 panic. nil interface도 Store하면 panic합니다. Go 1.19+에서는 <code>atomic.Pointer[T]</code>를 쓰세요.</p>
+    </div>
+    <div class="caveat-card">
+      <h4>"Don't be clever"</h4>
+      <p>Go 철학: atomic이나 unsafe로 lock-free 코드를 짜기보다 channel과 mutex로 동기화. atomic은 정말 필요할 때만 쓰는 도구로 위치합니다.</p>
+    </div>
+    <div class="caveat-card">
+      <h4>하드웨어 ≠ 언어 보장</h4>
+      <p>x86-64에서 정렬된 포인터 store는 거의 항상 찢어지지 않지만, 이는 언어 보장이 아닙니다. 32-bit 플랫폼에서는 8-byte 값에 대해 정렬 자체가 자동 보장되지 않습니다.</p>
+    </div>
+    <div class="caveat-card">
+      <h4>비공식 블로그 주의</h4>
+      <p>"x86에서는 atomic"이라고 단순화하는 비공식 글들이 있지만, 공식 Go Memory Model과 Go 팀 멤버들의 발언은 일관되게 "언어 차원에서는 보장하지 않는다"입니다.</p>
+    </div>
+  </div>
+
+  <div class="conclusion-banner reveal">
+    <h3>결론</h3>
+    <p>
+      <code>var p *MyStruct = q</code> 같은 평범한 포인터 대입은 Go 언어 스펙과 Go Memory Model 어디에서도 atomic operation으로 보장되지 않습니다.
+      동시 접근이 일어난다면 그 자체로 데이터 레이스이며, 정의상 정확한 동작을 약속받을 수 없습니다.
+      <br><br>
+      동시성 환경에서 포인터를 안전하게 공유·교체하려면 <code>sync/atomic.Pointer[T]</code> (Go 1.19+) 또는 <code>atomic.Value</code>, mutex, channel 중 하나를 반드시 사용해야 합니다.
+    </p>
+  </div>
+</section>
+
+</main>
+
+<!-- Back to Top -->
+<button class="back-to-top" id="backToTop" aria-label="맨 위로" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<!-- ═══════════════════════════════════════════
+     JavaScript
+     ═══════════════════════════════════════════ -->
+<script>
+// Theme Toggle
+const themeToggle = document.getElementById('themeToggle');
+const html = document.documentElement;
+themeToggle.addEventListener('click', () => {
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  themeToggle.textContent = isDark ? '☀️' : '🌙';
+});
+
+// Navigation scroll tracking
+const navBtns = document.querySelectorAll('.nav-btn[data-target]');
+const sections = [];
+navBtns.forEach(btn => {
+  const target = document.getElementById(btn.dataset.target);
+  if (target) sections.push({ btn, target });
+});
+
+navBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = document.getElementById(btn.dataset.target);
+    if (target) target.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+
+let scrollTicking = false;
+window.addEventListener('scroll', () => {
+  if (!scrollTicking) {
+    requestAnimationFrame(() => {
+      const scrollPos = window.scrollY + 120;
+      let activeIdx = 0;
+      sections.forEach((s, i) => {
+        if (s.target.offsetTop <= scrollPos) activeIdx = i;
+      });
+      navBtns.forEach(b => b.classList.remove('active'));
+      if (sections[activeIdx]) sections[activeIdx].btn.classList.add('active');
+
+      // Back to top
+      const btt = document.getElementById('backToTop');
+      btt.classList.toggle('visible', window.scrollY > 400);
+
+      scrollTicking = false;
+    });
+    scrollTicking = true;
+  }
+});
+
+// Reveal on scroll
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+// Guarantee Table - row click to show detail
+document.querySelectorAll('.guarantee-table tbody tr').forEach(row => {
+  row.setAttribute('tabindex', '0');
+  row.setAttribute('role', 'button');
+  const handler = () => {
+    const detail = row.dataset.detail;
+    const panel = row.querySelector('.detail-panel');
+    if (!panel) return;
+    const isShowing = panel.classList.contains('show');
+    document.querySelectorAll('.guarantee-table .detail-panel').forEach(p => {
+      p.classList.remove('show');
+      p.textContent = '';
+    });
+    document.querySelectorAll('.guarantee-table tbody tr').forEach(r => r.classList.remove('active'));
+    if (!isShowing) {
+      panel.textContent = detail;
+      panel.classList.add('show');
+      row.classList.add('active');
+    }
+  };
+  row.addEventListener('click', handler);
+  row.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(); }
+  });
+});
+
+// Code line click
+document.querySelectorAll('pre.code-block .line[data-tip]').forEach(line => {
+  line.addEventListener('click', (e) => {
+    const tip = line.dataset.tip;
+    if (!tip || tip.trim() === '') return;
+    const wasHighlighted = line.classList.contains('highlighted');
+    line.closest('pre').querySelectorAll('.line').forEach(l => {
+      l.classList.remove('highlighted');
+      const tt = l.querySelector('.line-tooltip');
+      if (tt) tt.remove();
+    });
+    if (!wasHighlighted) {
+      line.classList.add('highlighted');
+      const tooltip = document.createElement('div');
+      tooltip.className = 'line-tooltip';
+      tooltip.textContent = tip;
+      line.appendChild(tooltip);
+    }
+  });
+});
+
+// Layer toggle (HW vs Lang)
+function toggleLayer(el) {
+  el.classList.toggle('expanded');
+  el.setAttribute('aria-expanded', el.classList.contains('expanded'));
+}
+
+// Accordion
+function toggleAccordion(header) {
+  const card = header.parentElement;
+  card.classList.toggle('open');
+  header.setAttribute('aria-expanded', card.classList.contains('open'));
+}
+
+// Copy code
+function copyCode(btn, id) {
+  const block = document.getElementById(id);
+  if (!block) return;
+  const text = block.textContent;
+  function onSuccess() {
+    btn.textContent = '복사됨!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('copied'); }, 2000);
+  }
+  function onFail() {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;left:-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      onSuccess();
+    } catch (_) {
+      btn.textContent = '복사 실패';
+      setTimeout(() => { btn.textContent = '복사'; }, 2000);
+    }
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(onSuccess, onFail);
+  } else {
+    onFail();
+  }
+}
+</script>
+</body>
+</html>

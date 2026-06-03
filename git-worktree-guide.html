@@ -1,0 +1,1944 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Git Worktree 완벽 가이드</title>
+<style>
+:root {
+  --bg: #0a0e17;
+  --bg-card: #111827;
+  --bg-card-hover: #1a2332;
+  --bg-code: #0d1117;
+  --border: #1e293b;
+  --border-hover: #334155;
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  --accent: #3b82f6;
+  --accent-hover: #60a5fa;
+  --accent-glow: rgba(59, 130, 246, 0.15);
+  --cyan: #22d3ee;
+  --green: #34d399;
+  --yellow: #fbbf24;
+  --orange: #fb923c;
+  --red: #f87171;
+  --purple: #a78bfa;
+  --pink: #f472b6;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.3);
+  --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.7;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: local('JetBrains Mono'), local('Fira Code'), local('Consolas');
+}
+
+code, pre, .mono {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+::selection {
+  background: var(--accent);
+  color: white;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, var(--bg) 0%, #0f1729 50%, var(--bg) 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 2rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(20px);
+}
+
+.header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--accent), var(--cyan));
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--text), var(--cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header .subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Search */
+.search-box {
+  position: relative;
+  width: 320px;
+  flex-shrink: 0;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 0.6rem 1rem 0.6rem 2.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.9rem;
+  outline: none;
+  transition: var(--transition);
+}
+
+.search-box input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.search-box input::placeholder { color: var(--text-dim); }
+
+.search-icon {
+  position: absolute;
+  left: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+
+.search-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  max-height: 300px;
+  overflow-y: auto;
+  display: none;
+  z-index: 200;
+  box-shadow: var(--shadow);
+}
+
+.search-results.active { display: block; }
+
+.search-result-item {
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: var(--transition);
+}
+
+.search-result-item:last-child { border-bottom: none; }
+.search-result-item:hover { background: var(--bg-card-hover); }
+
+.search-result-item .cmd {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--cyan);
+  font-size: 0.85rem;
+}
+
+.search-result-item .desc {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-top: 2px;
+}
+
+.search-result-item mark {
+  background: var(--accent-glow);
+  color: var(--accent-hover);
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+/* Main Layout */
+.main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* Tab Navigation */
+.tab-nav {
+  display: flex;
+  gap: 0.25rem;
+  background: var(--bg-card);
+  padding: 0.35rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  margin-bottom: 2rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tab-btn {
+  padding: 0.6rem 1.2rem;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  transition: var(--transition);
+  position: relative;
+}
+
+.tab-btn:hover {
+  color: var(--text);
+  background: rgba(255,255,255,0.03);
+}
+
+.tab-btn.active {
+  background: var(--accent);
+  color: white;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+/* Tab Content */
+.tab-content { display: none; animation: fadeIn 0.3s ease; }
+.tab-content.active { display: block; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Cards */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  transition: var(--transition);
+}
+
+.card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow);
+}
+
+.card h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.card h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 1.2rem 0 0.6rem;
+  color: var(--accent-hover);
+}
+
+.card p {
+  color: var(--text-muted);
+  margin-bottom: 0.8rem;
+  font-size: 0.95rem;
+}
+
+.card ul, .card ol {
+  margin: 0.5rem 0 1rem 1.5rem;
+  color: var(--text-muted);
+}
+
+.card li {
+  margin-bottom: 0.4rem;
+  font-size: 0.95rem;
+}
+
+/* Badge */
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.badge-blue { background: rgba(59,130,246,0.15); color: var(--accent-hover); }
+.badge-cyan { background: rgba(34,211,238,0.15); color: var(--cyan); }
+.badge-green { background: rgba(52,211,153,0.15); color: var(--green); }
+.badge-yellow { background: rgba(251,191,36,0.15); color: var(--yellow); }
+.badge-red { background: rgba(248,113,113,0.15); color: var(--red); }
+.badge-purple { background: rgba(167,139,250,0.15); color: var(--purple); }
+
+/* Code Blocks */
+.code-block {
+  position: relative;
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin: 0.8rem 0;
+  overflow: hidden;
+}
+
+.code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid var(--border);
+}
+
+.code-lang {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.copy-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.copy-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent-hover);
+}
+
+.copy-btn.copied {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.code-block pre {
+  padding: 1rem;
+  overflow-x: auto;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+/* Syntax Highlighting */
+.kw { color: var(--purple); font-weight: 500; }
+.cmd { color: var(--cyan); }
+.arg { color: var(--orange); }
+.flag { color: var(--yellow); }
+.str { color: var(--green); }
+.cmt { color: var(--text-dim); font-style: italic; }
+.path { color: var(--pink); }
+.branch { color: var(--accent-hover); }
+
+/* Inline code */
+code:not(pre code) {
+  background: rgba(59,130,246,0.1);
+  color: var(--cyan);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+/* Accordion */
+.accordion {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+}
+
+.accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 1rem;
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: var(--transition);
+  user-select: none;
+}
+
+.accordion-header:hover { background: var(--bg-card-hover); }
+
+.accordion-header h4 {
+  font-size: 0.95rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.accordion-arrow {
+  color: var(--text-dim);
+  transition: transform var(--transition);
+  font-size: 0.8rem;
+}
+
+.accordion.open .accordion-arrow { transform: rotate(180deg); }
+
+.accordion-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease;
+}
+
+.accordion.open .accordion-body { max-height: 2000px; }
+
+.accordion-content {
+  padding: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+/* Diagram */
+.diagram-container {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+}
+
+.diagram-container svg {
+  display: block;
+  margin: 0 auto;
+}
+
+.diagram-label {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  margin-top: 0.8rem;
+}
+
+/* Interactive Diagram */
+.tree-node {
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.tree-node:hover { filter: brightness(1.2); }
+
+.tree-node text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+.tree-link {
+  stroke: var(--border-hover);
+  stroke-width: 2;
+  fill: none;
+}
+
+.tree-link.active {
+  stroke: var(--accent);
+  stroke-dasharray: 8 4;
+  animation: dashFlow 1s linear infinite;
+}
+
+@keyframes dashFlow {
+  to { stroke-dashoffset: -12; }
+}
+
+/* Tooltip */
+.tooltip {
+  position: fixed;
+  background: var(--bg-card);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.8rem;
+  color: var(--text);
+  pointer-events: none;
+  z-index: 300;
+  max-width: 280px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.tooltip.visible { opacity: 1; }
+
+/* Reference Table */
+.ref-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+}
+
+.ref-table th {
+  background: rgba(59,130,246,0.08);
+  color: var(--accent-hover);
+  padding: 0.7rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--accent);
+}
+
+.ref-table td {
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  vertical-align: top;
+}
+
+.ref-table tr:hover td {
+  background: rgba(255,255,255,0.02);
+}
+
+.ref-table td:first-child {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--cyan);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+/* Comparison Grid */
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.compare-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1.2rem;
+}
+
+.compare-item h4 {
+  font-size: 0.9rem;
+  margin-bottom: 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.compare-item.good { border-color: rgba(52,211,153,0.3); }
+.compare-item.good h4 { color: var(--green); }
+.compare-item.bad { border-color: rgba(248,113,113,0.3); }
+.compare-item.bad h4 { color: var(--red); }
+
+.compare-item ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.compare-item li {
+  padding: 0.2rem 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.compare-item li::before {
+  margin-right: 0.4rem;
+}
+
+.compare-item.good li::before { content: '✓'; color: var(--green); }
+.compare-item.bad li::before { content: '✗'; color: var(--red); }
+
+/* Scenario Cards */
+.scenario-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.scenario-card {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1.2rem;
+  transition: var(--transition);
+  cursor: default;
+}
+
+.scenario-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+
+.scenario-card .icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.scenario-card h4 {
+  font-size: 0.95rem;
+  color: var(--text);
+  margin-bottom: 0.4rem;
+}
+
+.scenario-card p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0;
+}
+
+/* Warning box */
+.warning-box {
+  background: rgba(251,191,36,0.06);
+  border: 1px solid rgba(251,191,36,0.2);
+  border-left: 3px solid var(--yellow);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  margin: 0.8rem 0;
+}
+
+.warning-box .label {
+  color: var(--yellow);
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 0.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.warning-box p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* Info box */
+.info-box {
+  background: rgba(59,130,246,0.06);
+  border: 1px solid rgba(59,130,246,0.2);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  margin: 0.8rem 0;
+}
+
+.info-box .label {
+  color: var(--accent-hover);
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 0.4rem;
+}
+
+.info-box p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* Tip box */
+.tip-box {
+  background: rgba(52,211,153,0.06);
+  border: 1px solid rgba(52,211,153,0.2);
+  border-left: 3px solid var(--green);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  margin: 0.8rem 0;
+}
+
+.tip-box .label {
+  color: var(--green);
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 0.4rem;
+}
+
+.tip-box p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  border-top: 1px solid var(--border);
+  margin-top: 2rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header-inner { flex-direction: column; align-items: stretch; }
+  .search-box { width: 100%; }
+  .tab-nav { flex-wrap: nowrap; }
+  .tab-btn { font-size: 0.8rem; padding: 0.5rem 0.8rem; }
+  .compare-grid { grid-template-columns: 1fr; }
+  .scenario-grid { grid-template-columns: 1fr; }
+  .main { padding: 1rem; }
+}
+
+/* Filter highlight */
+.highlight-match {
+  background: rgba(59,130,246,0.2);
+  border-radius: 2px;
+}
+
+.red { color: var(--red); }
+</style>
+</head>
+<body>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip"></div>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-inner">
+    <div class="header-title">
+      <div class="header-icon">🌲</div>
+      <div>
+        <h1>Git Worktree 완벽 가이드</h1>
+        <div class="subtitle">동시에 여러 브랜치를 작업하는 Git의 숨겨진 무기</div>
+      </div>
+    </div>
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="명령어 또는 키워드 검색..." autocomplete="off">
+      <div class="search-results" id="searchResults"></div>
+    </div>
+  </div>
+</header>
+
+<!-- Main -->
+<main class="main">
+
+  <!-- Tab Navigation -->
+  <nav class="tab-nav" id="tabNav">
+    <button class="tab-btn active" data-tab="concept">개념</button>
+    <button class="tab-btn" data-tab="commands">핵심 명령어</button>
+    <button class="tab-btn" data-tab="internals">동작 원리</button>
+    <button class="tab-btn" data-tab="scenarios">실전 시나리오</button>
+    <button class="tab-btn" data-tab="tips">주의사항 & 팁</button>
+    <button class="tab-btn" data-tab="reference">명령어 레퍼런스</button>
+  </nav>
+
+  <!-- Tab 1: Concept -->
+  <section class="tab-content active" id="tab-concept">
+    <div class="card">
+      <h2>🌲 Git Worktree란?</h2>
+      <p>
+        <code>git worktree</code>는 하나의 Git 저장소에서 <strong>여러 개의 작업 디렉토리(working tree)</strong>를 동시에 사용할 수 있게 해주는 기능입니다.
+        각 worktree는 서로 다른 브랜치를 체크아웃한 독립적인 작업 공간이지만, 내부적으로는 같은 <code>.git</code> 저장소를 공유합니다.
+      </p>
+      <p>
+        일반적으로 Git 저장소에서는 한 번에 하나의 브랜치만 체크아웃할 수 있습니다.
+        다른 브랜치로 전환하려면 <code>git checkout</code> 또는 <code>git switch</code>를 사용해야 하는데,
+        이때 현재 작업 중인 변경사항을 stash하거나 commit해야 합니다.
+        Worktree는 이 문제를 근본적으로 해결합니다.
+      </p>
+
+      <h3>일반 워크플로우 vs Worktree 워크플로우</h3>
+      <div class="compare-grid">
+        <div class="compare-item bad">
+          <h4>❌ 기존 방식 (단일 워킹 트리)</h4>
+          <ul>
+            <li>브랜치 전환 시 stash/commit 필요</li>
+            <li>빌드 캐시, node_modules 등 재설치</li>
+            <li>IDE가 파일 변경 감지 후 재인덱싱</li>
+            <li>컨텍스트 전환 비용이 큼</li>
+            <li>긴급 핫픽스 시 현재 작업 중단</li>
+          </ul>
+        </div>
+        <div class="compare-item good">
+          <h4>✅ Worktree 방식 (다중 워킹 트리)</h4>
+          <ul>
+            <li>각 브랜치별 독립 디렉토리</li>
+            <li>빌드 캐시, 의존성 별도 유지</li>
+            <li>IDE 창 여러 개로 동시 작업</li>
+            <li>컨텍스트 전환 = 디렉토리 이동</li>
+            <li>핫픽스를 별도 디렉토리에서 즉시 처리</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Clone과의 차이점</h3>
+      <p>
+        "그냥 저장소를 여러 번 clone하면 되지 않나?" 라고 생각할 수 있습니다. 차이점을 비교해보면:
+      </p>
+      <div class="compare-grid">
+        <div class="compare-item bad">
+          <h4>Multiple Clone</h4>
+          <ul>
+            <li>디스크 공간을 N배 사용</li>
+            <li>각 clone이 독립적인 remote 추적</li>
+            <li>한 clone의 commit이 다른 clone에 안 보임</li>
+            <li>fetch를 각각 따로 해야 함</li>
+            <li>.git 디렉토리가 N개 존재</li>
+          </ul>
+        </div>
+        <div class="compare-item good">
+          <h4>Worktree</h4>
+          <ul>
+            <li>Git objects를 공유하여 디스크 절약</li>
+            <li>하나의 remote 설정 공유</li>
+            <li>commit 즉시 모든 worktree에서 접근 가능</li>
+            <li>fetch 한 번이면 전체 반영</li>
+            <li>.git 저장소는 하나, 참조만 공유</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interactive Diagram: Worktree Structure -->
+    <div class="card">
+      <h2>📐 Worktree 구조 다이어그램</h2>
+      <p>아래 다이어그램에서 각 노드를 클릭하면 상세 설명을 볼 수 있습니다.</p>
+      <div class="diagram-container">
+        <svg id="structureDiagram" viewBox="0 0 800 420" width="100%" height="420">
+          <!-- Background grid -->
+          <defs>
+            <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(30,41,59,0.3)" stroke-width="0.5"/>
+            </pattern>
+          </defs>
+          <rect width="800" height="420" fill="url(#grid)"/>
+
+          <!-- Main Repository -->
+          <g class="tree-node" data-tooltip="메인 저장소: .git 디렉토리가 있는 원본 워킹 트리. 모든 worktree의 기준점입니다.">
+            <rect x="300" y="20" width="200" height="60" rx="10" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+            <text x="400" y="45" text-anchor="middle" fill="#60a5fa" font-weight="600">📁 my-project/</text>
+            <text x="400" y="65" text-anchor="middle" fill="#94a3b8" font-size="11">메인 워킹 트리 (main)</text>
+          </g>
+
+          <!-- .git directory -->
+          <g class="tree-node" data-tooltip=".git 디렉토리: 모든 Git 객체(commits, trees, blobs), refs, config가 저장되는 곳. 모든 worktree가 이 디렉토리를 공유합니다.">
+            <rect x="300" y="120" width="200" height="60" rx="10" fill="#1a1a2e" stroke="#a78bfa" stroke-width="2"/>
+            <text x="400" y="145" text-anchor="middle" fill="#a78bfa" font-weight="600">📦 .git/</text>
+            <text x="400" y="165" text-anchor="middle" fill="#94a3b8" font-size="11">공유 Git 저장소</text>
+          </g>
+
+          <!-- Link from main to .git -->
+          <line x1="400" y1="80" x2="400" y2="120" stroke="#334155" stroke-width="2"/>
+
+          <!-- .git/worktrees/ -->
+          <g class="tree-node" data-tooltip=".git/worktrees/ 디렉토리: 각 linked worktree의 메타데이터(HEAD, index, refs 등)가 저장되는 곳입니다.">
+            <rect x="300" y="220" width="200" height="50" rx="8" fill="#1a1a2e" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="4 2"/>
+            <text x="400" y="240" text-anchor="middle" fill="#a78bfa" font-size="11">worktrees/</text>
+            <text x="400" y="258" text-anchor="middle" fill="#64748b" font-size="10">linked worktree 메타데이터</text>
+          </g>
+
+          <line x1="400" y1="180" x2="400" y2="220" stroke="#334155" stroke-width="1.5" stroke-dasharray="4 2"/>
+
+          <!-- Worktree 1: feature -->
+          <g class="tree-node" data-tooltip="Linked Worktree #1: feature 브랜치를 체크아웃한 별도 디렉토리. .git 파일이 메인 저장소를 가리킵니다.">
+            <rect x="40" y="320" width="200" height="70" rx="10" fill="#1e293b" stroke="#22d3ee" stroke-width="2"/>
+            <text x="140" y="345" text-anchor="middle" fill="#22d3ee" font-weight="600">📁 ../wt-feature/</text>
+            <text x="140" y="365" text-anchor="middle" fill="#94a3b8" font-size="11">feature 브랜치</text>
+            <text x="140" y="380" text-anchor="middle" fill="#64748b" font-size="10">.git → ../my-project/.git</text>
+          </g>
+
+          <!-- Worktree 2: hotfix -->
+          <g class="tree-node" data-tooltip="Linked Worktree #2: hotfix 브랜치를 체크아웃한 별도 디렉토리. 메인 저장소와 동일한 Git objects를 공유합니다.">
+            <rect x="300" y="320" width="200" height="70" rx="10" fill="#1e293b" stroke="#34d399" stroke-width="2"/>
+            <text x="400" y="345" text-anchor="middle" fill="#34d399" font-weight="600">📁 ../wt-hotfix/</text>
+            <text x="400" y="365" text-anchor="middle" fill="#94a3b8" font-size="11">hotfix 브랜치</text>
+            <text x="400" y="380" text-anchor="middle" fill="#64748b" font-size="10">.git → ../my-project/.git</text>
+          </g>
+
+          <!-- Worktree 3: release -->
+          <g class="tree-node" data-tooltip="Linked Worktree #3: release 브랜치를 체크아웃한 별도 디렉토리. 릴리스 준비를 메인 작업과 분리합니다.">
+            <rect x="560" y="320" width="200" height="70" rx="10" fill="#1e293b" stroke="#fbbf24" stroke-width="2"/>
+            <text x="660" y="345" text-anchor="middle" fill="#fbbf24" font-weight="600">📁 ../wt-release/</text>
+            <text x="660" y="365" text-anchor="middle" fill="#94a3b8" font-size="11">release 브랜치</text>
+            <text x="660" y="380" text-anchor="middle" fill="#64748b" font-size="10">.git → ../my-project/.git</text>
+          </g>
+
+          <!-- Links from .git/worktrees to worktrees -->
+          <path class="tree-link active" d="M 350 270 Q 200 290 140 320"/>
+          <path class="tree-link active" d="M 400 270 L 400 320"/>
+          <path class="tree-link active" d="M 450 270 Q 550 290 660 320"/>
+
+          <!-- Shared label -->
+          <text x="400" y="415" text-anchor="middle" fill="#64748b" font-size="11">모든 worktree는 동일한 .git 저장소의 objects, refs, config를 공유합니다</text>
+        </svg>
+      </div>
+      <div class="diagram-label">클릭하여 각 구성 요소의 상세 설명을 확인하세요</div>
+    </div>
+  </section>
+
+  <!-- Tab 2: Core Commands -->
+  <section class="tab-content" id="tab-commands">
+    <div class="card">
+      <h2>⚡ 핵심 명령어</h2>
+      <p>Git Worktree의 주요 명령어를 알아봅니다. 각 명령어를 펼쳐서 상세 사용법과 예제를 확인하세요.</p>
+    </div>
+
+    <!-- git worktree add -->
+    <div class="accordion open" data-search="add worktree 추가 생성 새로운 브랜치 체크아웃">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        <h4><span class="badge badge-blue">필수</span> git worktree add — 새 워크트리 생성</h4>
+        <span class="accordion-arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <div class="accordion-content">
+          <p>새로운 워크트리를 생성합니다. 지정한 경로에 새 디렉토리를 만들고, 브랜치를 체크아웃합니다.</p>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">기본 사용법</span>
+              <button class="copy-btn" onclick="copyCode(this)">📋 복사</button>
+            </div>
+            <pre><code><span class="cmt"># 기존 브랜치로 워크트리 생성</span>
+<span class="cmd">git worktree add</span> <span class="path">../wt-feature</span> <span class="branch">feature-branch</span>
+
+<span class="cmt"># 새 브랜치를 만들면서 워크트리 생성 (-b 옵션)</span>
+<span class="cmd">git worktree add</span> <span class="flag">-b</span> <span class="branch">new-feature</span> <span class="path">../wt-new-feature</span>
+
+<span class="cmt"># 특정 커밋에서 새 브랜치 생성</span>
+<span class="cmd">git worktree add</span> <span class="flag">-b</span> <span class="branch">hotfix-v2</span> <span class="path">../wt-hotfix</span> <span class="str">origin/main</span>
+
+<span class="cmt"># detached HEAD 상태로 워크트리 생성</span>
+<span class="cmd">git worktree add</span> <span class="flag">--detach</span> <span class="path">../wt-temp</span> <span class="str">v2.1.0</span></code></pre>
+          </div>
+
+          <h3>주요 옵션</h3>
+          <table class="ref-table">
+            <tr><th>옵션</th><th>설명</th></tr>
+            <tr><td>-b &lt;branch&gt;</td><td>새 브랜치를 생성하면서 워크트리를 만듦</td></tr>
+            <tr><td>-B &lt;branch&gt;</td><td>브랜치가 이미 존재하면 리셋하고 생성</td></tr>
+            <tr><td>--detach</td><td>브랜치 없이 detached HEAD 상태로 생성</td></tr>
+            <tr><td>--track</td><td>원격 브랜치를 추적하도록 설정</td></tr>
+            <tr><td>--lock</td><td>생성과 동시에 잠금 (이동식 미디어용)</td></tr>
+            <tr><td>--quiet</td><td>출력 억제</td></tr>
+          </table>
+
+          <div class="tip-box">
+            <div class="label">💡 팁</div>
+            <p>경로만 지정하고 브랜치를 생략하면, 경로의 마지막 디렉토리 이름과 같은 브랜치를 체크아웃합니다.<br>
+            예: <code>git worktree add ../feature-login</code> → <code>feature-login</code> 브랜치를 체크아웃</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- git worktree list -->
+    <div class="accordion" data-search="list 목록 조회 확인 현재">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        <h4><span class="badge badge-green">조회</span> git worktree list — 워크트리 목록 확인</h4>
+        <span class="accordion-arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <div class="accordion-content">
+          <p>현재 저장소에 연결된 모든 워크트리의 목록을 출력합니다.</p>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">shell</span>
+              <button class="copy-btn" onclick="copyCode(this)">📋 복사</button>
+            </div>
+            <pre><code><span class="cmt"># 간단한 목록 출력</span>
+<span class="cmd">git worktree list</span>
+<span class="cmt"># 출력 예시:</span>
+<span class="cmt"># /home/user/my-project        abc1234 [main]</span>
+<span class="cmt"># /home/user/wt-feature         def5678 [feature-branch]</span>
+<span class="cmt"># /home/user/wt-hotfix          ghi9012 [hotfix-v2]</span>
+
+<span class="cmt"># 상세 정보 출력 (porcelain 형식)</span>
+<span class="cmd">git worktree list</span> <span class="flag">--porcelain</span>
+
+<span class="cmt"># 포맷 지정 (Git 2.36+)</span>
+<span class="cmd">git worktree list</span> <span class="flag">--format</span> <span class="str">'%(worktree) %(HEAD) %(branch)'</span></code></pre>
+          </div>
+
+          <div class="info-box">
+            <div class="label">ℹ️ 정보</div>
+            <p><code>--porcelain</code> 형식은 스크립트에서 파싱하기 좋습니다. 각 워크트리의 경로, HEAD 커밋, 브랜치 정보를 구조화된 형태로 출력합니다.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- git worktree remove -->
+    <div class="accordion" data-search="remove 삭제 제거 정리">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        <h4><span class="badge badge-red">삭제</span> git worktree remove — 워크트리 제거</h4>
+        <span class="accordion-arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <div class="accordion-content">
+          <p>더 이상 필요 없는 워크트리를 안전하게 제거합니다. 디렉토리와 관련 메타데이터를 함께 정리합니다.</p>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">shell</span>
+              <button class="copy-btn" onclick="copyCode(this)">📋 복사</button>
+            </div>
+            <pre><code><span class="cmt"># 워크트리 제거 (클린한 상태일 때)</span>
+<span class="cmd">git worktree remove</span> <span class="path">../wt-feature</span>
+
+<span class="cmt"># 변경사항이 있어도 강제 제거</span>
+<span class="cmd">git worktree remove</span> <span class="flag">--force</span> <span class="path">../wt-feature</span>
+
+<span class="cmt"># 잠긴 워크트리 강제 제거 (--force 두 번)</span>
+<span class="cmd">git worktree remove</span> <span class="flag">--force --force</span> <span class="path">../wt-locked</span></code></pre>
+          </div>
+
+          <div class="warning-box">
+            <div class="label">⚠️ 주의</div>
+            <p>커밋되지 않은 변경사항이나 추적되지 않는 파일이 있으면 <code>remove</code>가 실패합니다. 중요한 작업을 잃지 않으려면 반드시 확인 후 <code>--force</code>를 사용하세요.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- git worktree move -->
+    <div class="accordion" data-search="move 이동 경로변경">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        <h4><span class="badge badge-yellow">변경</span> git worktree move — 워크트리 이동</h4>
+        <span class="accordion-arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <div class="accordion-content">
+          <p>워크트리의 경로를 변경합니다. 디렉토리를 이동하면서 메타데이터도 함께 업데이트합니다.</p>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">shell</span>
+              <button class="copy-btn" onclick="copyCode(this)">📋 복사</button>
+            </div>
+            <pre><code><span class="cmt"># 워크트리 경로 변경</span>
+<span class="cmd">git worktree move</span> <span class="path">../wt-feature</span> <span class="path">../wt-feature-v2</span>
+
+<span class="cmt"># 잠긴 워크트리 이동 (--force 필요)</span>
+<span class="cmd">git worktree move</span> <span class="flag">--force</span> <span class="path">../wt-locked</span> <span class="path">../wt-new-path</span></code></pre>
+          </div>
+
+          <div class="info-box">
+            <div class="label">ℹ️ 참고</div>
+            <p>메인 워크트리(원본 저장소)는 이동할 수 없습니다. <code>move</code>는 linked worktree에만 사용 가능합니다.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- git worktree prune -->
+    <div class="accordion" data-search="prune 정리 청소 고아 orphan stale">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        <h4><span class="badge badge-purple">정리</span> git worktree prune — 고아 워크트리 정리</h4>
+        <span class="accordion-arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <div class="accordion-content">
+          <p>삭제된 워크트리 디렉토리의 메타데이터를 정리합니다. 디렉토리를 수동으로 <code>rm -rf</code>한 경우 유용합니다.</p>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">shell</span>
+              <button class="copy-btn" onclick="copyCode(this)">📋 복사</button>
+            </div>
+            <pre><code><span class="cmt"># 고아 워크트리 메타데이터 정리</span>
+<span class="cmd">git worktree prune</span>
+
+<span class="cmt"># 정리 전 미리보기 (dry run)</span>
+<span class="cmd">git worktree prune</span> <span class="flag">--dry-run</span>
+
+<span class="cmt"># 상세 출력과 함께 정리</span>
+<span class="cmd">git worktree prune</span> <span class="flag">--verbose</span></code></pre>
+          </div>
+
+          <div class="tip-box">
+            <div class="label">💡 팁</div>
+            <p>워크트리를 제거할 때는 가능하면 <code>git worktree remove</code>를 사용하세요. 디렉토리와 메타데이터를 한 번에 정리합니다. <code>prune</code>은 비정상 종료 후 복구용입니다.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- git worktree lock/unlock -->
+    <div class="accordion" data-search="lock unlock 잠금 해제 보호 이동식">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        <h4><span class="badge badge-cyan">보호</span> git worktree lock / unlock — 잠금 관리</h4>
+        <span class="accordion-arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <div class="accordion-content">
+          <p>워크트리를 잠금 처리하여 <code>prune</code>에 의해 실수로 정리되지 않도록 보호합니다. 이동식 드라이브의 워크트리에 유용합니다.</p>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">shell</span>
+              <button class="copy-btn" onclick="copyCode(this)">📋 복사</button>
+            </div>
+            <pre><code><span class="cmt"># 워크트리 잠금</span>
+<span class="cmd">git worktree lock</span> <span class="path">../wt-feature</span>
+
+<span class="cmt"># 잠금 이유 메모와 함께</span>
+<span class="cmd">git worktree lock</span> <span class="flag">--reason</span> <span class="str">"USB 드라이브에 있음"</span> <span class="path">../wt-feature</span>
+
+<span class="cmt"># 잠금 해제</span>
+<span class="cmd">git worktree unlock</span> <span class="path">../wt-feature</span></code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- git worktree repair -->
+    <div class="accordion" data-search="repair 수리 복구 연결 깨진">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        <h4><span class="badge badge-yellow">복구</span> git worktree repair — 연결 복구</h4>
+        <span class="accordion-arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <div class="accordion-content">
+          <p>메인 저장소나 워크트리를 수동으로 이동한 후 깨진 연결을 복구합니다. (Git 2.30+)</p>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">shell</span>
+              <button class="copy-btn" onclick="copyCode(this)">📋 복사</button>
+            </div>
+            <pre><code><span class="cmt"># 메인 저장소에서 실행하여 모든 링크 복구</span>
+<span class="cmd">git worktree repair</span>
+
+<span class="cmt"># 특정 워크트리 경로를 지정하여 복구</span>
+<span class="cmd">git worktree repair</span> <span class="path">../wt-moved-feature</span></code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tab 3: Internals -->
+  <section class="tab-content" id="tab-internals">
+    <div class="card">
+      <h2>🔧 동작 원리</h2>
+      <p>Git Worktree가 내부적으로 어떻게 동작하는지 이해하면, 문제 해결과 최적화에 도움이 됩니다.</p>
+    </div>
+
+    <div class="card">
+      <h3>.git 파일 vs .git 디렉토리</h3>
+      <p>
+        메인 워크트리에는 실제 <code>.git</code> <strong>디렉토리</strong>가 존재합니다.
+        반면, linked worktree에는 <code>.git</code> <strong>파일</strong>이 존재하며, 이 파일은 메인 저장소의 <code>.git/worktrees/&lt;name&gt;</code>을 가리킵니다.
+      </p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">linked worktree의 .git 파일 내용</span>
+          <button class="copy-btn" onclick="copyCode(this)">📋 복사</button>
+        </div>
+        <pre><code><span class="cmt"># cat ../wt-feature/.git</span>
+<span class="str">gitdir: /home/user/my-project/.git/worktrees/wt-feature</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">메인 저장소의 worktrees 디렉토리 구조</span>
+          <button class="copy-btn" onclick="copyCode(this)">📋 복사</button>
+        </div>
+        <pre><code><span class="path">.git/worktrees/wt-feature/</span>
+├── <span class="str">HEAD</span>          <span class="cmt"># 이 워크트리의 현재 HEAD</span>
+├── <span class="str">index</span>         <span class="cmt"># 이 워크트리의 스테이징 영역</span>
+├── <span class="str">gitdir</span>        <span class="cmt"># 워크트리의 .git 파일 경로 (역참조)</span>
+├── <span class="str">commondir</span>     <span class="cmt"># 공유 .git 디렉토리 경로</span>
+├── <span class="str">MERGE_HEAD</span>    <span class="cmt"># (머지 중일 때)</span>
+├── <span class="str">REBASE_HEAD</span>   <span class="cmt"># (리베이스 중일 때)</span>
+└── <span class="str">refs/</span>         <span class="cmt"># 워크트리별 refs (bisect 등)</span></code></pre>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>공유되는 것 vs 독립적인 것</h3>
+      <div class="compare-grid">
+        <div class="compare-item good">
+          <h4>🔗 모든 워크트리가 공유</h4>
+          <ul>
+            <li>Objects (commits, trees, blobs)</li>
+            <li>Refs (branches, tags)</li>
+            <li>Remote 설정</li>
+            <li>Hooks (git hooks)</li>
+            <li>Config (.git/config)</li>
+            <li>Packed-refs</li>
+          </ul>
+        </div>
+        <div class="compare-item bad">
+          <h4>🔒 각 워크트리별 독립</h4>
+          <ul>
+            <li>HEAD (현재 체크아웃 브랜치)</li>
+            <li>Index (스테이징 영역)</li>
+            <li>Working tree (작업 파일들)</li>
+            <li>MERGE_HEAD, REBASE_HEAD 등</li>
+            <li>Bisect 상태</li>
+            <li>워크트리별 refs</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Bare Repository에서의 Worktree</h3>
+      <p>
+        Bare 저장소는 워킹 트리가 없으므로, worktree를 사용하면 매우 깔끔한 구조를 만들 수 있습니다.
+        서버 환경이나 고급 워크플로우에서 자주 사용되는 패턴입니다.
+      </p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">Bare repo + Worktree 패턴</span>
+          <button class="copy-btn" onclick="copyCode(this)">📋 복사</button>
+        </div>
+        <pre><code><span class="cmt"># Bare 저장소 클론</span>
+<span class="cmd">git clone</span> <span class="flag">--bare</span> <span class="str">https://github.com/user/repo.git</span> <span class="path">repo.git</span>
+<span class="cmd">cd</span> <span class="path">repo.git</span>
+
+<span class="cmt"># 각 브랜치별 워크트리 생성</span>
+<span class="cmd">git worktree add</span> <span class="path">../repo-main</span> <span class="branch">main</span>
+<span class="cmd">git worktree add</span> <span class="path">../repo-develop</span> <span class="branch">develop</span>
+<span class="cmd">git worktree add</span> <span class="flag">-b</span> <span class="branch">feature-x</span> <span class="path">../repo-feature-x</span>
+
+<span class="cmt"># 결과 디렉토리 구조:</span>
+<span class="cmt"># repo.git/          ← bare 저장소 (object store)</span>
+<span class="cmt"># repo-main/         ← main 브랜치 워크트리</span>
+<span class="cmt"># repo-develop/      ← develop 브랜치 워크트리</span>
+<span class="cmt"># repo-feature-x/    ← feature-x 브랜치 워크트리</span></code></pre>
+      </div>
+
+      <div class="tip-box">
+        <div class="label">💡 장점</div>
+        <p>Bare repo 방식은 "메인 워크트리"라는 개념이 없어서 모든 브랜치가 동등하게 취급됩니다. 깔끔하고 대칭적인 구조를 선호한다면 이 패턴을 추천합니다.</p>
+      </div>
+    </div>
+
+    <!-- Interactive: Object Store Diagram -->
+    <div class="card">
+      <h2>📊 Object Store 공유 구조</h2>
+      <div class="diagram-container">
+        <svg viewBox="0 0 700 300" width="100%" height="300">
+          <defs>
+            <pattern id="grid2" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(30,41,59,0.3)" stroke-width="0.5"/>
+            </pattern>
+          </defs>
+          <rect width="700" height="300" fill="url(#grid2)"/>
+
+          <!-- Object Store (center) -->
+          <g class="tree-node" data-tooltip="Object Store: 모든 Git 객체(commit, tree, blob)가 저장됩니다. 모든 워크트리가 이 하나의 저장소를 공유합니다.">
+            <rect x="250" y="100" width="200" height="80" rx="12" fill="#1a1a2e" stroke="#a78bfa" stroke-width="2"/>
+            <text x="350" y="130" text-anchor="middle" fill="#a78bfa" font-weight="600" font-size="13">Object Store</text>
+            <text x="350" y="150" text-anchor="middle" fill="#94a3b8" font-size="11">commits, trees, blobs</text>
+            <text x="350" y="168" text-anchor="middle" fill="#64748b" font-size="10">.git/objects/</text>
+          </g>
+
+          <!-- WT 1 -->
+          <g class="tree-node" data-tooltip="워크트리 A: 독립적인 HEAD, index, working files를 가짐">
+            <rect x="30" y="20" width="150" height="55" rx="8" fill="#1e293b" stroke="#22d3ee" stroke-width="1.5"/>
+            <text x="105" y="42" text-anchor="middle" fill="#22d3ee" font-size="12" font-weight="500">WT-A (main)</text>
+            <text x="105" y="60" text-anchor="middle" fill="#64748b" font-size="10">HEAD, index, files</text>
+          </g>
+          <path d="M 180 52 Q 220 80 250 120" stroke="#22d3ee" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+
+          <!-- WT 2 -->
+          <g class="tree-node" data-tooltip="워크트리 B: 독립적인 HEAD, index, working files를 가짐">
+            <rect x="30" y="220" width="150" height="55" rx="8" fill="#1e293b" stroke="#34d399" stroke-width="1.5"/>
+            <text x="105" y="242" text-anchor="middle" fill="#34d399" font-size="12" font-weight="500">WT-B (feature)</text>
+            <text x="105" y="260" text-anchor="middle" fill="#64748b" font-size="10">HEAD, index, files</text>
+          </g>
+          <path d="M 180 248 Q 220 210 250 175" stroke="#34d399" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+
+          <!-- WT 3 -->
+          <g class="tree-node" data-tooltip="워크트리 C: 독립적인 HEAD, index, working files를 가짐">
+            <rect x="520" y="20" width="150" height="55" rx="8" fill="#1e293b" stroke="#fbbf24" stroke-width="1.5"/>
+            <text x="595" y="42" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="500">WT-C (hotfix)</text>
+            <text x="595" y="60" text-anchor="middle" fill="#64748b" font-size="10">HEAD, index, files</text>
+          </g>
+          <path d="M 520 52 Q 480 80 450 120" stroke="#fbbf24" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+
+          <!-- WT 4 -->
+          <g class="tree-node" data-tooltip="워크트리 D: 독립적인 HEAD, index, working files를 가짐">
+            <rect x="520" y="220" width="150" height="55" rx="8" fill="#1e293b" stroke="#f472b6" stroke-width="1.5"/>
+            <text x="595" y="242" text-anchor="middle" fill="#f472b6" font-size="12" font-weight="500">WT-D (release)</text>
+            <text x="595" y="260" text-anchor="middle" fill="#64748b" font-size="10">HEAD, index, files</text>
+          </g>
+          <path d="M 520 248 Q 480 210 450 175" stroke="#f472b6" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+
+          <!-- Shared label -->
+          <text x="350" y="290" text-anchor="middle" fill="#64748b" font-size="11">점선: Object Store에 대한 참조 (읽기/쓰기 공유)</text>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tab 4: Scenarios -->
+  <section class="tab-content" id="tab-scenarios">
+    <div class="card">
+      <h2>🎯 실전 사용 시나리오</h2>
+      <p>실제 개발에서 Git Worktree를 활용하는 대표적인 시나리오들입니다.</p>
+    </div>
+
+    <div class="scenario-grid">
+      <div class="scenario-card">
+        <div class="icon">🔥</div>
+        <h4>긴급 핫픽스</h4>
+        <p>기능 개발 중 프로덕션 버그 발생 시, 현재 작업을 중단하지 않고 별도 워크트리에서 즉시 핫픽스</p>
+      </div>
+      <div class="scenario-card">
+        <div class="icon">👀</div>
+        <h4>PR 코드 리뷰</h4>
+        <p>동료의 PR을 별도 워크트리에서 체크아웃하여 로컬에서 실행·테스트하며 리뷰</p>
+      </div>
+      <div class="scenario-card">
+        <div class="icon">🔀</div>
+        <h4>동시 브랜치 비교</h4>
+        <p>두 브랜치의 동작을 동시에 실행하여 비교. A/B 테스트나 성능 비교에 활용</p>
+      </div>
+      <div class="scenario-card">
+        <div class="icon">🚀</div>
+        <h4>CI/CD 파이프라인</h4>
+        <p>CI 서버에서 병렬 빌드 시 각 브랜치를 별도 worktree로 체크아웃하여 빌드</p>
+      </div>
+      <div class="scenario-card">
+        <div class="icon">📋</div>
+        <h4>장기 실행 태스크</h4>
+        <p>테스트 스위트가 실행 중인 동안 다른 워크트리에서 개발을 계속 진행</p>
+      </div>
+      <div class="scenario-card">
+        <div class="icon">🏷️</div>
+        <h4>릴리스 관리</h4>
+        <p>릴리스 브랜치를 별도 워크트리로 유지하며 메인 개발과 릴리스 준비를 병행</p>
+      </div>
+    </div>
+
+    <!-- Scenario 1: Hotfix -->
+    <div class="card">
+      <h3>🔥 시나리오 1: 긴급 핫픽스</h3>
+      <p>feature 브랜치에서 작업 중인데, 프로덕션에서 긴급 버그가 발견된 상황:</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">전체 워크플로우</span>
+          <button class="copy-btn" onclick="copyCode(this)">📋 복사</button>
+        </div>
+        <pre><code><span class="cmt"># 현재 상태: feature-login 브랜치에서 작업 중</span>
+<span class="cmt"># 프로덕션 긴급 버그 발생!</span>
+
+<span class="cmt"># 1. 핫픽스용 워크트리 생성</span>
+<span class="cmd">git worktree add</span> <span class="flag">-b</span> <span class="branch">hotfix/critical-bug</span> <span class="path">../hotfix</span> <span class="str">origin/main</span>
+
+<span class="cmt"># 2. 핫픽스 워크트리로 이동</span>
+<span class="cmd">cd</span> <span class="path">../hotfix</span>
+
+<span class="cmt"># 3. 버그 수정, 테스트, 커밋</span>
+<span class="cmd">vim</span> <span class="path">src/critical-module.js</span>
+<span class="cmd">npm test</span>
+<span class="cmd">git add</span> <span class="flag">-A</span> && <span class="cmd">git commit</span> <span class="flag">-m</span> <span class="str">"fix: 결제 실패 시 세션 복구 로직 수정"</span>
+<span class="cmd">git push</span> <span class="str">origin</span> <span class="branch">hotfix/critical-bug</span>
+
+<span class="cmt"># 4. 원래 작업으로 복귀</span>
+<span class="cmd">cd</span> <span class="path">../my-project</span>
+<span class="cmt"># feature-login 브랜치가 그대로! stash 필요 없음</span>
+
+<span class="cmt"># 5. 핫픽스 머지 후 워크트리 정리</span>
+<span class="cmd">git worktree remove</span> <span class="path">../hotfix</span></code></pre>
+      </div>
+    </div>
+
+    <!-- Scenario 2: PR Review -->
+    <div class="card">
+      <h3>👀 시나리오 2: PR 코드 리뷰</h3>
+      <p>동료의 PR을 로컬에서 실행하며 리뷰하는 워크플로우:</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">PR 리뷰 워크플로우</span>
+          <button class="copy-btn" onclick="copyCode(this)">📋 복사</button>
+        </div>
+        <pre><code><span class="cmt"># 1. PR 브랜치를 가져오기</span>
+<span class="cmd">git fetch</span> <span class="str">origin</span> <span class="branch">feature/new-dashboard</span>
+
+<span class="cmt"># 2. 리뷰용 워크트리 생성</span>
+<span class="cmd">git worktree add</span> <span class="path">../review-dashboard</span> <span class="str">origin/feature/new-dashboard</span>
+
+<span class="cmt"># 3. 리뷰 워크트리에서 빌드 & 실행</span>
+<span class="cmd">cd</span> <span class="path">../review-dashboard</span>
+<span class="cmd">npm install</span> && <span class="cmd">npm run dev</span>
+
+<span class="cmt"># → 브라우저에서 확인하며 리뷰</span>
+<span class="cmt"># → 내 작업은 원래 디렉토리에서 계속 진행 가능</span>
+
+<span class="cmt"># 4. 리뷰 완료 후 정리</span>
+<span class="cmd">cd</span> <span class="path">../my-project</span>
+<span class="cmd">git worktree remove</span> <span class="path">../review-dashboard</span></code></pre>
+      </div>
+    </div>
+
+    <!-- Scenario 3: CI -->
+    <div class="card">
+      <h3>🚀 시나리오 3: CI 파이프라인에서의 활용</h3>
+      <p>CI/CD 환경에서 병렬 빌드 시 worktree를 활용하는 예제:</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">CI 스크립트 예제</span>
+          <button class="copy-btn" onclick="copyCode(this)">📋 복사</button>
+        </div>
+        <pre><code><span class="cmt">#!/bin/bash</span>
+<span class="cmt"># 여러 브랜치를 동시에 빌드하는 CI 스크립트</span>
+
+<span class="kw">BRANCHES</span>=(<span class="str">"main"</span> <span class="str">"develop"</span> <span class="str">"staging"</span>)
+
+<span class="kw">for</span> branch <span class="kw">in</span> <span class="str">"${BRANCHES[@]}"</span>; <span class="kw">do</span>
+  <span class="cmd">git worktree add</span> <span class="path">"build-${branch}"</span> <span class="str">"origin/${branch}"</span>
+  (
+    <span class="cmd">cd</span> <span class="path">"build-${branch}"</span>
+    <span class="cmd">npm ci</span> && <span class="cmd">npm run build</span> && <span class="cmd">npm test</span>
+  ) &amp;  <span class="cmt"># 백그라운드로 병렬 실행</span>
+<span class="kw">done</span>
+
+<span class="cmd">wait</span>  <span class="cmt"># 모든 빌드 완료 대기</span>
+
+<span class="cmt"># 정리</span>
+<span class="kw">for</span> branch <span class="kw">in</span> <span class="str">"${BRANCHES[@]}"</span>; <span class="kw">do</span>
+  <span class="cmd">git worktree remove</span> <span class="path">"build-${branch}"</span>
+<span class="kw">done</span></code></pre>
+      </div>
+    </div>
+
+    <!-- Scenario 4: Bare Repo Pattern -->
+    <div class="card">
+      <h3>📂 시나리오 4: Bare Repo 기반 워크플로우</h3>
+      <p>깔끔한 프로젝트 구조를 위해 bare repo + worktree 조합을 사용하는 패턴:</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">Bare repo 워크플로우 초기 설정</span>
+          <button class="copy-btn" onclick="copyCode(this)">📋 복사</button>
+        </div>
+        <pre><code><span class="cmt"># 프로젝트 디렉토리 생성</span>
+<span class="cmd">mkdir</span> <span class="path">my-project</span> && <span class="cmd">cd</span> <span class="path">my-project</span>
+
+<span class="cmt"># Bare 저장소 클론 (.bare 디렉토리에)</span>
+<span class="cmd">git clone</span> <span class="flag">--bare</span> <span class="str">https://github.com/user/repo.git</span> <span class="path">.bare</span>
+
+<span class="cmt"># .git 파일 생성 (편의를 위해)</span>
+<span class="cmd">echo</span> <span class="str">"gitdir: ./.bare"</span> > <span class="path">.git</span>
+
+<span class="cmt"># remote fetch 설정 (bare clone은 기본값이 다름)</span>
+<span class="cmd">git config</span> <span class="str">remote.origin.fetch</span> <span class="str">"+refs/heads/*:refs/remotes/origin/*"</span>
+<span class="cmd">git fetch</span> <span class="str">origin</span>
+
+<span class="cmt"># 워크트리 생성</span>
+<span class="cmd">git worktree add</span> <span class="path">main</span>
+<span class="cmd">git worktree add</span> <span class="path">develop</span>
+<span class="cmd">git worktree add</span> <span class="flag">-b</span> <span class="branch">feature/awesome</span> <span class="path">feature-awesome</span>
+
+<span class="cmt"># 결과 구조:</span>
+<span class="cmt"># my-project/</span>
+<span class="cmt"># ├── .bare/              ← Git object store</span>
+<span class="cmt"># ├── .git                ← gitdir 참조 파일</span>
+<span class="cmt"># ├── main/               ← main 브랜치 작업 공간</span>
+<span class="cmt"># ├── develop/            ← develop 브랜치 작업 공간</span>
+<span class="cmt"># └── feature-awesome/    ← 새 피처 작업 공간</span></code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tab 5: Tips & Warnings -->
+  <section class="tab-content" id="tab-tips">
+    <div class="card">
+      <h2>⚠️ 주의사항과 팁</h2>
+      <p>Git Worktree를 효과적으로 사용하기 위해 알아두어야 할 중요한 사항들입니다.</p>
+    </div>
+
+    <!-- Warning 1 -->
+    <div class="card">
+      <h3>🚫 같은 브랜치를 동시에 체크아웃할 수 없음</h3>
+      <p>이것은 가장 중요한 제약 사항입니다. 하나의 저장소에서 같은 브랜치를 두 개 이상의 워크트리에서 체크아웃할 수 없습니다.</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">에러 예시</span>
+          <button class="copy-btn" onclick="copyCode(this)">📋 복사</button>
+        </div>
+        <pre><code><span class="cmt"># main이 이미 메인 워크트리에서 체크아웃된 상태</span>
+$ <span class="cmd">git worktree add</span> <span class="path">../wt-main</span> <span class="branch">main</span>
+<span class="red">fatal: 'main' is already checked out at '/home/user/my-project'</span>
+
+<span class="cmt"># 해결책 1: 다른 브랜치 사용</span>
+<span class="cmd">git worktree add</span> <span class="flag">-b</span> <span class="branch">main-copy</span> <span class="path">../wt-main</span> <span class="str">main</span>
+
+<span class="cmt"># 해결책 2: detached HEAD로 체크아웃</span>
+<span class="cmd">git worktree add</span> <span class="flag">--detach</span> <span class="path">../wt-main</span> <span class="str">main</span></code></pre>
+      </div>
+
+      <div class="info-box">
+        <div class="label">ℹ️ 왜 이런 제약이 있을까?</div>
+        <p>같은 브랜치를 두 워크트리에서 체크아웃하면, 한쪽에서 commit할 때 다른 쪽의 HEAD가 자동으로 갱신되지 않아 데이터 일관성 문제가 발생합니다. Git은 이를 원천 차단합니다.</p>
+      </div>
+    </div>
+
+    <!-- Warning 2 -->
+    <div class="card">
+      <h3>📦 Submodule 주의점</h3>
+      <div class="warning-box">
+        <div class="label">⚠️ 주의</div>
+        <p>Submodule이 포함된 저장소에서 worktree를 생성하면, submodule이 자동으로 초기화/업데이트되지 않습니다.
+        새 워크트리에서 별도로 <code>git submodule update --init</code>을 실행해야 합니다.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">Submodule이 있는 프로젝트에서의 워크트리</span>
+          <button class="copy-btn" onclick="copyCode(this)">📋 복사</button>
+        </div>
+        <pre><code><span class="cmt"># 워크트리 생성 후</span>
+<span class="cmd">git worktree add</span> <span class="path">../wt-feature</span> <span class="branch">feature</span>
+<span class="cmd">cd</span> <span class="path">../wt-feature</span>
+
+<span class="cmt"># submodule 초기화 필요!</span>
+<span class="cmd">git submodule update</span> <span class="flag">--init --recursive</span></code></pre>
+      </div>
+    </div>
+
+    <!-- Warning 3 -->
+    <div class="card">
+      <h3>🗑️ 올바른 정리 방법</h3>
+      <p>워크트리를 정리하는 올바른 방법과 잘못된 방법을 비교합니다:</p>
+
+      <div class="compare-grid">
+        <div class="compare-item good">
+          <h4>✅ 올바른 정리</h4>
+          <ul>
+            <li>git worktree remove 사용</li>
+            <li>메타데이터와 디렉토리 동시 정리</li>
+            <li>변경사항 있으면 경고 표시</li>
+          </ul>
+        </div>
+        <div class="compare-item bad">
+          <h4>❌ 잘못된 정리</h4>
+          <ul>
+            <li>rm -rf로 디렉토리만 삭제</li>
+            <li>메타데이터가 .git/worktrees에 남음</li>
+            <li>git worktree prune으로 추가 정리 필요</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">정리 베스트 프랙티스</span>
+          <button class="copy-btn" onclick="copyCode(this)">📋 복사</button>
+        </div>
+        <pre><code><span class="cmt"># 권장: git worktree remove 사용</span>
+<span class="cmd">git worktree remove</span> <span class="path">../wt-feature</span>
+
+<span class="cmt"># 만약 rm -rf로 삭제했다면:</span>
+<span class="cmd">git worktree prune</span>  <span class="cmt"># 고아 메타데이터 정리</span>
+
+<span class="cmt"># 전체 워크트리 상태 확인</span>
+<span class="cmd">git worktree list</span></code></pre>
+      </div>
+    </div>
+
+    <!-- Tips -->
+    <div class="card">
+      <h3>💡 유용한 팁 모음</h3>
+
+      <div class="tip-box">
+        <div class="label">💡 워크트리 경로 네이밍 컨벤션</div>
+        <p>워크트리 디렉토리를 프로젝트 상위 디렉토리에 생성하고, <code>wt-</code> 접두사를 붙이면 관리하기 쉽습니다.<br>
+        예: <code>../wt-feature</code>, <code>../wt-hotfix</code>, <code>../wt-review-pr123</code></p>
+      </div>
+
+      <div class="tip-box">
+        <div class="label">💡 Shell 별칭 설정</div>
+        <p>자주 사용하는 worktree 명령어를 별칭으로 등록하세요:</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">~/.gitconfig 또는 ~/.zshrc</span>
+          <button class="copy-btn" onclick="copyCode(this)">📋 복사</button>
+        </div>
+        <pre><code><span class="cmt"># .gitconfig에 별칭 추가</span>
+[alias]
+  wta = worktree add
+  wtl = worktree list
+  wtr = worktree remove
+  wtp = worktree prune
+
+<span class="cmt"># 또는 shell alias</span>
+<span class="kw">alias</span> <span class="str">gwta</span>=<span class="str">'git worktree add'</span>
+<span class="kw">alias</span> <span class="str">gwtl</span>=<span class="str">'git worktree list'</span>
+<span class="kw">alias</span> <span class="str">gwtr</span>=<span class="str">'git worktree remove'</span></code></pre>
+      </div>
+
+      <div class="tip-box">
+        <div class="label">💡 .gitignore와 워크트리</div>
+        <p><code>.gitignore</code>는 저장소에 포함되므로 모든 워크트리에서 공유됩니다. 하지만 각 워크트리의 빌드 산출물이나 <code>node_modules</code>는 독립적입니다.</p>
+      </div>
+
+      <div class="tip-box">
+        <div class="label">💡 IDE 통합</div>
+        <p>VSCode에서 각 워크트리를 별도 창으로 열면 완전히 독립적인 개발 환경을 구성할 수 있습니다. <code>code ../wt-feature</code>로 바로 열 수 있습니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tab 6: Reference -->
+  <section class="tab-content" id="tab-reference">
+    <div class="card">
+      <h2>📋 명령어 빠른 레퍼런스</h2>
+      <p>모든 Git Worktree 명령어와 주요 옵션을 한눈에 확인할 수 있는 레퍼런스 테이블입니다. 검색창에서 명령어를 검색할 수도 있습니다.</p>
+
+      <table class="ref-table" id="refTable">
+        <thead>
+          <tr>
+            <th>명령어</th>
+            <th>설명</th>
+            <th>주요 옵션</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-search="add 추가 생성 새로운 브랜치">
+            <td>git worktree add &lt;path&gt; [&lt;branch&gt;]</td>
+            <td>새 워크트리를 생성하고 브랜치를 체크아웃</td>
+            <td><code>-b</code> <code>-B</code> <code>--detach</code> <code>--track</code> <code>--lock</code></td>
+          </tr>
+          <tr data-search="list 목록 조회 확인">
+            <td>git worktree list</td>
+            <td>모든 워크트리의 목록을 출력</td>
+            <td><code>--porcelain</code> <code>--format</code></td>
+          </tr>
+          <tr data-search="remove 삭제 제거">
+            <td>git worktree remove &lt;path&gt;</td>
+            <td>워크트리를 제거 (디렉토리 + 메타데이터)</td>
+            <td><code>--force</code></td>
+          </tr>
+          <tr data-search="move 이동 경로변경">
+            <td>git worktree move &lt;path&gt; &lt;new-path&gt;</td>
+            <td>워크트리를 새 경로로 이동</td>
+            <td><code>--force</code></td>
+          </tr>
+          <tr data-search="prune 정리 청소 고아">
+            <td>git worktree prune</td>
+            <td>삭제된 워크트리의 고아 메타데이터 정리</td>
+            <td><code>--dry-run</code> <code>--verbose</code> <code>--expire</code></td>
+          </tr>
+          <tr data-search="lock 잠금 보호">
+            <td>git worktree lock &lt;path&gt;</td>
+            <td>워크트리를 잠금 (prune 보호)</td>
+            <td><code>--reason</code></td>
+          </tr>
+          <tr data-search="unlock 잠금해제">
+            <td>git worktree unlock &lt;path&gt;</td>
+            <td>워크트리 잠금 해제</td>
+            <td>—</td>
+          </tr>
+          <tr data-search="repair 수리 복구">
+            <td>git worktree repair [&lt;path&gt;...]</td>
+            <td>깨진 워크트리 연결 복구 (Git 2.30+)</td>
+            <td>—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>🔗 관련 Git 명령어</h3>
+      <table class="ref-table">
+        <thead>
+          <tr>
+            <th>명령어</th>
+            <th>Worktree와의 관계</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>git stash</td>
+            <td>Worktree를 사용하면 stash 사용 빈도가 크게 줄어듦</td>
+          </tr>
+          <tr>
+            <td>git switch / checkout</td>
+            <td>Worktree 내에서는 일반적인 브랜치 전환과 동일하게 동작</td>
+          </tr>
+          <tr>
+            <td>git clone --bare</td>
+            <td>Bare repo + worktree 패턴의 기반</td>
+          </tr>
+          <tr>
+            <td>git submodule</td>
+            <td>새 워크트리에서 별도 초기화 필요</td>
+          </tr>
+          <tr>
+            <td>git bisect</td>
+            <td>별도 워크트리에서 bisect를 실행하면 메인 작업에 영향 없음</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>📊 요구 Git 버전</h3>
+      <table class="ref-table">
+        <thead>
+          <tr>
+            <th>기능</th>
+            <th>최소 Git 버전</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>git worktree (기본)</td><td>2.5+</td></tr>
+          <tr><td>git worktree list</td><td>2.7+</td></tr>
+          <tr><td>git worktree move</td><td>2.17+</td></tr>
+          <tr><td>git worktree remove</td><td>2.17+</td></tr>
+          <tr><td>git worktree lock/unlock</td><td>2.10+</td></tr>
+          <tr><td>git worktree repair</td><td>2.30+</td></tr>
+          <tr><td>git worktree list --format</td><td>2.36+</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  Git Worktree 완벽 가이드 · 순수 HTML/CSS/JS · 외부 의존성 없음
+</footer>
+
+<script>
+// ==================== Tab Navigation ====================
+const tabBtns = document.querySelectorAll('.tab-btn');
+const tabContents = document.querySelectorAll('.tab-content');
+
+tabBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = btn.dataset.tab;
+    tabBtns.forEach(b => b.classList.remove('active'));
+    tabContents.forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + target).classList.add('active');
+  });
+});
+
+// ==================== Accordion ====================
+function toggleAccordion(header) {
+  const accordion = header.parentElement;
+  accordion.classList.toggle('open');
+}
+
+// ==================== Copy Code ====================
+function copyCode(btn) {
+  const codeBlock = btn.closest('.code-block');
+  const code = codeBlock.querySelector('code');
+  const text = code.innerText;
+
+  navigator.clipboard.writeText(text).then(() => {
+    btn.classList.add('copied');
+    btn.innerHTML = '✅ 복사됨';
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = '📋 복사';
+    }, 2000);
+  }).catch(() => {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    btn.classList.add('copied');
+    btn.innerHTML = '✅ 복사됨';
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = '📋 복사';
+    }, 2000);
+  });
+}
+
+// ==================== Tooltip for Diagrams ====================
+const tooltip = document.getElementById('tooltip');
+
+document.querySelectorAll('.tree-node').forEach(node => {
+  node.addEventListener('mouseenter', (e) => {
+    const text = node.dataset.tooltip;
+    if (!text) return;
+    tooltip.textContent = text;
+    tooltip.classList.add('visible');
+  });
+
+  node.addEventListener('mousemove', (e) => {
+    const x = e.clientX + 12;
+    const y = e.clientY + 12;
+    const maxX = window.innerWidth - tooltip.offsetWidth - 20;
+    const maxY = window.innerHeight - tooltip.offsetHeight - 20;
+    tooltip.style.left = Math.min(x, maxX) + 'px';
+    tooltip.style.top = Math.min(y, maxY) + 'px';
+  });
+
+  node.addEventListener('mouseleave', () => {
+    tooltip.classList.remove('visible');
+  });
+
+  node.addEventListener('click', (e) => {
+    const text = node.dataset.tooltip;
+    if (!text) return;
+    tooltip.textContent = text;
+    tooltip.classList.add('visible');
+    const rect = node.getBoundingClientRect();
+    tooltip.style.left = (rect.left + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
+    tooltip.style.top = (rect.bottom + 8) + 'px';
+    setTimeout(() => tooltip.classList.remove('visible'), 3000);
+  });
+});
+
+// ==================== Search ====================
+const searchInput = document.getElementById('searchInput');
+const searchResults = document.getElementById('searchResults');
+
+const searchData = [
+  { cmd: 'git worktree add <path> [<branch>]', desc: '새 워크트리 생성', tab: 'commands', keywords: 'add 추가 생성 새로운 브랜치 체크아웃 checkout' },
+  { cmd: 'git worktree add -b <branch> <path>', desc: '새 브랜치와 함께 워크트리 생성', tab: 'commands', keywords: 'add 추가 생성 새 브랜치 -b' },
+  { cmd: 'git worktree add --detach <path> <commit>', desc: 'Detached HEAD로 워크트리 생성', tab: 'commands', keywords: 'add detach 분리 커밋 태그' },
+  { cmd: 'git worktree list', desc: '워크트리 목록 조회', tab: 'commands', keywords: 'list 목록 조회 확인 현재' },
+  { cmd: 'git worktree list --porcelain', desc: '스크립트 파싱용 목록 출력', tab: 'commands', keywords: 'list porcelain 스크립트 파싱' },
+  { cmd: 'git worktree remove <path>', desc: '워크트리 제거', tab: 'commands', keywords: 'remove 삭제 제거 정리' },
+  { cmd: 'git worktree remove --force <path>', desc: '변경사항 무시하고 강제 제거', tab: 'commands', keywords: 'remove force 강제 삭제' },
+  { cmd: 'git worktree move <path> <new-path>', desc: '워크트리 경로 이동', tab: 'commands', keywords: 'move 이동 경로 변경' },
+  { cmd: 'git worktree prune', desc: '고아 워크트리 메타데이터 정리', tab: 'commands', keywords: 'prune 정리 청소 고아 orphan stale' },
+  { cmd: 'git worktree prune --dry-run', desc: '정리 대상 미리보기', tab: 'commands', keywords: 'prune dry-run 미리보기 확인' },
+  { cmd: 'git worktree lock <path>', desc: '워크트리 잠금', tab: 'commands', keywords: 'lock 잠금 보호 이동식' },
+  { cmd: 'git worktree unlock <path>', desc: '워크트리 잠금 해제', tab: 'commands', keywords: 'unlock 잠금해제 풀기' },
+  { cmd: 'git worktree repair', desc: '깨진 워크트리 연결 복구', tab: 'commands', keywords: 'repair 수리 복구 연결 깨진' },
+  { cmd: 'git clone --bare', desc: 'Bare 저장소 클론 (worktree 패턴용)', tab: 'internals', keywords: 'bare clone 저장소 패턴' },
+  { cmd: 'git submodule update --init', desc: '새 워크트리에서 서브모듈 초기화', tab: 'tips', keywords: 'submodule 서브모듈 초기화' },
+  { cmd: '핫픽스 워크플로우', desc: '긴급 버그 수정 시 워크트리 활용', tab: 'scenarios', keywords: '핫픽스 hotfix 긴급 버그 수정' },
+  { cmd: 'PR 리뷰 워크플로우', desc: '코드 리뷰 시 별도 워크트리 활용', tab: 'scenarios', keywords: 'pr review 리뷰 코드리뷰' },
+  { cmd: 'CI 빌드 워크플로우', desc: '병렬 CI 빌드에 워크트리 활용', tab: 'scenarios', keywords: 'ci cd 빌드 파이프라인 병렬' },
+  { cmd: '.git 파일 구조', desc: 'Linked worktree의 .git 파일 동작 원리', tab: 'internals', keywords: '.git 파일 디렉토리 구조 원리 gitdir' },
+  { cmd: 'Object Store 공유', desc: '워크트리 간 Git 객체 공유 구조', tab: 'internals', keywords: 'object store 공유 객체 commit tree blob' },
+];
+
+searchInput.addEventListener('input', (e) => {
+  const query = e.target.value.trim().toLowerCase();
+  if (!query) {
+    searchResults.classList.remove('active');
+    return;
+  }
+
+  const results = searchData.filter(item =>
+    item.cmd.toLowerCase().includes(query) ||
+    item.desc.toLowerCase().includes(query) ||
+    item.keywords.toLowerCase().includes(query)
+  );
+
+  if (results.length === 0) {
+    searchResults.innerHTML = '<div class="search-result-item"><div class="desc">검색 결과가 없습니다</div></div>';
+  } else {
+    searchResults.innerHTML = results.map(item => {
+      const highlightedCmd = item.cmd.replace(
+        new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'),
+        '<mark>$1</mark>'
+      );
+      return `<div class="search-result-item" onclick="navigateToResult('${item.tab}')">
+        <div class="cmd">${highlightedCmd}</div>
+        <div class="desc">${item.desc}</div>
+      </div>`;
+    }).join('');
+  }
+
+  searchResults.classList.add('active');
+});
+
+searchInput.addEventListener('blur', () => {
+  setTimeout(() => searchResults.classList.remove('active'), 200);
+});
+
+searchInput.addEventListener('focus', () => {
+  if (searchInput.value.trim()) {
+    searchInput.dispatchEvent(new Event('input'));
+  }
+});
+
+function navigateToResult(tabId) {
+  const btn = document.querySelector(`[data-tab="${tabId}"]`);
+  if (btn) {
+    btn.click();
+    searchResults.classList.remove('active');
+    searchInput.value = '';
+  }
+}
+
+// ==================== Keyboard shortcut ====================
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    searchInput.focus();
+  }
+  if (e.key === 'Escape') {
+    searchInput.blur();
+    searchResults.classList.remove('active');
+  }
+});
+
+// Placeholder hint
+searchInput.setAttribute('placeholder', '명령어 또는 키워드 검색... (Ctrl+K)');
+</script>
+
+</body>
+</html>

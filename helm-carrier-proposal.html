@@ -1,0 +1,2687 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Helm Carrier — Dynamic Workflows for Fleet · Proposal</title>
+<meta name="description" content="Fleet 메인테이너 검토용 — Anthropic Dynamic Workflows 분석과 Helm Carrier 도입 청사진" />
+<style>
+  /* === Reset & base === */
+  *,*::before,*::after { box-sizing: border-box; }
+  :root {
+    --bg: #0a0e1a;
+    --bg-elev: #131829;
+    --bg-elev-2: #1a2138;
+    --border: #1f2740;
+    --border-strong: #2d3654;
+    --text: #e8eef5;
+    --text-muted: #8b95a8;
+    --text-dim: #5d6678;
+    --accent: #d4af37;
+    --accent-soft: #b8941f;
+    --accent-glow: rgba(212, 175, 55, 0.15);
+    --link: #7cc4ff;
+    --success: #4ade80;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --info: #60a5fa;
+    --code-bg: #0d1224;
+    --code-border: #1f2740;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro KR", "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  }
+  body.light {
+    --bg: #f7f8fb;
+    --bg-elev: #ffffff;
+    --bg-elev-2: #f0f3f8;
+    --border: #d8dde6;
+    --border-strong: #b8c0cf;
+    --text: #1a2138;
+    --text-muted: #4a5269;
+    --text-dim: #8b95a8;
+    --accent: #9c7e1d;
+    --accent-soft: #b8941f;
+    --accent-glow: rgba(156, 126, 29, 0.12);
+    --link: #1e6fc7;
+    --code-bg: #f0f3f8;
+    --code-border: #d8dde6;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.65;
+    letter-spacing: -0.005em;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* === Layout === */
+  .shell {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    max-width: 1380px;
+    margin: 0 auto;
+    gap: 0;
+  }
+  @media (max-width: 960px) {
+    .shell { grid-template-columns: 1fr; }
+    .toc { display: none !important; }
+  }
+  /* === TOC === */
+  .toc {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 28px 18px 28px 28px;
+    border-right: 1px solid var(--border);
+    background: var(--bg);
+    font-size: 13.5px;
+  }
+  .toc .logo {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .toc .title {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 22px;
+    font-size: 14px;
+    line-height: 1.35;
+  }
+  .toc ol { list-style: none; padding: 0; margin: 0; counter-reset: toc; }
+  .toc li { counter-increment: toc; margin: 2px 0; }
+  .toc a {
+    display: block;
+    padding: 6px 10px 6px 30px;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-radius: 6px;
+    position: relative;
+    transition: all 0.15s;
+  }
+  .toc a::before {
+    content: counter(toc, decimal-leading-zero);
+    position: absolute;
+    left: 8px;
+    top: 6px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text-dim);
+  }
+  .toc a:hover { background: var(--bg-elev); color: var(--text); }
+  .toc a.active {
+    background: var(--accent-glow);
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .toc a.active::before { color: var(--accent); }
+  /* === Main === */
+  main { padding: 0 56px 80px; }
+  @media (max-width: 960px) { main { padding: 0 22px 60px; } }
+  section { padding-top: 60px; scroll-margin-top: 24px; }
+  section:first-of-type { padding-top: 36px; }
+  h1, h2, h3, h4 { font-weight: 600; letter-spacing: -0.02em; line-height: 1.25; }
+  h2 {
+    font-size: 28px;
+    margin: 0 0 8px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+  h2 .num {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+  }
+  h3 { font-size: 19px; margin: 36px 0 12px; color: var(--text); }
+  h4 { font-size: 15.5px; margin: 24px 0 8px; color: var(--text); }
+  p { margin: 12px 0; }
+  a { color: var(--link); }
+  code, pre, .mono { font-family: var(--mono); }
+  :not(pre) > code {
+    background: var(--code-bg);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.88em;
+    border: 1px solid var(--code-border);
+    color: var(--accent);
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.55;
+    position: relative;
+  }
+  pre .copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--bg-elev-2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  pre:hover .copy-btn { opacity: 1; }
+  pre .copy-btn:hover { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  ul, ol { padding-left: 22px; }
+  li { margin: 4px 0; }
+  /* === Hero === */
+  .hero {
+    margin: 0 -56px;
+    padding: 80px 56px 60px;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, var(--accent-glow), transparent),
+      radial-gradient(800px 400px at 10% 110%, rgba(96, 165, 250, 0.08), transparent),
+      linear-gradient(180deg, var(--bg-elev) 0%, var(--bg) 100%);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  @media (max-width: 960px) { .hero { margin: 0 -22px; padding: 60px 22px 40px; } }
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(212, 175, 55, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(212, 175, 55, 0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+  .hero > * { position: relative; }
+  .hero .kicker {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.22em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin: 0 0 18px;
+  }
+  .hero h1 {
+    font-size: clamp(32px, 5vw, 56px);
+    margin: 0 0 18px;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+  }
+  .hero h1 .accent { color: var(--accent); }
+  .hero .lede {
+    font-size: 17px;
+    color: var(--text-muted);
+    max-width: 740px;
+    line-height: 1.6;
+    margin: 0 0 32px;
+  }
+  .hero .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px 30px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .hero .meta b { color: var(--text); font-weight: 600; }
+  /* === TL;DR grid === */
+  .tldr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin: 24px 0;
+  }
+  .tldr-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    transition: all 0.2s;
+  }
+  .tldr-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .tldr-card .label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .tldr-card .value {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+  .tldr-card .desc {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+  /* === Tables === */
+  .table-wrap { overflow-x: auto; margin: 16px 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-elev);
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 13.5px;
+    border: 1px solid var(--border);
+  }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th {
+    background: var(--bg-elev-2);
+    font-weight: 600;
+    color: var(--text);
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg-elev-2); }
+  /* === Pills === */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-family: var(--mono);
+    letter-spacing: 0.06em;
+    border: 1px solid var(--border-strong);
+    background: var(--bg-elev);
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+  .pill.high { color: var(--danger); border-color: var(--danger); }
+  .pill.med { color: var(--warning); border-color: var(--warning); }
+  .pill.low { color: var(--success); border-color: var(--success); }
+  .pill.locked { color: var(--accent); border-color: var(--accent); }
+  .pill.open { color: var(--info); border-color: var(--info); }
+  /* === Callout === */
+  .callout {
+    margin: 20px 0;
+    padding: 16px 18px;
+    border-left: 3px solid var(--accent);
+    background: var(--bg-elev);
+    border-radius: 0 8px 8px 0;
+  }
+  .callout.warn { border-left-color: var(--warning); }
+  .callout.danger { border-left-color: var(--danger); }
+  .callout.info { border-left-color: var(--info); }
+  .callout .label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.18em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .callout.warn .label { color: var(--warning); }
+  .callout.danger .label { color: var(--danger); }
+  .callout.info .label { color: var(--info); }
+  .callout p:last-child { margin-bottom: 0; }
+  /* === Tabs (Nimitz decisions) === */
+  .tabs { margin: 20px 0; }
+  .tab-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0;
+  }
+  .tab-btn {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 10px 14px;
+    color: var(--text-muted);
+    font-family: var(--sans);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: -1px;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .tab-panel { display: none; padding: 22px 0; }
+  .tab-panel.active { display: block; }
+  .decision-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 16px 0; }
+  @media (max-width: 720px) { .decision-grid { grid-template-columns: 1fr; } }
+  .decision-block {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .decision-block h5 {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin: 0 0 8px;
+    font-weight: 600;
+  }
+  .decision-block.choose h5 { color: var(--success); }
+  .decision-block.unknown h5 { color: var(--warning); }
+  .decision-block.rationale h5 { color: var(--info); }
+  /* === Waves timeline === */
+  .waves {
+    display: grid;
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .wave-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .wave-card:hover { border-color: var(--accent); }
+  .wave-card summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 16px 18px;
+    display: grid;
+    grid-template-columns: 60px 1fr auto auto;
+    gap: 16px;
+    align-items: center;
+  }
+  .wave-card summary::-webkit-details-marker { display: none; }
+  .wave-num {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--accent-glow);
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .wave-title { font-size: 15.5px; font-weight: 600; color: var(--text); }
+  .wave-subtitle { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+  .wave-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+  .wave-toggle {
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 18px;
+    transition: transform 0.2s;
+  }
+  .wave-card[open] .wave-toggle { transform: rotate(45deg); }
+  .wave-body {
+    padding: 4px 18px 22px;
+    border-top: 1px solid var(--border);
+    margin-top: -1px;
+    padding-top: 18px;
+  }
+  .wave-body h6 {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin: 16px 0 8px;
+    font-weight: 600;
+  }
+  .wave-body h6:first-child { margin-top: 0; }
+  /* === Diagrams === */
+  .diagram {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    margin: 20px 0;
+    text-align: center;
+    overflow-x: auto;
+  }
+  .diagram svg { max-width: 100%; height: auto; }
+  .diagram-caption {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 12px;
+    font-style: italic;
+  }
+  /* === Comparison columns === */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin: 20px 0;
+  }
+  @media (max-width: 720px) { .compare { grid-template-columns: 1fr; } }
+  .compare-col {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .compare-col h4 {
+    margin-top: 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .compare-col h4 .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--accent);
+  }
+  .compare-col.them h4 .dot { background: var(--info); }
+  /* === Convo timeline === */
+  .convo { display: grid; gap: 14px; margin: 20px 0; }
+  .convo-turn {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+  }
+  .convo-turn.admiral { border-left-color: var(--info); }
+  .convo-turn .who {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .convo-turn.admiral .who { color: var(--info); }
+  .convo-turn .msg { font-size: 13.5px; line-height: 1.55; color: var(--text); }
+  /* === Header bar === */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(10, 14, 26, 0.92);
+    backdrop-filter: saturate(120%) blur(10px);
+    -webkit-backdrop-filter: saturate(120%) blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+  }
+  body.light .topbar { background: rgba(247, 248, 251, 0.92); }
+  .topbar .brand {
+    font-family: var(--mono);
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  .topbar .actions { display: flex; gap: 8px; align-items: center; }
+  .icon-btn {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .icon-btn:hover { color: var(--accent); border-color: var(--accent); }
+  /* === Print === */
+  @media print {
+    .toc, .topbar, .copy-btn { display: none !important; }
+    body { background: white; color: black; }
+    main { padding: 0; }
+    section { page-break-inside: avoid; }
+    .hero { background: white; border: 1px solid #333; padding: 30px; }
+  }
+  /* === Misc === */
+  .lead-grid {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 16px;
+    margin: 16px 0;
+    align-items: start;
+  }
+  @media (max-width: 720px) { .lead-grid { grid-template-columns: 1fr; } }
+  .lead-grid > .k {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding-top: 4px;
+  }
+  .quote {
+    font-size: 17px;
+    line-height: 1.5;
+    color: var(--text);
+    font-style: italic;
+    margin: 24px 0;
+    padding: 18px 22px;
+    border-left: 3px solid var(--accent);
+    background: linear-gradient(90deg, var(--accent-glow), transparent);
+    border-radius: 0 8px 8px 0;
+  }
+  hr.sep {
+    border: none;
+    border-top: 1px dashed var(--border-strong);
+    margin: 32px 0;
+  }
+  .anchor-link {
+    color: var(--text-dim);
+    margin-left: 6px;
+    opacity: 0;
+    transition: opacity 0.15s;
+    text-decoration: none;
+  }
+  h2:hover .anchor-link, h3:hover .anchor-link { opacity: 1; }
+  .badge-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+
+  /* === Plan verbatim block === */
+  .plan-verbatim {
+    margin: 20px 0;
+    background: var(--bg-elev);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px var(--accent-glow), 0 0 30px rgba(212, 175, 55, 0.06);
+  }
+  .verbatim-summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-elev-2);
+    border-bottom: 1px solid var(--accent);
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .verbatim-summary::-webkit-details-marker { display: none; }
+  .verbatim-summary:hover { background: var(--accent-glow); }
+  .verbatim-icon { font-size: 16px; }
+  .verbatim-path {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .verbatim-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    margin-left: auto;
+    padding-right: 12px;
+  }
+  .verbatim-toggle {
+    font-family: var(--mono);
+    color: var(--accent);
+    font-size: 14px;
+    transition: transform 0.2s;
+  }
+  .plan-verbatim[open] .verbatim-toggle { transform: rotate(180deg); }
+  .verbatim-body {
+    padding: 24px 28px 28px;
+    background:
+      linear-gradient(180deg, rgba(212, 175, 55, 0.03) 0px, transparent 40px),
+      var(--bg-elev);
+  }
+  .verbatim-body > h4.vb-h1 {
+    font-size: 20px;
+    margin: 0 0 8px;
+    color: var(--accent);
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--accent);
+    letter-spacing: -0.01em;
+  }
+  .verbatim-body h4.vb-h2 {
+    font-size: 16.5px;
+    margin: 28px 0 10px;
+    padding: 0 0 6px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .verbatim-body h5.vb-h3 {
+    font-size: 14.5px;
+    margin: 20px 0 8px;
+    color: var(--accent);
+    font-family: var(--sans);
+    padding: 6px 12px;
+    background: var(--bg-elev-2);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    display: inline-block;
+  }
+  .verbatim-body .vb-comment,
+  .verbatim-body .vb-comment-inline {
+    color: var(--text-dim);
+    font-style: italic;
+    font-size: 12px;
+    font-weight: 400;
+  }
+  .verbatim-body .vb-comment-inline { font-size: 12px; margin-left: 4px; }
+  .verbatim-body .vb-meta-list {
+    list-style: none;
+    padding-left: 0;
+    margin: 12px 0;
+  }
+  .verbatim-body .vb-meta-list li {
+    padding: 4px 0;
+    font-size: 13.5px;
+  }
+  .verbatim-body .vb-checklist {
+    list-style: none;
+    padding-left: 0;
+  }
+  .verbatim-body .vb-checklist li {
+    padding: 5px 0;
+    font-size: 13.5px;
+    font-family: var(--mono);
+    color: var(--text-muted);
+  }
+  .verbatim-body .vb-totals {
+    margin-top: 24px;
+    padding: 14px 18px;
+    background: var(--accent-glow);
+    border-radius: 8px;
+    font-size: 13.5px;
+  }
+  .verbatim-body ol, .verbatim-body ul { padding-left: 22px; }
+  .verbatim-body ul ul, .verbatim-body ol ol, .verbatim-body ul ol, .verbatim-body ol ul {
+    margin: 4px 0;
+  }
+  .verbatim-body pre { margin: 10px 0; }
+
+  /* === Copy markdown button === */
+  .copy-md-btn {
+    background: var(--accent);
+    color: var(--bg);
+    border: 1px solid var(--accent);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-left: 8px;
+  }
+  .copy-md-btn:hover {
+    background: var(--accent-soft);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+  }
+  .copy-md-btn:active { transform: translateY(0); }
+  .copy-md-btn.copied {
+    background: var(--success);
+    border-color: var(--success);
+    color: var(--bg);
+  }
+  .copy-md-btn.errored {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #fff;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">⚓ FLEET · INTERNAL PROPOSAL</div>
+  <div class="actions">
+    <button class="icon-btn" id="themeToggle" title="Toggle theme">◐ THEME</button>
+    <button class="icon-btn" onclick="window.print()">⎙ PRINT</button>
+  </div>
+</div>
+
+<div class="shell">
+
+<aside class="toc" id="toc">
+  <div class="logo">PROPOSAL · v0.1</div>
+  <div class="title">Helm Carrier — Dynamic Workflows for Fleet</div>
+  <nav>
+    <ol>
+      <li><a href="#summary">Executive Summary</a></li>
+      <li><a href="#analysis">Dynamic Workflows 분석</a></li>
+      <li><a href="#mapping">Fleet ↔ DW 매핑</a></li>
+      <li><a href="#helm">Helm Carrier 설계</a></li>
+      <li><a href="#nimitz">Nimitz 결정 (7)</a></li>
+      <li><a href="#kirov">Kirov Plan (Waves)</a></li>
+      <li><a href="#watchout">Watchout · Risks</a></li>
+      <li><a href="#next">Next Steps</a></li>
+      <li><a href="#appendix">Appendix</a></li>
+    </ol>
+  </nav>
+</aside>
+
+<main>
+
+<header class="hero">
+  <p class="kicker">⚓ Fleet Internal · Maintainer Review</p>
+  <h1>Helm Carrier — <span class="accent">Dynamic Workflows</span><br/>for Fleet</h1>
+  <p class="lede">
+    Anthropic이 2026년 5월 28일 Claude Code에 공개한 Dynamic Workflows 기능을 분해하고,
+    동일한 효과를 Fleet 도크트린에 정합시키는 신규 캐리어 — <b>Helm</b> — 의 도입 청사진을 제출합니다.
+    Nimitz 함장의 doctrinal 판정과 Kirov 함장의 7-wave 실행 계획이 본문에 포함되어 있으며,
+    실제 코드 발주가 아닌 <b>Fleet 메인테이너 검토용 단일 문서</b>로 작성되었습니다.
+  </p>
+  <div class="meta">
+    <div><b>FROM</b> · Admiral (제독)</div>
+    <div><b>TO</b> · Fleet Maintainer</div>
+    <div><b>DATE</b> · 2026-06-02</div>
+    <div><b>STATUS</b> · Draft · v0.1</div>
+    <div><b>READ TIME</b> · ~18 min</div>
+  </div>
+</header>
+
+<!-- ============================================================ -->
+<section id="summary">
+  <h2><span class="num">§ 01</span> Executive Summary</h2>
+
+  <div class="quote">
+    Dynamic Workflows의 JS 런타임은 추론을 하지 않는다. 그것은 <b>Promise.all + 세마포어 + 디스크 영속화</b>를
+    Claude API 호출 위에 두른 코디네이터일 뿐이다. 따라서 Fleet 도크트린 내에서 등가물을 만드는 일은 가능하다 — 그리고 가치 있다.
+  </div>
+
+  <div class="tldr-grid">
+    <div class="tldr-card">
+      <div class="label">What</div>
+      <div class="value">Helm Carrier</div>
+      <div class="desc">Admiral이 작성한 동적 JS 스크립트를 격리 Deno 런타임에서 실행, 자식 sub-agent를 fan-out하는 신규 독립 캐리어.</div>
+    </div>
+    <div class="tldr-card">
+      <div class="label">Why</div>
+      <div class="value">Context 해방</div>
+      <div class="desc">현재 Fleet은 중간 결과가 Admiral 컨텍스트에 누적되어 1,000-agent 확장이 불가. Helm은 결과를 디스크와 자식 프로세스에 격리.</div>
+    </div>
+    <div class="tldr-card">
+      <div class="label">Scale</div>
+      <div class="value">16 / 1,000</div>
+      <div class="desc">동시 16개 / 누적 1,000개 sub-agent. Manifest로 사전 선언, 런타임이 하드 강제.</div>
+    </div>
+    <div class="tldr-card">
+      <div class="label">Effort</div>
+      <div class="value">~5.5 ideal-days</div>
+      <div class="desc">7 wave 구성 — Verification → Schema → Sandbox → Fan-out → Failure Policy → Demo → Docs. Wave 1 contract verification으로 0.25d.</div>
+    </div>
+    <div class="tldr-card">
+      <div class="label">Risk</div>
+      <div class="value">1 HIGH 잔존</div>
+      <div class="desc">U-6 (mutation 롤백 원자성)만 잔존. U-1·U-2·U-3는 Nimitz LOCK으로 사전 결정(L-7·L-8·L-9). R-1·R-2 등급 축소됨.</div>
+    </div>
+    <div class="tldr-card">
+      <div class="label">Scope OUT</div>
+      <div class="value">Ohio 미수정</div>
+      <div class="desc">Ohio는 정적 plan_file 소비자, Helm은 동적 생성+실행 복합체. 역할 직교. 1,000-agent 부하 테스트는 별도 후속.</div>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <div class="label">⚓ 본 문서가 답하는 것</div>
+    <p>
+      ① Dynamic Workflows의 실체는 무엇인가 · ② Fleet 도크트린에 어떻게 매핑되는가 ·
+      ③ Helm을 어떻게 도입할 것인가 · ④ 무엇을 결정하고 무엇을 미루는가 ·
+      ⑤ 메인테이너가 검토해야 할 점은 무엇인가.
+    </p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="analysis">
+  <h2><span class="num">§ 02</span> Dynamic Workflows 분석</h2>
+  <p>
+    2026-05-28 Anthropic이 공개한 기능. Claude가 <b>JavaScript 오케스트레이션 스크립트를 동적으로 작성</b>하고,
+    격리 런타임이 이를 실행하며, 최대 <b>16 concurrent / 1,000 total</b> sub-agent를 병렬 fan-out한다.
+    중간 결과는 스크립트 변수에 저장되어 Claude의 컨텍스트 윈도우를 오염시키지 않는다.
+  </p>
+
+  <h3>2.1 런타임의 9가지 책임</h3>
+  <p>핵심 통찰: 그 JS 런타임은 <b>AI를 하지 않는다</b>. 평범한 코디네이터 프로세스다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:40px">#</th><th>책임</th><th>실체</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>스크립트 실행 엔진</td><td>V8/Node 같은 평범한 JS VM</td></tr>
+        <tr><td>2</td><td>Agent 호출 프리미티브</td><td>내부적으로 <code>claude -p</code> 또는 Anthropic API 호출</td></tr>
+        <tr><td>3</td><td>동시성 제어</td><td>세마포어 (<code>p-limit</code> 등)</td></tr>
+        <tr><td>4</td><td>중간 상태 보관</td><td>JS 변수 — RAM 상의 객체</td></tr>
+        <tr><td>5</td><td>디스크 영속화</td><td>체크포인트 JSON</td></tr>
+        <tr><td>6</td><td>라이프사이클</td><td>pause/cancel 시그널, 자식 프로세스 트리 관리</td></tr>
+        <tr><td>7</td><td>토큰/비용 회계</td><td>API 응답 메타데이터 집계</td></tr>
+        <tr><td>8</td><td>권한 브로커링</td><td>부모 대화로 prompt 전달</td></tr>
+        <tr><td>9</td><td><code>/workflows</code> TUI</td><td>상태 파일 읽고 렌더링</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>본질적으로 런타임이 하는 일을 한 줄로 압축하면:</p>
+  <pre><code>const results = await Promise.all(
+  prompts.map(p =&gt; limit(() =&gt; spawnClaude(p)))
+);</code></pre>
+  <p>나머지는 모두 폴리시(polish)이다.</p>
+
+  <h3>2.2 워크플로우 패턴 — <code>/deep-research</code> 사례</h3>
+  <div class="diagram">
+    <svg viewBox="0 0 700 240" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 z" fill="#d4af37"/>
+        </marker>
+      </defs>
+      <!-- Phase 1 -->
+      <rect x="20" y="40" width="140" height="160" rx="8" fill="#131829" stroke="#1f2740"/>
+      <text x="90" y="62" fill="#d4af37" font-family="monospace" font-size="10" text-anchor="middle" letter-spacing="2">PHASE 1</text>
+      <text x="90" y="82" fill="#e8eef5" font-size="13" font-weight="600" text-anchor="middle">다각도 검색</text>
+      <text x="90" y="100" fill="#8b95a8" font-size="11" text-anchor="middle">병렬 fan-out</text>
+      <circle cx="50" cy="135" r="10" fill="#60a5fa"/>
+      <circle cx="90" cy="135" r="10" fill="#60a5fa"/>
+      <circle cx="130" cy="135" r="10" fill="#60a5fa"/>
+      <circle cx="50" cy="165" r="10" fill="#60a5fa"/>
+      <circle cx="90" cy="165" r="10" fill="#60a5fa"/>
+      <circle cx="130" cy="165" r="10" fill="#60a5fa"/>
+      <text x="90" y="192" fill="#5d6678" font-size="10" text-anchor="middle">N agents</text>
+
+      <!-- arrow 1 -->
+      <line x1="165" y1="120" x2="200" y2="120" stroke="#d4af37" stroke-width="2" marker-end="url(#arrow)"/>
+
+      <!-- Phase 2 -->
+      <rect x="210" y="40" width="140" height="160" rx="8" fill="#131829" stroke="#1f2740"/>
+      <text x="280" y="62" fill="#d4af37" font-family="monospace" font-size="10" text-anchor="middle" letter-spacing="2">PHASE 2</text>
+      <text x="280" y="82" fill="#e8eef5" font-size="13" font-weight="600" text-anchor="middle">교차검증</text>
+      <text x="280" y="100" fill="#8b95a8" font-size="11" text-anchor="middle">독립 verifier</text>
+      <rect x="232" y="125" width="40" height="20" rx="3" fill="#4ade80" opacity="0.8"/>
+      <rect x="286" y="125" width="40" height="20" rx="3" fill="#4ade80" opacity="0.8"/>
+      <rect x="232" y="155" width="40" height="20" rx="3" fill="#ef4444" opacity="0.7"/>
+      <rect x="286" y="155" width="40" height="20" rx="3" fill="#4ade80" opacity="0.8"/>
+      <text x="280" y="192" fill="#5d6678" font-size="10" text-anchor="middle">verify ✓/✗</text>
+
+      <!-- arrow 2 -->
+      <line x1="355" y1="120" x2="390" y2="120" stroke="#d4af37" stroke-width="2" marker-end="url(#arrow)"/>
+
+      <!-- Phase 3 -->
+      <rect x="400" y="40" width="140" height="160" rx="8" fill="#131829" stroke="#1f2740"/>
+      <text x="470" y="62" fill="#d4af37" font-family="monospace" font-size="10" text-anchor="middle" letter-spacing="2">PHASE 3</text>
+      <text x="470" y="82" fill="#e8eef5" font-size="13" font-weight="600" text-anchor="middle">투표 · 합의</text>
+      <text x="470" y="100" fill="#8b95a8" font-size="11" text-anchor="middle">quorum vote</text>
+      <text x="470" y="145" fill="#d4af37" font-size="28" font-weight="700" text-anchor="middle">2/3</text>
+      <text x="470" y="170" fill="#8b95a8" font-size="11" text-anchor="middle">survival</text>
+
+      <!-- arrow 3 -->
+      <line x1="545" y1="120" x2="580" y2="120" stroke="#d4af37" stroke-width="2" marker-end="url(#arrow)"/>
+
+      <!-- Result -->
+      <rect x="590" y="60" width="90" height="120" rx="8" fill="#0a0e1a" stroke="#d4af37" stroke-width="2"/>
+      <text x="635" y="100" fill="#d4af37" font-family="monospace" font-size="10" text-anchor="middle" letter-spacing="2">RESULT</text>
+      <text x="635" y="125" fill="#e8eef5" font-size="13" font-weight="600" text-anchor="middle">검증된</text>
+      <text x="635" y="142" fill="#e8eef5" font-size="13" font-weight="600" text-anchor="middle">인용</text>
+      <text x="635" y="160" fill="#8b95a8" font-size="11" text-anchor="middle">보고서</text>
+
+      <text x="350" y="220" fill="#5d6678" font-size="11" text-anchor="middle" font-style="italic">Phase 단위 조직화 + adversarial review — 본 함대 Code/Security Review 사이클과 동일 사상</text>
+    </svg>
+    <div class="diagram-caption">Figure 2.1 — <code>/deep-research</code> 번들 워크플로우의 phase 구조</div>
+  </div>
+
+  <h3>2.3 라이프사이클</h3>
+  <ol>
+    <li><b>사용자 요청</b> ("workflow" 키워드 또는 <code>/deep-research</code>)</li>
+    <li><b>승인 프롬프트</b> — Default(매번) / Auto(첫 1회) / <code>claude -p</code>(스킵)</li>
+    <li><b>스크립트 작성</b> → <code>~/.claude/projects/</code> 세션 디렉토리에 저장</li>
+    <li><b>격리 런타임 실행</b> — 백그라운드, 대화 응답성 유지</li>
+    <li><b>/workflows TUI</b>로 모니터링 (↑↓ phase, Enter 상세, p 일시중지, s 저장)</li>
+    <li><b>완료</b> → 검증된 결과만 대화로 반환 (스트리밍 아닌 일괄 보고)</li>
+  </ol>
+</section>
+
+<!-- ============================================================ -->
+<section id="mapping">
+  <h2><span class="num">§ 03</span> Fleet ↔ Dynamic Workflows 매핑</h2>
+  <p>
+    Fleet은 이미 Dynamic Workflows의 <b>수동·동기 버전</b>을 구현하고 있다.
+    Phase 기반 protocol, 병렬 carrier_dispatch, adversarial review, Result Integrity Standing Order가
+    그 어휘에 직접 대응한다.
+  </p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Dynamic Workflows 요소</th>
+          <th>Fleet 대응 수단</th>
+          <th>격차</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Phase 단위 조직화</td><td>Fleet Action Protocol 7-Phase</td><td><span class="pill low">동등</span></td></tr>
+        <tr><td>병렬 fan-out</td><td>단일 응답 내 다중 <code>carrier_dispatch</code></td><td><span class="pill med">스케일 한계</span></td></tr>
+        <tr><td>Adversarial review</td><td>Phase 6 — Code Review ∥ Security Review</td><td><span class="pill low">동등</span></td></tr>
+        <tr><td>검증된 결과만 반환</td><td>Result Integrity Standing Order</td><td><span class="pill low">동등</span></td></tr>
+        <tr><td>재귀 자체 검증</td><td>Deep Dive Standing Order</td><td><span class="pill low">동등</span></td></tr>
+        <tr><td>백그라운드 실행</td><td><code>run_in_background</code> + Monitor</td><td><span class="pill low">동등</span></td></tr>
+        <tr><td>다중 phase 강제</td><td>Kirov plan_file → Ohio wave 실행</td><td><span class="pill low">동등</span></td></tr>
+        <tr><td>중간 결과 격리</td><td><b>없음</b> — Admiral 컨텍스트에 누적</td><td><span class="pill high">결정적 격차</span></td></tr>
+        <tr><td>1,000-agent 스케일</td><td><b>없음</b> — 컨텍스트 그릇 한계</td><td><span class="pill high">결정적 격차</span></td></tr>
+        <tr><td>오케스트레이션 스크립트 영속화</td><td><b>없음</b> — doctrine·persona가 일부 대체</td><td><span class="pill med">부분 격차</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="compare">
+    <div class="compare-col">
+      <h4><span class="dot"></span> Fleet (현재)</h4>
+      <p><b>그릇</b> — Admiral 컨텍스트 윈도우</p>
+      <p><b>결정 주체</b> — phase 게이트마다 Admiral 판단</p>
+      <p><b>스케일</b> — 수~수십 agent (실제 컨텍스트 제약)</p>
+      <p><b>재사용</b> — Standing Order / Captain 정의로 정적 영속화</p>
+      <p><b>안전성</b> — 인간 Admiral의 단계별 검토 (강함)</p>
+    </div>
+    <div class="compare-col them">
+      <h4><span class="dot"></span> Dynamic Workflows</h4>
+      <p><b>그릇</b> — JS 스크립트 변수 (런타임 RAM)</p>
+      <p><b>결정 주체</b> — Claude가 작성한 스크립트가 자율 통과</p>
+      <p><b>스케일</b> — 동시 16 / 누적 1,000</p>
+      <p><b>재사용</b> — <code>/workflows save</code> → 슬래시커맨드화</p>
+      <p><b>안전성</b> — manifest 사전 승인 + 샌드박스 (구조적)</p>
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="label">⚓ 결론</div>
+    <p>
+      Fleet은 작은~중규모(수~수십 agent)에서 Dynamic Workflows와 사실상 동등하다.
+      차이는 <b>누가 컨텍스트의 그릇이 되는가</b>다. Workflows는 런타임이, Fleet은 제독이.
+      Helm은 이 그릇을 런타임으로 옮겨, Fleet의 doctrine 안전장치를 유지하면서 1,000-agent 스케일을 가능케 한다.
+    </p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="helm">
+  <h2><span class="num">§ 04</span> Helm Carrier 설계</h2>
+
+  <h3>4.1 정체 (Identity)</h3>
+  <div class="lead-grid">
+    <div class="k">CAPTAIN</div><div>Helm (조타수)</div>
+    <div class="k">ROLE</div><div>동적 오케스트레이션 생성 + 격리 실행 + N:1 집계</div>
+    <div class="k">TIER</div><div>Ohio와 동급의 독립 캐리어 — Admiral의 carrier_dispatch 대상</div>
+    <div class="k">INPUT</div><div>Admiral 의도 (자연어) + 선택적 manifest 힌트</div>
+    <div class="k">OUTPUT</div><div>단일 <code>AggregatedExecResult</code> via carrier_jobs</div>
+    <div class="k">INTERNAL</div><div>동적 JS 스크립트 → Deno 런타임 → fan-out <code>claude -p</code> 자식들</div>
+  </div>
+
+  <h3>4.2 실행 흐름</h3>
+  <div class="diagram">
+    <svg viewBox="0 0 800 380" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ar2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 z" fill="#d4af37"/>
+        </marker>
+      </defs>
+      <!-- Admiral -->
+      <rect x="30" y="20" width="160" height="60" rx="8" fill="#0a0e1a" stroke="#60a5fa" stroke-width="2"/>
+      <text x="110" y="42" fill="#60a5fa" font-family="monospace" font-size="10" text-anchor="middle" letter-spacing="2">ADMIRAL</text>
+      <text x="110" y="62" fill="#e8eef5" font-size="13" text-anchor="middle">의도 + manifest 힌트</text>
+
+      <!-- arrow A -->
+      <line x1="190" y1="50" x2="240" y2="50" stroke="#d4af37" stroke-width="2" marker-end="url(#ar2)"/>
+      <text x="215" y="42" fill="#5d6678" font-size="10" text-anchor="middle">dispatch</text>
+
+      <!-- Helm -->
+      <rect x="245" y="20" width="160" height="60" rx="8" fill="#131829" stroke="#d4af37" stroke-width="2"/>
+      <text x="325" y="42" fill="#d4af37" font-family="monospace" font-size="10" text-anchor="middle" letter-spacing="2">HELM CARRIER</text>
+      <text x="325" y="62" fill="#e8eef5" font-size="13" text-anchor="middle">JS 스크립트 + manifest 작성</text>
+
+      <!-- arrow B (approval) -->
+      <path d="M325,80 Q325,110 200,110 Q110,110 110,90" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#ar2)"/>
+      <text x="200" y="125" fill="#f59e0b" font-size="11" text-anchor="middle">① 단일 승인 요청</text>
+
+      <!-- arrow C (approval back) -->
+      <path d="M125,80 Q200,140 325,90" fill="none" stroke="#4ade80" stroke-width="2" marker-end="url(#ar2)"/>
+      <text x="225" y="160" fill="#4ade80" font-size="11" text-anchor="middle">② 승인</text>
+
+      <!-- arrow D -->
+      <line x1="325" y1="80" x2="325" y2="175" stroke="#d4af37" stroke-width="2" marker-end="url(#ar2)"/>
+      <text x="345" y="135" fill="#5d6678" font-size="10">spawn</text>
+
+      <!-- Deno runtime -->
+      <rect x="200" y="180" width="250" height="80" rx="8" fill="#131829" stroke="#1f2740"/>
+      <text x="325" y="202" fill="#d4af37" font-family="monospace" font-size="10" text-anchor="middle" letter-spacing="2">DENO RUNTIME (격리)</text>
+      <text x="325" y="222" fill="#e8eef5" font-size="12" text-anchor="middle">--allow-run=claude</text>
+      <text x="325" y="240" fill="#e8eef5" font-size="12" text-anchor="middle">--allow-write=.fleet/workflows/</text>
+
+      <!-- arrows to workers -->
+      <line x1="240" y1="260" x2="180" y2="295" stroke="#d4af37" stroke-width="1.5" marker-end="url(#ar2)"/>
+      <line x1="290" y1="260" x2="290" y2="295" stroke="#d4af37" stroke-width="1.5" marker-end="url(#ar2)"/>
+      <line x1="340" y1="260" x2="395" y2="295" stroke="#d4af37" stroke-width="1.5" marker-end="url(#ar2)"/>
+      <line x1="400" y1="260" x2="500" y2="295" stroke="#d4af37" stroke-width="1.5" marker-end="url(#ar2)"/>
+
+      <!-- Workers -->
+      <rect x="120" y="295" width="120" height="50" rx="6" fill="#0d1224" stroke="#1f2740"/>
+      <text x="180" y="315" fill="#7cc4ff" font-family="monospace" font-size="10" text-anchor="middle">claude -p</text>
+      <text x="180" y="333" fill="#8b95a8" font-size="11" text-anchor="middle">worker-1</text>
+
+      <rect x="245" y="295" width="90" height="50" rx="6" fill="#0d1224" stroke="#1f2740"/>
+      <text x="290" y="315" fill="#7cc4ff" font-family="monospace" font-size="10" text-anchor="middle">claude -p</text>
+      <text x="290" y="333" fill="#8b95a8" font-size="11" text-anchor="middle">worker-2</text>
+
+      <rect x="340" y="295" width="120" height="50" rx="6" fill="#0d1224" stroke="#1f2740"/>
+      <text x="400" y="315" fill="#7cc4ff" font-family="monospace" font-size="10" text-anchor="middle">claude -p</text>
+      <text x="400" y="333" fill="#8b95a8" font-size="11" text-anchor="middle">worker-3</text>
+
+      <rect x="475" y="295" width="120" height="50" rx="6" fill="#0d1224" stroke="#1f2740" stroke-dasharray="3,3"/>
+      <text x="535" y="315" fill="#8b95a8" font-family="monospace" font-size="10" text-anchor="middle">claude -p</text>
+      <text x="535" y="333" fill="#5d6678" font-size="11" text-anchor="middle">... ≤ 16</text>
+
+      <!-- aggregate arrow -->
+      <line x1="450" y1="220" x2="640" y2="220" stroke="#d4af37" stroke-width="2" marker-end="url(#ar2)"/>
+      <text x="540" y="212" fill="#5d6678" font-size="10" text-anchor="middle">N:1 aggregate</text>
+
+      <!-- carrier_jobs -->
+      <rect x="640" y="195" width="140" height="60" rx="8" fill="#0a0e1a" stroke="#4ade80" stroke-width="2"/>
+      <text x="710" y="217" fill="#4ade80" font-family="monospace" font-size="10" text-anchor="middle" letter-spacing="2">carrier_jobs</text>
+      <text x="710" y="237" fill="#e8eef5" font-size="12" text-anchor="middle">AggregatedExecResult</text>
+
+      <!-- back to Admiral -->
+      <path d="M710,195 Q710,90 110,80" fill="none" stroke="#4ade80" stroke-width="2" marker-end="url(#ar2)"/>
+      <text x="500" y="80" fill="#4ade80" font-size="11">③ 검증된 결과만</text>
+
+      <!-- legend -->
+      <text x="400" y="375" fill="#5d6678" font-size="11" text-anchor="middle" font-style="italic">중간 결과는 .fleet/workflows/runs/&lt;id&gt;/ 에 격리 — Admiral 컨텍스트 미오염</text>
+    </svg>
+    <div class="diagram-caption">Figure 4.1 — Helm 실행 시퀀스: Admiral 단일 승인 → 격리 fan-out → N:1 집계</div>
+  </div>
+
+  <h3>4.3 핵심 코드 스케치 (개념)</h3>
+  <p>Helm이 동적으로 작성하는 오케스트레이션 스크립트의 형태:</p>
+
+<pre><code>// .fleet/workflows/runs/&lt;id&gt;/script.mjs — Helm이 동적 생성
+// Deno 런타임에서 실행: deno run --allow-run=claude --allow-write=.fleet/workflows/ script.mjs
+
+const limit = createSemaphore(16);  // manifest.budget.maxConcurrent 강제
+
+// Phase 1: 다각도 정찰 fan-out
+const angles = [
+  "src/auth/ 인증 미들웨어 누락 핸들러 탐지",
+  "src/routes/ 데코레이터 없는 엔드포인트 탐지",
+  "test/ 인증 우회 케이스 커버리지 갭 탐지",
+];
+const findings = await Promise.all(
+  angles.map(a =&gt; limit(() =&gt; dispatchWorker(a, { isolation: "cwd+env" })))
+);
+
+// Phase 2: adversarial cross-check (validation phase = quorum 2/3)
+const verified = await Promise.all(
+  findings.map(f =&gt; limit(() =&gt;
+    dispatchWorker(`이 발견을 비판적으로 반증 시도: ${JSON.stringify(f)}`)
+  ))
+);
+
+// 최종 합성만 carrier_jobs로 반환
+return aggregate({
+  confirmed: verified.filter(v =&gt; v.confirmed),
+  rejected: verified.filter(v =&gt; !v.confirmed),
+});</code></pre>
+
+  <p><code>dispatchWorker()</code>는 Helm이 Deno global scope에 주입하는 API로, 내부적으로 <code>claude -p</code>를 격리 환경에서 spawn한다.</p>
+
+  <h3>4.4 WorkflowManifest 스키마</h3>
+<pre><code>interface WorkflowManifest {
+  budget: {
+    maxAgents: number;        // 누적 상한 (≤ 1000)
+    tokensPerAgent: number;   // 1개 agent 토큰 예산
+    maxConcurrent: number;    // 동시 상한 (≤ 16, 런타임 강제)
+  };
+  toolAllowlist: string[];    // EXECUTOR_MCP_TOOL_IDS 하위 집합
+  domainAllowlist: string[];  // 외부 접근 허용 도메인
+  mutationPhases: PhaseId[];  // 파일 쓰기/git 포함 phase
+  phases: PhaseDefinition[];
+}
+
+interface PhaseDefinition {
+  id: PhaseId;
+  type: 'analysis' | 'mutation' | 'validation';
+  failurePolicy: 'fail-fast' | 'best-effort' | { quorum: number };
+}</code></pre>
+
+</section>
+
+<!-- ============================================================ -->
+<section id="nimitz">
+  <h2><span class="num">§ 05</span> Nimitz Doctrine Decisions</h2>
+  <p>Nimitz 함장의 read-only 아키텍처 판정. 1차 검토(<code>carrier:bc7793e9</code>)에서 7개 핵심 결정점(D1~D7)을 못박았고, 후속 검토(<code>carrier:83767460</code>)에서 Wave 1 unknown 3개를 사전 LOCK 결정(L-7/L-8/L-9)으로 격상시켰다. 클릭하여 각 결정을 펼쳐 보십시오.</p>
+  <div class="callout">
+    <div class="label">📌 추가 LOCK 결정 (Wave 1 사전 commit)</div>
+    <p><b>L-7 (U-1-LOCK)</b>: <code>CLAUDE_HOME=$RUN_DIR/worker-N/.claude-home</code> 무조건 주입 — zero-assumption 격리 · <b>L-8 (U-2-LOCK)</b>: <code>--output-format json</code> 강제 + <code>ChildResultRaw</code> 인터페이스 + raw fallback + semver pre-flight · <b>L-9 (U-3-LOCK)</b>: Deno는 시스템 전제, <code>package.json</code> 진입 금지, <code>setup-deno@v2</code>. 결과: Wave 1이 "Runtime Spike"에서 "<b>Runtime Contract Verification</b>" (0.25d)으로 격하, R-1·R-2 등급 축소.</p>
+  </div>
+
+  <div class="tabs">
+    <div class="tab-list" role="tablist">
+      <button class="tab-btn active" data-tab="d1">D1 · Carrier 신설</button>
+      <button class="tab-btn" data-tab="d2">D2 · 샌드박스</button>
+      <button class="tab-btn" data-tab="d3">D3 · 호출 메커니즘</button>
+      <button class="tab-btn" data-tab="d4">D4 · 격리 모델</button>
+      <button class="tab-btn" data-tab="d5">D5 · 비용 게이트</button>
+      <button class="tab-btn" data-tab="d6">D6 · 실패 정책</button>
+      <button class="tab-btn" data-tab="d7">D7 · Roster 위치</button>
+    </div>
+
+    <div class="tab-panel active" id="d1">
+      <h4>D1 — Carrier 신설 vs Ohio 확장</h4>
+      <div class="decision-grid">
+        <div class="decision-block choose">
+          <h5>✓ 권장안</h5>
+          <p><b>신규 독립 Helm 캐리어</b>. Ohio 소스 미수정.</p>
+        </div>
+        <div class="decision-block">
+          <h5>선택지</h5>
+          <p>A) Ohio에 동적 JS 실행 레이어 추가<br/>B) 신규 Helm 캐리어 분리</p>
+        </div>
+        <div class="decision-block rationale">
+          <h5>근거</h5>
+          <p>Ohio = 정적 plan_file wave 실행자. Helm = 스크립트 <i>생성</i> + fan-out 오케스트레이션. 두 책임은 직교한다. Ohio를 확장하면 단일 페르소나가 두 직교 책임을 갖게 되어 Domain Boundary 불변 조건이 페르소나 수준에서 위반된다.</p>
+        </div>
+        <div class="decision-block unknown">
+          <h5>⚠ 미해결</h5>
+          <p>9번째 페르소나 추가 시 <code>CARRIER_COLORS</code>, <code>constants.ts</code> 자동 파생 체계 적용 여부 확인 필요.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="d2">
+      <h4>D2 — 샌드박스 모델</h4>
+      <div class="decision-grid">
+        <div class="decision-block choose">
+          <h5>✓ 권장안</h5>
+          <p><b>Deno</b> — <code>--allow-run=claude --allow-write=.fleet/workflows/</code></p>
+        </div>
+        <div class="decision-block">
+          <h5>탈락 옵션</h5>
+          <ul>
+            <li><b>firejail</b>: macOS 비호환</li>
+            <li><b>vm2</b>: deprecated + 다수 CVE</li>
+            <li><b>Node vm</b>: 동일 힙, 우회 trivial</li>
+            <li><b>Docker</b>: 1,000-agent fan-out 시 컨테이너 spin-up 레이턴시가 LLM 호출 비용보다 큼</li>
+          </ul>
+        </div>
+        <div class="decision-block rationale">
+          <h5>Deno 채택 근거</h5>
+          <p>별도 프로세스(힙 불공유), <code>--allow-*</code> 선언적 권한 제한, macOS 완전 호환. Helm이 생성하는 JS는 오케스트레이션 로직만 — npm 에코시스템 불필요 → Deno의 no-npm-default가 공격 면적을 줄인다.</p>
+        </div>
+        <div class="decision-block unknown">
+          <h5>⚠ 미해결</h5>
+          <p>Fleet 빌드 체인(tsup/Node 18+)에 Deno 의존성 추가 시 패키지 정책 충돌 여부. 대안: <code>deno</code>를 devDep 아닌 시스템 경로 요구사항으로 문서화.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="d3">
+      <h4>D3 — Sub-agent 호출 메커니즘</h4>
+      <div class="decision-grid">
+        <div class="decision-block choose">
+          <h5>✓ 권장안</h5>
+          <p><b><code>claude -p</code> headless</b> 단일 경로. SDK 직접 호출 병행 금지.</p>
+        </div>
+        <div class="decision-block rationale">
+          <h5>비교</h5>
+          <table style="font-size:12px">
+            <tr><th>기준</th><th><code>claude -p</code></th><th>SDK</th></tr>
+            <tr><td>권한 모델</td><td>Claude Code 네이티브</td><td>없음</td></tr>
+            <tr><td>토큰 회계</td><td>stdout 리포팅</td><td>직접</td></tr>
+            <tr><td>Auth</td><td>Fleet 일원화</td><td>두 번째 경로</td></tr>
+            <tr><td>도구 화이트리스트</td><td><code>EXECUTOR_MCP_TOOL_IDS</code> 준수</td><td>우회</td></tr>
+          </table>
+        </div>
+        <div class="decision-block">
+          <h5>핵심 논리</h5>
+          <p>Fleet의 핵심 설계는 <i>CLI 바이너리를 ACP/headless 모드로 구동</i>하는 것 (<code>CLI_BACKENDS</code> SSoT). SDK 직접 호출은 이 철학과 충돌하고 whitelist를 우회하는 second auth path를 만든다.</p>
+        </div>
+        <div class="decision-block unknown">
+          <h5>⚠ 미해결</h5>
+          <p><code>claude -p</code>의 종료 코드 규약 및 부분 실패 시 stdout 형식이 파싱 가능한 수준인지 — Wave 1 spike로 검증 필수.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="d4">
+      <h4>D4 — 컨텍스트 격리 보장 (3-Layer)</h4>
+      <div class="decision-grid">
+        <div class="decision-block choose">
+          <h5>✓ 권장안 — 3-Layer 격리</h5>
+          <ol>
+            <li><b>CWD 격리:</b> <code>--cwd .fleet/workflows/runs/&lt;id&gt;/worker-&lt;n&gt;/</code></li>
+            <li><b>Env 화이트리스트:</b> <code>process.env</code> 통과 금지, 명시 항목만</li>
+            <li><b>No session resume:</b> <code>executeOneShot</code> 전용, <code>CarrierSessionStore</code> pool 진입 금지</li>
+          </ol>
+        </div>
+        <div class="decision-block rationale">
+          <h5>근거</h5>
+          <p><code>~/.claude/MEMORY.md</code>는 CWD 무관하게 홈에서 로드될 수 있다. env whitelist + <code>--cwd</code> 결합이 부모 MEMORY 및 credential 누설을 막는 최소 필요 조건.</p>
+          <p><code>CarrierSessionStore</code> JSONL이 <code>infra.dataDir</code>에 공유되므로, pool 진입 시 부모 sessionId 교차오염 가능.</p>
+        </div>
+        <div class="decision-block unknown">
+          <h5>⚠ 미해결 (Wave 1)</h5>
+          <p><code>claude -p</code>가 <code>~/.claude/MEMORY.md</code>를 <i>항상</i> 로드하는지. 완전 격리 불가 시 자식 전용 <code>CLAUDE_HOME</code> 환경변수 주입 필요.</p>
+        </div>
+        <div class="decision-block">
+          <h5>스레드 위험도</h5>
+          <p><span class="pill high">HIGH</span> 격리 실패 = 데이터/credential 누설</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="d5">
+      <h4>D5 — 권한 / 비용 게이트</h4>
+      <div class="decision-grid">
+        <div class="decision-block choose">
+          <h5>✓ 권장안</h5>
+          <p><b>WorkflowManifest 사전 선언 + Admiral 단일 승인 지점</b></p>
+        </div>
+        <div class="decision-block rationale">
+          <h5>흐름</h5>
+          <ol>
+            <li>Helm이 JS 스크립트 + manifest 작성</li>
+            <li>Admiral에 단일 승인 요청</li>
+            <li>승인 후 Deno 런타임에 manifest를 권한 봉투로 주입</li>
+            <li>런타임이 초과 시도를 throw로 거부</li>
+            <li>fan-out 중 Admiral 재개입 없음</li>
+          </ol>
+        </div>
+        <div class="decision-block">
+          <h5>왜 사전 선언인가</h5>
+          <p>런타임 동적 게이팅은 fan-out 도중 Admiral 컨텍스트를 오염시킨다 — 해결하려는 문제와 역방향. 사전 고정은 1회 검토로 전체 실행 승인 가능.</p>
+        </div>
+        <div class="decision-block unknown">
+          <h5>⚠ 미해결</h5>
+          <p>토큰 예산 추정 정확도. 실제 소비가 budget 초과 시 mid-run 중단 vs soft-warn 정책 결정 필요.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="d6">
+      <h4>D6 — 실패 의미론</h4>
+      <div class="decision-grid">
+        <div class="decision-block choose">
+          <h5>✓ 권장안 — Phase 타입 기반 이중 정책</h5>
+          <table style="font-size:12px">
+            <tr><th>Phase 타입</th><th>기본 정책</th><th>판정 기준</th></tr>
+            <tr><td>analysis</td><td><code>best-effort</code></td><td>&gt;50% 완료 = 성공</td></tr>
+            <tr><td>mutation</td><td><code>fail-fast</code></td><td>1개 실패 → 즉시 중단 + 롤백</td></tr>
+            <tr><td>validation</td><td><code>quorum(2/3)</code></td><td>2/3 합의 = 통과</td></tr>
+          </table>
+        </div>
+        <div class="decision-block">
+          <h5>Per-phase override</h5>
+<pre style="margin:0; font-size:11.5px"><code>phases[N].failurePolicy:
+  "fail-fast"
+  | "best-effort"
+  | { quorum: 0.67 }</code></pre>
+        </div>
+        <div class="decision-block rationale">
+          <h5>근거</h5>
+          <p>"분석 실패"는 정보 손실이지만 안전. "뮤테이션 실패"는 부분 적용 상태를 남기므로 즉시 중단 필수. 검증 합의 철학은 Autoresearch Task Force와 자연 정렬.</p>
+        </div>
+        <div class="decision-block unknown">
+          <h5>⚠ 미해결 (Wave 5)</h5>
+          <p>뮤테이션 phase 실패 시 롤백 원자성 메커니즘. git stash 기반인지, <code>.fleet/runs/&lt;id&gt;/snapshot/</code> 기반인지.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="d7">
+      <h4>D7 — Fleet Roster 내 위치</h4>
+      <div class="decision-grid">
+        <div class="decision-block choose">
+          <h5>✓ 권장안</h5>
+          <p><b>독립 캐리어 (Ohio와 동급 tier)</b>. Admiral의 <code>carrier_dispatch</code> 직접 대상.</p>
+        </div>
+        <div class="decision-block">
+          <h5>거부된 안</h5>
+          <p><b>Ohio sub-role 거부:</b> Ohio는 plan_file 소비자. Helm은 plan을 생성+실행하는 복합체.</p>
+          <p><b>Admiral-only meta-tool 거부:</b> Admiral 컨텍스트 오염 해결이 Helm 도입 목적이므로 직소유는 역방향.</p>
+        </div>
+        <div class="decision-block rationale">
+          <h5>흐름 정합성</h5>
+<pre style="margin:0; font-size:11.5px"><code>Admiral
+├─ Kirov (계획)
+├─ Helm (동적 오케스트레이션) ◀ 신규
+├─ Ohio (정적 wave 실행)
+├─ Vanguard, Nimitz, Sentinel, ...</code></pre>
+        </div>
+        <div class="decision-block unknown">
+          <h5>⚠ 미해결 (Wave 2)</h5>
+          <p>Helm이 자식 worker들의 결과를 단일 <code>carrier_jobs</code>로 압축하는 집계 스키마. 현재 <code>ExecResult</code>가 N:1 팬인을 지원하는지 검토 필요.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="label">📌 Planning Constraints (Kirov가 고정으로 받은 입력)</div>
+    <ol>
+      <li>샌드박스: Deno 단일 선택. vm/vm2/Docker 재논의 대상 아님.</li>
+      <li>호출: <code>claude -p</code> headless 단일 경로.</li>
+      <li>동시성 하드캡: <code>maxConcurrent ≤ 16</code>.</li>
+      <li>Admiral 개입: 발사 전 1회만.</li>
+      <li>Helm = 독립 캐리어, Ohio 코드 무수정.</li>
+      <li>자식 worker = <code>executeOneShot</code> 전용.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="kirov">
+  <h2><span class="num">§ 06</span> Kirov Plan — 7 Waves</h2>
+  <p>Kirov 함장이 작성한 <code>/Users/c86j224s/pg/.fleet/plans/helm-carrier-introduction.md</code>의 핵심.
+  총 <b>~5.75 ideal-days</b>. 각 wave는 명시적 의존성, QA 게이트, 에스컬레이션 트리거를 가진다.</p>
+
+  <h3>6.1 Wave Timeline</h3>
+  <div class="waves">
+
+    <details class="wave-card" open>
+      <summary>
+        <div class="wave-num">W1</div>
+        <div>
+          <div class="wave-title">Runtime Contract Verification <span class="pill locked" style="margin-left:8px">LOCKED</span></div>
+          <div class="wave-subtitle">L-7 / L-8 / L-9 사전 결정 실환경 성립 smoke test</div>
+        </div>
+        <div class="wave-meta">0.25d · 의존성 없음</div>
+        <div class="wave-toggle">+</div>
+      </summary>
+      <div class="wave-body">
+        <h6>목표</h6>
+        <p>3개 사전 결정이 실환경에서 성립함을 smoke test로 확인. <b>Unknown 해소가 아닌 사전 결정의 verification.</b></p>
+        <h6>실행</h6>
+        <ol>
+          <li><b>Smoke A (L-7):</b> <code>CLAUDE_HOME=/tmp/empty claude -p "echo ok"</code> → <code>~/.claude/</code> 트리 미참조 확인. 판정: <b>PASS / FAIL 이진</b>.</li>
+          <li><b>Smoke B (L-8):</b> <code>claude -p "hello" --output-format json</code> → <code>ChildResultRaw.result</code> 필드 존재 확인. 비정상 인자로 non-0 종료 유도. 판정: <b>PASS / FAIL 이진</b>.</li>
+          <li><b>Smoke C (L-9):</b> CI matrix에서 Deno 미설치 → pre-flight fail-fast 메시지 확인. <code>denoland/setup-deno@v2</code> 포함 시 CI green. 판정: <b>PASS / FAIL 이진</b>.</li>
+          <li><code>AGENTS.md</code>에 Deno 설치 전제 조건 섹션 추가 (<code>deno >= 2.0</code>).</li>
+        </ol>
+        <h6>QA Gate (G-1)</h6>
+        <ul>
+          <li>3개 smoke test 모두 PASS 기록</li>
+          <li>AGENTS.md Deno entry 등록 확인</li>
+          <li>어느 smoke라도 FAIL 시 정의된 E-1/E-2/E-5 즉시 트리거</li>
+        </ul>
+        <h6>에스컬레이션 (FAIL 시)</h6>
+        <p><span class="pill med">E-1</span> Smoke A FAIL — CLAUDE_HOME 미구현 CLI 시 <code>--no-memory</code> 탐색<br/>
+        <span class="pill med">E-2</span> Smoke B FAIL — <code>result</code> 키 불일치 시 버전 핀 + fallback raw-text<br/>
+        <span class="pill med">E-5</span> Smoke C FAIL — pre-flight 메시지 강화 + 비권장 fallback 문서화</p>
+      </div>
+    </details>
+
+    <details class="wave-card">
+      <summary>
+        <div class="wave-num">W2</div>
+        <div>
+          <div class="wave-title">Schema & Type Foundation</div>
+          <div class="wave-subtitle">WorkflowManifest · ExecResult N:1 · TrackStatus partial</div>
+        </div>
+        <div class="wave-meta">0.5d · ← W1</div>
+        <div class="wave-toggle">+</div>
+      </summary>
+      <div class="wave-body">
+        <h6>목표</h6>
+        <p>Helm의 핵심 타입 계약을 확정해 이후 구현 wave의 인터페이스를 고정.</p>
+        <h6>실행</h6>
+        <ol>
+          <li><b>WorkflowManifest</b> 타입 정의 (budget·toolAllowlist·domainAllowlist·mutationPhases·phases)</li>
+          <li><b>U-4 해소:</b> <code>ExecResult</code>에 <code>children: ChildResult[]</code> 추가 또는 별도 <code>AggregatedExecResult</code> 래퍼 정의</li>
+          <li><b>U-5 해소:</b> <code>TrackStatus</code>에 <code>"partial"</code> 추가 (quorum 부분 성공), 완전 실패는 <code>"error"</code> 유지</li>
+          <li>Helm <code>CarrierJobReport</code> 초안 (자식 N개 → 단일 carrier_jobs 결과 압축)</li>
+        </ol>
+        <h6>QA Gate (G-2)</h6>
+        <ul>
+          <li><code>tsc --noEmit</code> 통과</li>
+          <li>manifest <code>maxConcurrent &gt; 16</code> 시 컴파일/런타임 검증</li>
+        </ul>
+        <h6>에스컬레이션</h6>
+        <p><span class="pill med">E-4</span> TrackStatus 공유 타입이 다른 캐리어에 breaking change 유발 시 → Admiral Direction Needed</p>
+      </div>
+    </details>
+
+    <details class="wave-card">
+      <summary>
+        <div class="wave-num">W3</div>
+        <div>
+          <div class="wave-title">Deno Sandbox & 3-Layer Isolation</div>
+          <div class="wave-subtitle">CWD · Env whitelist · No session resume</div>
+        </div>
+        <div class="wave-meta">1.0d · ← W1, W2</div>
+        <div class="wave-toggle">+</div>
+      </summary>
+      <div class="wave-body">
+        <h6>목표</h6>
+        <p>Deno 프로세스 샌드박스 + 3-layer 컨텍스트 격리 구현.</p>
+        <h6>실행</h6>
+        <ol>
+          <li><b>Layer 1 (CWD):</b> <code>.fleet/workflows/runs/&lt;runId&gt;/worker-&lt;n&gt;/</code>를 <code>--cwd</code>로 지정. 부모 CLAUDE.md 상속 차단.</li>
+          <li><b>Layer 2 (Env):</b> 자식 spawn 시 <code>process.env</code> 전달 차단. 허용 목록(<code>ANTHROPIC_API_KEY</code>, <code>FLEET_RUN_ID</code> 등)만 전달.</li>
+          <li><b>Layer 3 (No resume):</b> <code>--no-resume</code> 동등 플래그. <code>CarrierSessionStore</code> pool 진입 차단.</li>
+          <li>WorkflowManifest의 <code>toolAllowlist</code>·<code>domainAllowlist</code> 초과 시도를 throw로 거부하는 permission guard.</li>
+          <li><code>deno-runner.ts</code>는 <code>--allow-run=claude --allow-write=.fleet/workflows/</code> 외 추가 권한 없이 동작.</li>
+        </ol>
+        <h6>QA Gate (G-3)</h6>
+        <ul>
+          <li>자식 프로세스 env에 <code>HOME</code>, <code>CLAUDE_HOME</code> 누설 없는지 단위 테스트</li>
+          <li>Deno 런타임 내 <code>fetch()</code>/<code>Deno.readFile("../../")</code> 호출 시 권한 오류 확인</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="wave-card">
+      <summary>
+        <div class="wave-num">W4</div>
+        <div>
+          <div class="wave-title">Fan-out Orchestration Engine</div>
+          <div class="wave-subtitle">Semaphore · dispatchWorker API · N:1 aggregation</div>
+        </div>
+        <div class="wave-meta">1.5d · ← W2, W3</div>
+        <div class="wave-toggle">+</div>
+      </summary>
+      <div class="wave-body">
+        <h6>목표</h6>
+        <p><code>maxConcurrent ≤ 16</code> 하드캡 적용 하에 동적 JS로부터 자식 worker fan-out + N:1 집계.</p>
+        <h6>실행</h6>
+        <ol>
+          <li><code>fan-out.ts</code>: concurrency semaphore. <code>maxConcurrent</code> manifest 값 런타임 강제, 16 초과 즉시 reject.</li>
+          <li>오케스트레이션 스크립트가 Deno 내에서 <code>dispatchWorker(prompt, opts): Promise&lt;ChildResult&gt;</code> 호출. Helm이 이 API를 Deno global scope에 주입.</li>
+          <li><code>result-aggregator.ts</code>: <code>AggregatedExecResult</code> 스키마로 N개 ChildResult를 취합. <code>carrier_jobs</code> 단일 결과로 압축.</li>
+          <li>Admiral 승인 흐름: manifest + JS script 제출 → 승인 → Deno 시작 → fan-out 자율 진행.</li>
+        </ol>
+        <h6>QA Gate (G-4)</h6>
+        <ul>
+          <li><code>maxConcurrent: 17</code> 설정 시 런타임 에러 단위 테스트</li>
+          <li>16 concurrent worker 동시 실행 통합 테스트 (mock <code>claude -p</code>)</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="wave-card">
+      <summary>
+        <div class="wave-num">W5</div>
+        <div>
+          <div class="wave-title">Failure Policy & Rollback</div>
+          <div class="wave-subtitle">Phase 타입별 이중 정책 · 롤백 원자성 (U-6)</div>
+        </div>
+        <div class="wave-meta">1.0d · ← W4</div>
+        <div class="wave-toggle">+</div>
+      </summary>
+      <div class="wave-body">
+        <h6>목표</h6>
+        <p>Phase 타입 기반 이중 실패 정책 + 뮤테이션 롤백 원자성 해소.</p>
+        <h6>실행</h6>
+        <ol>
+          <li>기본 정책 구현: analysis=best-effort(&gt;50%), mutation=fail-fast(1실패→롤백), validation=quorum(2/3)</li>
+          <li>manifest <code>phases[N].failurePolicy</code> override 지원</li>
+          <li><b>U-6 해소 — 롤백 전략 선택:</b>
+            <ul>
+              <li><b>Option A (git):</b> <code>git stash</code> + <code>stash pop</code>. 원자성 강함, git 상태 의존.</li>
+              <li><b>Option B (snapshot):</b> <code>.fleet/workflows/runs/&lt;id&gt;/snapshot/</code> 사전 복사. git 독립, 대용량 오버헤드.</li>
+              <li>팀 git 정책 확인 후 선택. <span class="pill high">E-3</span> 미결 시 Wave 5 시작 금지.</li>
+            </ul>
+          </li>
+          <li><code>TrackStatus "partial"</code>을 quorum 부분 성공에 적용 (W2 확정 시).</li>
+        </ol>
+        <h6>QA Gate (G-5)</h6>
+        <ul>
+          <li>mutation 1개 실패 시 롤백 적용 확인 통합 테스트</li>
+          <li>best-effort 49% 실패 시 phase 실패 판정 단위 테스트</li>
+          <li>quorum 정확히 2/3 경계값 단위 테스트</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="wave-card">
+      <summary>
+        <div class="wave-num">W6</div>
+        <div>
+          <div class="wave-title">Demo Workflow & E2E Validation</div>
+          <div class="wave-subtitle">최소 워크플로우 1개 end-to-end 시연</div>
+        </div>
+        <div class="wave-meta">0.75d · ← W3, W4, W5</div>
+        <div class="wave-toggle">+</div>
+      </summary>
+      <div class="wave-body">
+        <h6>목표</h6>
+        <p>Helm 캐리어가 실제로 동작함을 증명.</p>
+        <h6>실행</h6>
+        <ol>
+          <li>데모: "지정 디렉터리의 파일 목록을 분석 phase로 fan-out, 각 파일 요약 → 집계 → 단일 summary"</li>
+          <li>오케스트레이션은 순수 JS, <code>dispatchWorker</code> API만 사용, 외부 npm 0개</li>
+          <li>Admiral 승인 → Deno 실행 → fan-out → 집계 → <code>carrier_jobs</code> 결과 반환 전체 흐름</li>
+          <li>실행 로그 <code>runs/&lt;id&gt;/</code> 하위 worker별 stdout 보존 확인</li>
+        </ol>
+        <h6>QA Gate (G-6)</h6>
+        <ul>
+          <li>데모 완주 후 <code>carrier_jobs(action:"result")</code>가 <code>AggregatedExecResult</code> 만족</li>
+          <li>Admiral 컨텍스트 외부 격리 확인 (Admiral 세션에 중간 worker 출력 없음)</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="wave-card">
+      <summary>
+        <div class="wave-num">W7</div>
+        <div>
+          <div class="wave-title">Documentation & Fleet Roster Update</div>
+          <div class="wave-subtitle">helm.md · architecture diagram · Roster 등록</div>
+        </div>
+        <div class="wave-meta">0.5d · ← W6</div>
+        <div class="wave-toggle">+</div>
+      </summary>
+      <div class="wave-body">
+        <h6>목표</h6>
+        <p>Helm을 Fleet doctrine에 공식 등록 + 운영 가이드 완성.</p>
+        <h6>실행</h6>
+        <ol>
+          <li><code>docs/carriers/helm.md</code>: 역할, WorkflowManifest 필드, 사용 예시, 제한사항</li>
+          <li><code>docs/architecture/helm-workflow.md</code>: Mermaid 흐름 다이어그램</li>
+          <li>Fleet Roster에 Helm 페르소나 등록. <code>CARRIER_COLORS</code>·<code>constants.ts</code> 자동 파생 적용 여부 확인</li>
+          <li>1,000-agent 부하 테스트를 후속 작전으로 <code>docs/roadmap/helm-load-test.md</code>에 예고</li>
+        </ol>
+        <h6>QA Gate (G-7)</h6>
+        <ul>
+          <li>모든 코드 예시가 W6 실제 동작 기준으로 검증됨</li>
+          <li>Mermaid 다이어그램 렌더링 확인</li>
+        </ul>
+      </div>
+    </details>
+  </div>
+
+  <h3>6.2 Acceptance Criteria</h3>
+  <ol>
+    <li><b>격리:</b> 데모 실행 중 Admiral 컨텍스트에 자식 worker 중간 출력이 노출되지 않는다.</li>
+    <li><b>하드캡:</b> <code>maxConcurrent &gt; 16</code> manifest 제출 시 런타임 reject.</li>
+    <li><b>단일 승인:</b> Admiral은 워크플로우 발사 전 1회만 개입. fan-out 중 추가 개입 없음.</li>
+    <li><b>실패 정책:</b> mutation phase 1개 실패 시 즉시 중단 + 롤백 트리거.</li>
+    <li><b>결과 반환:</b> 집계된 최종 결과가 <code>carrier_jobs</code> 경로로 단일 응답 반환.</li>
+    <li><b>데모 완주:</b> 예시 오케스트레이션이 Deno 런타임에서 end-to-end 실행.</li>
+    <li><b>Ohio 무결성:</b> Ohio 소스 변경 없음.</li>
+    <li><b>Spike 해소:</b> U-1~U-6 전체가 wave 보고서에 명시적 판정과 함께 기록.</li>
+  </ol>
+
+  <h3>6.3 Plan File — Verbatim Source</h3>
+  <p>아래는 <code>/Users/c86j224s/pg/.fleet/plans/helm-carrier-introduction.md</code>의 <b>전체 원문</b>이다. 위 6.1·6.2의 요약과 §5(Nimitz)·§7(Risks)의 발췌가 모두 이 단일 소스에서 파생되었다. <b>📋 COPY MARKDOWN 버튼</b>으로 원본 마크다운을 1-click 복사할 수 있다.</p>
+
+  <details class="plan-verbatim" open>
+    <summary class="verbatim-summary">
+      <span class="verbatim-icon">📄</span>
+      <span class="verbatim-path">.fleet/plans/helm-carrier-introduction.md</span>
+      <span class="verbatim-meta">334 lines · 20.5 KB · authored by Kirov</span>
+      <button type="button" class="copy-md-btn" id="copyMdBtn">📋 COPY MARKDOWN</button>
+      <span class="verbatim-toggle">⇕</span>
+    </summary>
+    <div class="verbatim-body">
+
+      <h4 class="vb-h1">Helm Carrier Introduction</h4>
+      <p class="vb-comment">&lt;!-- Blueprint for Fleet maintainer review · Not an active Ohio dispatch --&gt;</p>
+
+      <h4 class="vb-h2">Overview</h4>
+      <p>Helm은 Admiral이 작성한 동적 JS 오케스트레이션 스크립트를 격리된 Deno 런타임에서 실행하고, 최대 16 concurrent / 1,000 total 자식 sub-agent를 fan-out하며, 중간 결과를 Admiral 컨텍스트 외부에 격리하고, 검증된 최종 결과만 <code>carrier_jobs</code> 경로로 반환하는 신규 독립 캐리어다.</p>
+      <ul class="vb-meta-list">
+        <li><b>의도 유형:</b> Build from Scratch</li>
+        <li><b>청사진 상태:</b> 메인테이너 검토용 (실제 코드 발주 아님)</li>
+        <li><b>원본 Doctrine Decision 출처:</b> Nimitz <code>carrier:bc7793e9-20ab-4cfe-a4e2-764faa14cb2a</code></li>
+        <li><b>Wave 1 재정의 출처:</b> Nimitz <code>carrier:83767460-d40b-40b3-bebd-876777819a38</code></li>
+        <li><b>목표 완료 추정:</b> <b style="color:var(--accent)">5.5 ideal-days</b> (contract verification 포함)</li>
+      </ul>
+
+      <h4 class="vb-h2">Objective</h4>
+      <ol>
+        <li>Fleet Roster에 Helm을 독립 캐리어로 추가한다.</li>
+        <li>Deno 격리 런타임 위에서 동적 JS 오케스트레이션을 실행하는 최소 viable 구현을 정의한다.</li>
+        <li>Admiral 단일 승인 → 자율 fan-out → 격리 결과 반환 흐름을 시연한다.</li>
+        <li>사전 결정(U-1-LOCK, U-2-LOCK, U-3-LOCK)의 실환경 성립을 contract verification wave로 확인하고, 잔존 unknowns(U-4~U-6)를 후속 wave에서 해소한다.</li>
+      </ol>
+
+      <h4 class="vb-h2">Decisions Locked <span class="vb-comment-inline">— Nimitz 결정 — 재논의 대상 아님</span></h4>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>결정</th><th>선택값</th><th>근거 요약</th></tr></thead>
+          <tbody>
+            <tr><td>L-1</td><td>샌드박스</td><td><b>Deno</b> <code>--allow-run=claude --allow-write=.fleet/workflows/</code></td><td>firejail=macOS 비호환, vm2=deprecated+CVE, Node vm=동일힙, Docker=spin-up 레이턴시 지배적</td></tr>
+            <tr><td>L-2</td><td>호출 메커니즘</td><td><b><code>claude -p</code> headless only</b></td><td>Fleet auth 일원화, <code>EXECUTOR_MCP_TOOL_IDS</code> whitelist 준수, SDK 직접 호출 시 second auth path 생성</td></tr>
+            <tr><td>L-3</td><td>동시성 하드캡</td><td><b><code>maxConcurrent ≤ 16</code></b> (manifest 선언, runtime 강제)</td><td>Anthropic Dynamic Workflows 상한 정렬</td></tr>
+            <tr><td>L-4</td><td>Admiral 개입</td><td><b>워크플로우 발사 전 1회만</b></td><td>fan-out 중 재개입 시 컨텍스트 오염 역행</td></tr>
+            <tr><td>L-5</td><td>Ohio 관계</td><td><b>Helm = 독립 캐리어, Ohio 미수정</b></td><td>Ohio=정적 wave 실행자, Helm=동적 생성+실행 복합체 — 역할 직교</td></tr>
+            <tr><td>L-6</td><td>자식 worker</td><td><b><code>executeOneShot</code> 전용</b> — <code>CarrierSessionStore</code> pool 진입 금지</td><td>세션 교차오염 차단</td></tr>
+            <tr><td>L-7</td><td>컨텍스트 홈 격리 <b>(U-1-LOCK)</b></td><td><b><code>CLAUDE_HOME=$RUN_DIR/worker-N/.claude-home</code></b> 무조건 주입 (사전 생성 빈 디렉터리)</td><td>부모 <code>~/.claude/</code> 트리 물리 접근 차단. <code>claude -p</code> 내부 동작 불문 zero-assumption 격리.</td></tr>
+            <tr><td>L-8</td><td>stdout 파싱 계약 <b>(U-2-LOCK)</b></td><td><b><code>--output-format json</code> 강제.</b> 종료코드 0/non-0 이진 신호. 결과는 <code>ChildResultRaw { result, is_error?, session_id?, cost_usd? }</code>. 파싱 실패 시 raw text fallback. CLI semver pre-flight.</td><td>버전 간 추가 필드 수용, <code>result</code> 키 제거는 pre-flight 차단.</td></tr>
+            <tr><td>L-9</td><td>Deno 의존성 정책 <b>(U-3-LOCK)</b></td><td><b><code>package.json</code> 진입 금지.</b> 시스템 전제 <code>deno >= 2.0</code> LTS. AGENTS.md/README 설치 섹션. CI <code>denoland/setup-deno@v2</code>. launcher pre-flight <code>which deno</code> + semver → fail-fast.</td><td>npm devDep는 Fleet <code>allowed native builds</code> 정책 충돌.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4 class="vb-h2">Open Unknowns <span class="vb-comment-inline">— U-1/U-2/U-3 LOCK 처리됨, Wave 1 verification만 수행. U-4~U-6 잔존.</span></h4>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Unknown</th><th>위험 등급</th><th>해소 Wave</th></tr></thead>
+          <tbody>
+            <tr><td>U-4</td><td><code>ExecResult</code> 스키마의 N:1 팬인 집계 지원 여부</td><td><span class="pill med">MEDIUM</span> — 결과 취합 아키텍처 영향</td><td>Wave 2</td></tr>
+            <tr><td>U-5</td><td><code>TrackStatus</code> enum에 <code>"partial"</code> 상태 추가 vs 기존 <code>"error"</code> 재사용</td><td><span class="pill low">LOW-MED</span></td><td>Wave 2</td></tr>
+            <tr><td>U-6</td><td>뮤테이션 phase 실패 시 롤백 원자성 — git 기반 vs <code>.fleet/runs/&lt;id&gt;/snapshot</code> 기반</td><td><span class="pill high">HIGH</span> — 데이터 안전성</td><td>Wave 5</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4 class="vb-h2">File Ownership</h4>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>경로 (예정)</th><th>소유 Carrier</th><th>비고</th></tr></thead>
+          <tbody>
+            <tr><td><code>admiral/carrier/personas/helm/</code></td><td>Helm</td><td>신규 페르소나 디렉터리</td></tr>
+            <tr><td><code>admiral/carrier/personas/helm/index.ts</code></td><td>Helm</td><td>캐리어 진입점</td></tr>
+            <tr><td><code>admiral/carrier/personas/helm/deno-runner.ts</code></td><td>Helm</td><td>Deno subprocess 래퍼</td></tr>
+            <tr><td><code>admiral/carrier/personas/helm/manifest.schema.ts</code></td><td>Helm</td><td>WorkflowManifest 타입</td></tr>
+            <tr><td><code>admiral/carrier/personas/helm/fan-out.ts</code></td><td>Helm</td><td>동시성 제어 + fan-out 엔진</td></tr>
+            <tr><td><code>admiral/carrier/personas/helm/result-aggregator.ts</code></td><td>Helm</td><td>N:1 팬인 + ExecResult 집계</td></tr>
+            <tr><td><code>admiral/carrier/personas/helm/failure-policy.ts</code></td><td>Helm</td><td>Phase 타입별 실패 정책</td></tr>
+            <tr><td><code>.fleet/workflows/</code></td><td>Helm (런타임 write 대상)</td><td>Deno 격리 write zone</td></tr>
+            <tr><td><code>.fleet/workflows/runs/&lt;id&gt;/</code></td><td>Helm</td><td>실행 단위 격리 디렉터리</td></tr>
+            <tr><td><code>docs/carriers/helm.md</code></td><td>Helm</td><td>캐리어 사용 문서</td></tr>
+            <tr><td><code>docs/architecture/helm-workflow.md</code></td><td>Helm</td><td>아키텍처 다이어그램 + 흐름도</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4 class="vb-h2">Waves</h4>
+
+      <h5 class="vb-h3">Wave 1 — Runtime Contract Verification</h5>
+      <ul>
+        <li><b>목표:</b> L-7(U-1-LOCK), L-8(U-2-LOCK), L-9(U-3-LOCK) 3개 사전 결정이 실제 환경에서 성립함을 smoke test로 확인한다. <b>Unknown 해소가 아닌 사전 결정의 실환경 검증이다.</b></li>
+        <li><b>Target files/modules:</b>
+          <ul>
+            <li><code>AGENTS.md</code> (Deno 설치 전제 조건 섹션 추가)</li>
+            <li>smoke test pass record (CI artifact 또는 <code>docs/spikes/helm-wave1-smoke.md</code>)</li>
+          </ul>
+        </li>
+        <li><b>Dependencies:</b> 없음 (이후 모든 wave의 선행. Wave 0 상당)</li>
+        <li><b>Implementation summary:</b>
+          <ol>
+            <li><b>Smoke A — L-7 (CLAUDE_HOME 격리) 확인:</b> <code>CLAUDE_HOME=/tmp/empty claude -p "echo ok"</code> 실행. <code>~/.claude/</code> 트리 미참조 확인 (파일시스템 접근 로그 또는 빈 home 하에 정상 실행 여부). 판정: <b>PASS / FAIL 이진</b>.</li>
+            <li><b>Smoke B — L-8 (<code>--output-format json</code> 파싱) 확인:</b> <code>claude -p "hello" --output-format json</code> 실행 → <code>ChildResultRaw.result</code> 필드 존재 확인. 비정상 인자로 non-0 종료 유도 → 종료 코드 관찰. 판정: <b>PASS / FAIL 이진</b>.</li>
+            <li><b>Smoke C — L-9 (Deno pre-flight) 확인:</b> CI matrix에서 Deno 미설치 상태로 Helm pre-flight 실행 → fail-fast 메시지 출력 확인. <code>denoland/setup-deno@v2</code> action 포함 후 CI green 확인. 판정: <b>PASS / FAIL 이진</b>.</li>
+            <li><code>AGENTS.md</code>에 Deno 설치 전제 조건 섹션 추가: <code>deno >= 2.0</code> 요구사항, 설치 명령, pre-flight 에러 메시지 예시.</li>
+          </ol>
+        </li>
+        <li><b>Verification/static checks:</b>
+          <ul>
+            <li>3개 smoke test 모두 PASS 기록될 것</li>
+            <li>AGENTS.md Deno entry 등록 확인</li>
+            <li>어느 smoke라도 FAIL 시 정의된 에스컬레이션 경로(E-1, E-2, E-5) 즉시 트리거</li>
+          </ul>
+        </li>
+        <li><b>Escalation triggers:</b>
+          <ul>
+            <li>Smoke A FAIL: <code>CLAUDE_HOME</code>이 해당 CLI 버전에서 미구현 → <code>--no-memory</code> 플래그 탐색으로 에스컬레이션 (E-1)</li>
+            <li>Smoke B FAIL: <code>result</code> 키 이름 불일치 또는 JSON 출력 미지원 → 버전 핀 + fallback raw-text 전략으로 에스컬레이션 (E-2)</li>
+            <li>Smoke C FAIL: Deno 시스템 미설치 환경 대응 불가 → pre-flight fail-fast 메시지 명시 안내, <code>npm install -g deno</code> fallback 비권장 문서화 (E-5)</li>
+          </ul>
+        </li>
+        <li><b>Ideal-day 추정:</b> <b style="color:var(--accent)">0.25d</b></li>
+      </ul>
+
+      <h5 class="vb-h3">Wave 2 — Schema & Type Foundation</h5>
+      <ul>
+        <li><b>목표:</b> Helm의 핵심 타입 계약(WorkflowManifest, ExecResult 팬인, TrackStatus)을 확정해 이후 구현 wave의 인터페이스를 고정한다.</li>
+        <li><b>Target files/modules:</b>
+          <ul>
+            <li><code>admiral/carrier/personas/helm/manifest.schema.ts</code></li>
+            <li><code>admiral/carrier/personas/helm/result-aggregator.ts</code> (스키마 부분)</li>
+            <li>Fleet 공유 타입 파일 (TrackStatus enum 위치 — U-5 해소 후 결정)</li>
+          </ul>
+        </li>
+        <li><b>Dependencies:</b> Wave 1 완료 (U-2 파싱 계약 확정 후 ExecResult 설계 가능)</li>
+        <li><b>Implementation summary:</b>
+          <ol>
+            <li><b>WorkflowManifest</b> 타입 정의:
+<pre><code>interface WorkflowManifest {
+  budget: { maxAgents: number; tokensPerAgent: number; maxConcurrent: number }
+  toolAllowlist: string[]
+  domainAllowlist: string[]
+  mutationPhases: PhaseId[]
+  phases: PhaseDefinition[]
+}
+interface PhaseDefinition {
+  id: PhaseId
+  type: 'analysis' | 'mutation' | 'validation'
+  failurePolicy: 'fail-fast' | 'best-effort' | { quorum: number }
+}</code></pre>
+            </li>
+            <li><b>U-4 해소:</b> ExecResult에 <code>children: ChildResult[]</code> 필드 추가 또는 별도 <code>AggregatedExecResult</code> 래퍼 타입 정의. N:1 팬인 집계 스키마 확정.</li>
+            <li><b>U-5 해소:</b> <code>TrackStatus</code>에 <code>"partial"</code> 추가 여부 결정. quorum 성공·부분 성공 표현에 <code>"partial"</code> 도입, 완전 실패는 기존 <code>"error"</code> 유지 권장.</li>
+            <li>Helm 자체 <code>CarrierJobReport</code> (자식 N개 → 단일 carrier_jobs 결과 압축) 초안.</li>
+          </ol>
+        </li>
+        <li><b>Verification/static checks:</b>
+          <ul>
+            <li><code>tsc --noEmit</code> 통과</li>
+            <li>manifest 스키마에 <code>maxConcurrent &gt; 16</code> 시 컴파일 타임 경고 또는 Zod/런타임 검증 추가</li>
+          </ul>
+        </li>
+        <li><b>Escalation triggers:</b>
+          <ul>
+            <li>TrackStatus 공유 타입이 다른 캐리어에 breaking change를 유발하는 경우 → Admiral Direction Needed</li>
+          </ul>
+        </li>
+        <li><b>Ideal-day 추정:</b> 0.5d</li>
+      </ul>
+
+      <h5 class="vb-h3">Wave 3 — Deno Sandbox & 3-Layer Isolation</h5>
+      <ul>
+        <li><b>목표:</b> Deno 프로세스 샌드박스와 3-layer 컨텍스트 격리를 구현해 자식 worker가 부모 컨텍스트와 완전히 분리되도록 보장한다.</li>
+        <li><b>Target files/modules:</b>
+          <ul>
+            <li><code>admiral/carrier/personas/helm/deno-runner.ts</code></li>
+            <li><code>.fleet/workflows/runs/</code> (런타임 생성 디렉터리)</li>
+          </ul>
+        </li>
+        <li><b>Dependencies:</b> Wave 1 (Smoke A~C PASS 확인), Wave 2 (WorkflowManifest 타입)</li>
+        <li><b>Implementation summary:</b>
+          <ol>
+            <li><b>Layer 1 — CWD 격리:</b> 각 <code>claude -p</code> 자식 호출은 <code>.fleet/workflows/runs/&lt;runId&gt;/worker-&lt;n&gt;/</code>를 <code>--cwd</code>로 지정. 부모 CLAUDE.md 상속 차단.</li>
+            <li><b>Layer 2 — Env 화이트리스트 + CLAUDE_HOME 강제 (L-7):</b> 자식 spawn 시 <code>process.env</code> 전달 차단. 명시적 허용 목록(<code>ANTHROPIC_API_KEY</code>, <code>FLEET_RUN_ID</code>) + <code>CLAUDE_HOME=$RUN_DIR/worker-N/.claude-home</code>(사전 생성 빈 디렉터리) 무조건 주입.</li>
+            <li><b>Layer 3 — No session resume:</b> <code>--no-resume</code> 동등 플래그 적용. CarrierSessionStore pool 진입 차단.</li>
+            <li>Deno 런타임 내부에서 WorkflowManifest의 <code>toolAllowlist</code>·<code>domainAllowlist</code> 초과 시도를 throw로 거부하는 permission guard 구현.</li>
+            <li><code>deno-runner.ts</code>는 <code>--allow-run=claude --allow-write=.fleet/workflows/</code> 외 추가 권한 없이 동작할 것.</li>
+          </ol>
+        </li>
+        <li><b>Verification/static checks:</b>
+          <ul>
+            <li>격리 단위 테스트: 자식 프로세스 env에 <code>HOME</code>, <code>CLAUDE_HOME</code> 누설 없는지 확인</li>
+            <li><code>deno info</code>로 권한 선언 확인</li>
+            <li>Deno 런타임 내 <code>fetch()</code> / <code>Deno.readFile("../../")</code> 호출 시 권한 오류 발생 확인</li>
+          </ul>
+        </li>
+        <li><b>Escalation triggers:</b>
+          <ul>
+            <li>Wave 1 Smoke A FAIL 전파: <code>CLAUDE_HOME</code> 미구현 CLI 버전 사용 중인 경우 → Wave 중단, E-1 트리거</li>
+          </ul>
+        </li>
+        <li><b>Ideal-day 추정:</b> 1.0d</li>
+      </ul>
+
+      <h5 class="vb-h3">Wave 4 — Fan-out Orchestration Engine</h5>
+      <ul>
+        <li><b>목표:</b> maxConcurrent ≤ 16 하드캡 적용 하에 동적 JS 스크립트로부터 자식 worker를 fan-out하고, 결과를 N:1 집계하는 오케스트레이션 엔진을 구현한다.</li>
+        <li><b>Target files/modules:</b>
+          <ul>
+            <li><code>admiral/carrier/personas/helm/fan-out.ts</code></li>
+            <li><code>admiral/carrier/personas/helm/result-aggregator.ts</code></li>
+            <li><code>admiral/carrier/personas/helm/index.ts</code> (캐리어 진입점)</li>
+          </ul>
+        </li>
+        <li><b>Dependencies:</b> Wave 2 (스키마), Wave 3 (Deno sandbox)</li>
+        <li><b>Implementation summary:</b>
+          <ol>
+            <li><code>fan-out.ts</code>: concurrency semaphore 구현. <code>maxConcurrent</code> manifest 값을 런타임 강제. 16 초과 시 즉시 reject.</li>
+            <li>동적 JS 오케스트레이션 스크립트는 Deno 런타임 내에서 <code>dispatchWorker(prompt: string, opts: WorkerOpts): Promise&lt;ChildResult&gt;</code> API를 호출. Helm이 이 API를 Deno global scope에 주입.</li>
+            <li><code>result-aggregator.ts</code>: Wave 2에서 확정된 <code>AggregatedExecResult</code> 스키마로 N개 ChildResult를 취합. <code>carrier_jobs</code> 단일 결과로 압축.</li>
+            <li>Admiral 승인 흐름: Helm이 manifest + JS script를 Admiral에 제출 → 승인 수신 후 Deno 런타임 시작 → fan-out 자율 진행.</li>
+          </ol>
+        </li>
+        <li><b>Verification/static checks:</b>
+          <ul>
+            <li><code>maxConcurrent: 17</code> 설정 시 런타임 에러 발생 단위 테스트</li>
+            <li>16 concurrent worker 동시 실행 통합 테스트 (mock <code>claude -p</code>)</li>
+            <li>집계 결과가 <code>AggregatedExecResult</code> 스키마를 만족하는지 타입 체크</li>
+          </ul>
+        </li>
+        <li><b>Escalation triggers:</b>
+          <ul>
+            <li>dispatchWorker API 설계가 Deno global injection 방식으로 충돌하는 경우 → 대안(파라미터 주입) 선택 전 Admiral 확인</li>
+          </ul>
+        </li>
+        <li><b>Ideal-day 추정:</b> 1.5d</li>
+      </ul>
+
+      <h5 class="vb-h3">Wave 5 — Failure Policy & Rollback</h5>
+      <ul>
+        <li><b>목표:</b> Phase 타입 기반 이중 실패 정책을 구현하고, 뮤테이션 phase 롤백 원자성(U-6)을 해소한다.</li>
+        <li><b>Target files/modules:</b>
+          <ul>
+            <li><code>admiral/carrier/personas/helm/failure-policy.ts</code></li>
+            <li><code>.fleet/workflows/runs/&lt;id&gt;/snapshot/</code> (롤백 스냅샷 디렉터리, 런타임 생성)</li>
+          </ul>
+        </li>
+        <li><b>Dependencies:</b> Wave 4 (팬인 엔진), Wave 1 (U-6 rollback 전략 선행 확인)</li>
+        <li><b>Implementation summary:</b>
+          <ol>
+            <li>Phase 타입별 기본 정책 구현:
+              <ul>
+                <li><code>analysis</code>: <code>best-effort</code> (&gt;50% 완료 시 phase 성공)</li>
+                <li><code>mutation</code>: <code>fail-fast</code> (1개 실패 → 즉시 중단 + 롤백 트리거)</li>
+                <li><code>validation</code>: <code>quorum(2/3)</code> (2/3 이상 합의 시 통과)</li>
+              </ul>
+            </li>
+            <li>manifest <code>phases[N].failurePolicy</code> override 지원.</li>
+            <li><b>U-6 해소 — 롤백 전략 선택:</b>
+              <ul>
+                <li><b>Option A (git 기반):</b> mutation phase 시작 전 <code>git stash</code> + 실패 시 <code>git stash pop</code>. 원자성 보장되나 git 상태 의존.</li>
+                <li><b>Option B (snapshot 기반):</b> <code>.fleet/workflows/runs/&lt;id&gt;/snapshot/</code>에 영향 파일 사전 복사 + 실패 시 복원. git 독립적이나 대용량 파일 시 오버헤드.</li>
+                <li><b>Wave 5 결정 지점:</b> 팀 git 정책 확인 후 선택. Admiral Direction Needed if 미결.</li>
+              </ul>
+            </li>
+            <li><code>TrackStatus "partial"</code> (Wave 2 확정 시) quorum 부분 성공 케이스에 적용.</li>
+          </ol>
+        </li>
+        <li><b>Verification/static checks:</b>
+          <ul>
+            <li>mutation phase 1개 실패 시나리오에서 롤백 적용 여부 확인 통합 테스트</li>
+            <li>best-effort phase에서 49% 실패 시 phase 실패 판정 단위 테스트</li>
+            <li>quorum 정확히 2/3 경계값 단위 테스트</li>
+          </ul>
+        </li>
+        <li><b>Escalation triggers:</b>
+          <ul>
+            <li><b>U-6 미해소 시 Wave 5 시작 불가</b> → 롤백 전략(git vs snapshot) Admiral Direction Needed</li>
+            <li>git 기반 롤백이 다른 캐리어 실행과 충돌하는 경우 → snapshot 방식으로 강제 전환</li>
+          </ul>
+        </li>
+        <li><b>Ideal-day 추정:</b> 1.0d</li>
+      </ul>
+
+      <h5 class="vb-h3">Wave 6 — Demo Workflow & End-to-End Validation</h5>
+      <ul>
+        <li><b>목표:</b> 최소 워크플로우 1개를 end-to-end 시연해 Helm 캐리어가 실제로 동작함을 증명한다.</li>
+        <li><b>Target files/modules:</b>
+          <ul>
+            <li><code>.fleet/workflows/examples/multi-file-analysis.js</code> (데모 오케스트레이션 스크립트)</li>
+            <li><code>docs/carriers/helm.md</code> (사용 예시 포함)</li>
+          </ul>
+        </li>
+        <li><b>Dependencies:</b> Wave 3, 4, 5 완료</li>
+        <li><b>Implementation summary:</b>
+          <ol>
+            <li>데모 시나리오: "지정 디렉터리의 파일 목록을 분석 phase로 fan-out, 각 파일에 대해 <code>claude -p</code>로 요약 생성, 결과를 집계해 단일 summary 반환"</li>
+            <li>오케스트레이션 스크립트는 순수 JS. <code>dispatchWorker</code> API만 사용. 외부 npm import 없음 (Deno 격리 원칙).</li>
+            <li>Admiral 승인 → Deno 실행 → fan-out → 집계 → <code>carrier_jobs</code> 결과 반환 전체 흐름 실행.</li>
+            <li>실행 로그 <code>runs/&lt;id&gt;/</code> 하위에 worker별 stdout 보존 확인.</li>
+          </ol>
+        </li>
+        <li><b>Verification/static checks:</b>
+          <ul>
+            <li>데모 워크플로우 완주 후 <code>carrier_jobs(action:"result")</code> 응답이 <code>AggregatedExecResult</code> 스키마 만족</li>
+            <li>Admiral 컨텍스트 외부 격리 확인 (Admiral 세션에 중간 worker 출력 없음)</li>
+            <li><code>maxConcurrent ≤ 16</code> 준수 로그 확인</li>
+          </ul>
+        </li>
+        <li><b>Escalation triggers:</b>
+          <ul>
+            <li>데모 워크플로우가 환경 의존성(Deno 미설치, claude CLI 버전 불일치 등)으로 실행 불가 시 → 설치 전제조건 문서화 후 Wave 6 완료 마킹</li>
+          </ul>
+        </li>
+        <li><b>Ideal-day 추정:</b> 0.75d</li>
+      </ul>
+
+      <h5 class="vb-h3">Wave 7 — Documentation & Fleet Roster Update</h5>
+      <ul>
+        <li><b>목표:</b> Helm 캐리어를 Fleet doctrine 문서에 공식 등록하고 운영 가이드를 완성한다.</li>
+        <li><b>Target files/modules:</b>
+          <ul>
+            <li><code>docs/carriers/helm.md</code></li>
+            <li><code>docs/architecture/helm-workflow.md</code></li>
+            <li>Fleet Roster 문서 (캐리어 목록 업데이트)</li>
+            <li><code>CLAUDE.md</code> (Helm 진입점 기술 추가)</li>
+          </ul>
+        </li>
+        <li><b>Dependencies:</b> Wave 6 (데모 결과 기반 실제 동작 검증 후 문서화)</li>
+        <li><b>Implementation summary:</b>
+          <ol>
+            <li><code>docs/carriers/helm.md</code>: 역할 정의, WorkflowManifest 필드 설명, 사용 예시, 제한사항(1,000-agent 부하 테스트는 별도 후속).</li>
+            <li><code>docs/architecture/helm-workflow.md</code>: Admiral → Helm → Deno → workers → aggregator → carrier_jobs 흐름 다이어그램 (Mermaid).</li>
+            <li>Fleet Roster에 Helm 페르소나 등록. <code>CARRIER_COLORS</code>, <code>constants.ts</code> 자동 파생 체계 적용 여부 확인 (Wave 1 spike 결과 반영).</li>
+            <li>1,000-agent 부하 테스트를 명시적 후속 작전으로 <code>docs/roadmap/helm-load-test.md</code>에 예고.</li>
+          </ol>
+        </li>
+        <li><b>Verification/static checks:</b>
+          <ul>
+            <li>모든 코드 예시가 Wave 6 실제 동작 기준으로 검증됨</li>
+            <li>Mermaid 다이어그램 렌더링 확인</li>
+          </ul>
+        </li>
+        <li><b>Escalation triggers:</b>
+          <ul>
+            <li>CARRIER_COLORS / constants.ts 자동 파생 체계 비적용 확인 시 → 수동 등록 절차 문서화</li>
+          </ul>
+        </li>
+        <li><b>Ideal-day 추정:</b> 0.5d</li>
+      </ul>
+
+      <h4 class="vb-h2">QA Gates</h4>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Gate</th><th>조건</th><th>통과 기준</th></tr></thead>
+          <tbody>
+            <tr><td>G-1</td><td>Wave 1 완료 후</td><td>3개 smoke test (A/B/C) 모두 PASS 기록, AGENTS.md Deno entry 등록 확인</td></tr>
+            <tr><td>G-2</td><td>Wave 2 완료 후</td><td><code>tsc --noEmit</code> 통과, manifest maxConcurrent 검증 통과</td></tr>
+            <tr><td>G-3</td><td>Wave 3 완료 후</td><td>격리 단위 테스트 통과, env 누설 없음 확인</td></tr>
+            <tr><td>G-4</td><td>Wave 4 완료 후</td><td>maxConcurrent ≤ 16 강제 테스트 통과, 집계 스키마 타입 체크 통과</td></tr>
+            <tr><td>G-5</td><td>Wave 5 완료 후</td><td>실패 정책 단위 테스트 전체 통과, 롤백 전략 결정 문서화</td></tr>
+            <tr><td>G-6</td><td>Wave 6 완료 후</td><td>데모 워크플로우 end-to-end 완주, carrier_jobs 결과 스키마 만족</td></tr>
+            <tr><td>G-7</td><td>Wave 7 완료 후</td><td>문서 완성, Fleet Roster 업데이트, 후속 부하 테스트 작전 예고 등록</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4 class="vb-h2">Acceptance Criteria</h4>
+      <ol>
+        <li><b>격리:</b> 데모 실행 중 Admiral 컨텍스트에 자식 worker 중간 출력이 노출되지 않는다.</li>
+        <li><b>하드캡:</b> <code>maxConcurrent &gt; 16</code> manifest 제출 시 런타임 reject된다.</li>
+        <li><b>단일 승인:</b> Admiral은 워크플로우 발사 전 1회만 개입한다. fan-out 중 추가 개입 없음.</li>
+        <li><b>실패 정책:</b> mutation phase 1개 실패 시 즉시 중단 + 롤백이 트리거된다.</li>
+        <li><b>결과 반환:</b> 집계된 최종 결과가 <code>carrier_jobs</code> 경로를 통해 단일 응답으로 반환된다.</li>
+        <li><b>데모 완주:</b> 예시 오케스트레이션 스크립트가 Deno 런타임에서 end-to-end 실행된다.</li>
+        <li><b>Ohio 무결성:</b> Ohio 소스에 변경이 없다.</li>
+        <li><b>Contract 확인 + Unknown 해소:</b> Wave 1 smoke A~C PASS, U-4~U-6 전체가 배정 wave 보고서에 명시적 판정과 함께 기록된다.</li>
+      </ol>
+
+      <h4 class="vb-h2">Documentation Updates</h4>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>문서</th><th>변경 유형</th><th>담당 Wave</th></tr></thead>
+          <tbody>
+            <tr><td><code>docs/carriers/helm.md</code></td><td>신규 생성</td><td>Wave 7</td></tr>
+            <tr><td><code>docs/architecture/helm-workflow.md</code></td><td>신규 생성 (Mermaid 다이어그램)</td><td>Wave 7</td></tr>
+            <tr><td>Fleet Roster (캐리어 목록)</td><td>Helm 페르소나 추가</td><td>Wave 7</td></tr>
+            <tr><td><code>CLAUDE.md</code></td><td>Helm 진입점 기술 추가</td><td>Wave 7</td></tr>
+            <tr><td><code>AGENTS.md</code></td><td>Deno 설치 전제 조건 섹션 추가</td><td>Wave 1</td></tr>
+            <tr><td><code>docs/spikes/helm-wave1-smoke.md</code></td><td>신규 생성 (smoke test pass record)</td><td>Wave 1</td></tr>
+            <tr><td><code>docs/roadmap/helm-load-test.md</code></td><td>신규 생성 (후속 작전 예고)</td><td>Wave 7</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4 class="vb-h2">Escalation Triggers</h4>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>트리거</th><th>조건</th><th>조치</th></tr></thead>
+          <tbody>
+            <tr><td>E-1</td><td>Wave 1 Smoke A FAIL: <code>CLAUDE_HOME</code>이 현재 CLI 버전에서 미구현</td><td><code>--no-memory</code> 플래그 존재 여부 탐색으로 에스컬레이션 → Admiral Direction Needed</td></tr>
+            <tr><td>E-2</td><td>Wave 1 Smoke B FAIL: JSON schema 하위 버전에서 <code>result</code> 키 이름 불일치</td><td>버전 핀 확정 + fallback raw-text 처리 전략 Admiral 승인 → Wave 3 설계 수정</td></tr>
+            <tr><td>E-3</td><td>U-6: 롤백 전략(git vs snapshot) 미결</td><td>Wave 5 시작 금지 — Admiral Direction Needed</td></tr>
+            <tr><td>E-4</td><td>TrackStatus <code>"partial"</code> 추가가 기존 캐리어에 breaking change 유발</td><td>Admiral Direction Needed — 타입 전략 확정</td></tr>
+            <tr><td>E-5</td><td>Wave 1 Smoke C FAIL: Deno 시스템 미설치에서 pre-flight fail-fast 미동작</td><td>pre-flight 에러 메시지 강화 + AGENTS.md 안내 명시. <code>npm install -g deno</code> fallback 비권장. CI <code>denoland/setup-deno@v2</code> 필수.</td></tr>
+            <tr><td>E-6</td><td>Ohio 코드베이스 수정 압박 발생</td><td>즉시 중단 — L-5 결정 위반, Nimitz에 재상신</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4 class="vb-h2">Risk Register</h4>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>리스크</th><th>확률</th><th>영향</th><th>완화 전략</th></tr></thead>
+          <tbody>
+            <tr><td>R-1</td><td><code>claude -p</code> 동작이 버전별로 비일관적 — 파싱 계약 불안정</td><td><span class="pill low">LOW</span></td><td><span class="pill med">MED</span></td><td><code>--output-format json</code> 고정 + raw text fallback + CLI semver pre-flight 핀으로 흡수 (L-8)</td></tr>
+            <tr><td>R-2</td><td>Deno 격리가 <code>~/.claude/MEMORY.md</code>를 막지 못함</td><td><span class="pill low">LOW</span></td><td><span class="pill low">LOW</span></td><td><code>CLAUDE_HOME</code> 무조건 주입으로 행동학적 제거 (L-7). 잔존 리스크: CLI 미구현 버전 — E-1 경로.</td></tr>
+            <tr><td>R-3</td><td>1,000-agent 총량 실행 시 <code>.fleet/workflows/runs/</code> 디스크 폭증</td><td><span class="pill low">LOW</span></td><td><span class="pill med">MED</span></td><td>본 작전 범위 밖, 부하 테스트 후속 작전에서 해소</td></tr>
+            <tr><td>R-4</td><td>mutation 롤백 원자성 보장 실패 → 부분 적용 상태 영구화</td><td><span class="pill low">LOW</span></td><td><span class="pill high">HIGH</span></td><td>git stash 또는 snapshot 전략 Wave 5에서 확정, 미결 시 mutation phase 비활성화</td></tr>
+            <tr><td>R-5</td><td>16-concurrent 한도에서 총 1,000-agent 목표 달성 시간 초과</td><td><span class="pill low">LOW</span></td><td><span class="pill low">LOW</span></td><td>비기능 요구사항 — 성능 SLA는 본 MVP 범위 밖</td></tr>
+            <tr><td>R-6</td><td>CARRIER_COLORS 등 CLI constants 자동 파생 체계 미지원</td><td><span class="pill med">MED</span></td><td><span class="pill low">LOW</span></td><td>Wave 7에서 수동 등록 fallback 절차 문서화</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4 class="vb-h2">Final Review Loop</h4>
+      <p><b>메인테이너 검토 체크리스트:</b></p>
+      <ul class="vb-checklist">
+        <li>☐ L-1~L-9 결정 사항이 팀 Fleet doctrine과 일치하는가?</li>
+        <li>☐ Wave 1 smoke test A/B/C 모두 PASS 기록되었는가?</li>
+        <li>☐ U-4~U-6 해소 결과가 Wave별 QA Gate를 통과하는가?</li>
+        <li>☐ Wave 5 롤백 전략(E-3)이 git 정책과 충돌하지 않는가?</li>
+        <li>☐ TrackStatus <code>"partial"</code> 추가(U-5)의 하위 호환성이 검토되었는가?</li>
+        <li>☐ 1,000-agent 부하 테스트 후속 작전이 로드맵에 등록되었는가?</li>
+        <li>☐ Ohio 소스 미수정 (L-5) 확인: <code>git diff admiral/carrier/personas/ohio/</code> 변경 없음?</li>
+        <li>☐ 데모 워크플로우(Wave 6)가 재현 가능한 환경에서 실행 확인되었는가?</li>
+      </ul>
+      <p class="vb-totals"><b>총 ideal-day 합산:</b> <b style="color:var(--accent)">5.5d</b> (Wave 1: 0.25d + Wave 2: 0.5d + Wave 3: 1.0d + Wave 4: 1.5d + Wave 5: 1.0d + Wave 6: 0.75d + Wave 7: 0.5d)<br/>
+      <b>1,000-agent 부하 테스트:</b> 별도 후속 작전 — 본 MVP 범위 외 명시 제외.</p>
+    </div>
+  </details>
+</section>
+
+<!-- ============================================================ -->
+<section id="watchout">
+  <h2><span class="num">§ 07</span> Watchout · Open Decisions · Risks</h2>
+
+  <h3>7.1 Open Unknowns (Wave별 해소 예정)</h3>
+  <div class="callout info">
+    <div class="label">✓ U-1 / U-2 / U-3 사전 LOCK 처리</div>
+    <p>Nimitz 추가 검토(<code>carrier:83767460</code>)로 U-1·U-2·U-3는 <b>실험 대상 unknown</b>에서 <b>사전 결정된 commit (L-7·L-8·L-9)</b>으로 격상되었다. Wave 1은 더 이상 spike가 아니라 <b>"Runtime Contract Verification"</b> — 3개 결정의 실환경 성립을 smoke test로만 확인한다. 잔존 unknowns는 U-4·U-5·U-6 셋뿐.</p>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Unknown</th><th>위험</th><th>해소 Wave</th></tr></thead>
+      <tbody>
+        <tr><td>U-4</td><td><code>ExecResult</code> 스키마의 N:1 팬인 집계 지원</td><td><span class="pill med">MED</span></td><td>W2</td></tr>
+        <tr><td>U-5</td><td><code>TrackStatus</code>에 <code>"partial"</code> 추가 vs <code>"error"</code> 재사용</td><td><span class="pill low">LOW</span></td><td>W2</td></tr>
+        <tr><td>U-6</td><td>뮤테이션 phase 실패 시 롤백 원자성 (git vs snapshot)</td><td><span class="pill high">HIGH</span></td><td>W5</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>7.2 Admiral Direction Needed (메인테이너 결정 요청)</h3>
+  <div class="callout danger">
+    <div class="label">🚨 결정 1 — E-3 / U-6 (Wave 5 시작 전)</div>
+    <p>뮤테이션 phase 롤백 전략: <b>git stash 기반</b> vs <b><code>.fleet/runs/&lt;id&gt;/snapshot/</code> 기반</b>. 팀 git 정책과 충돌 여부 확인 필요. 미결 시 Wave 5 진입 금지.</p>
+  </div>
+  <div class="callout warn">
+    <div class="label">⚠ 결정 2 — E-4 / U-5 (Wave 2 전)</div>
+    <p><code>TrackStatus</code>에 <code>"partial"</code> 추가 시 다른 캐리어에 breaking change 유발 여부 확인. 영향 시 마이그레이션 전략 필요.</p>
+  </div>
+  <div class="callout info">
+    <div class="label">ℹ 사전 차단 — Wave 1 Smoke FAIL 조건부 (확률 LOW)</div>
+    <p>Smoke A/B/C 중 FAIL 발생 시에만 활성화: <b>E-1</b> (CLAUDE_HOME 미구현) / <b>E-2</b> (<code>result</code> 키 불일치) / <b>E-5</b> (Deno pre-flight 미동작). 통상 경로에서는 메인테이너 개입 불필요.</p>
+  </div>
+
+  <h3>7.3 Risk Register</h3>
+  <div class="callout">
+    <div class="label">📉 R-1·R-2 등급 축소 (Nimitz LOCK 후)</div>
+    <p><b>R-1</b>: MED·HIGH → <b>LOW·MED</b> (L-8 JSON 고정 + raw fallback + semver pre-flight) — <b>R-2</b>: MED·HIGH → <b>LOW·LOW</b> (L-7 CLAUDE_HOME 무조건 주입으로 행동학적 제거)</p>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>리스크</th><th>확률</th><th>영향</th><th>완화</th></tr></thead>
+      <tbody>
+        <tr><td>R-1</td><td><code>claude -p</code> 동작이 버전별 비일관적</td><td><span class="pill low">LOW</span></td><td><span class="pill med">MED</span></td><td><code>--output-format json</code> 고정 + raw text fallback + CLI semver pre-flight (L-8)</td></tr>
+        <tr><td>R-2</td><td>Deno 격리가 MEMORY.md 차단 실패</td><td><span class="pill low">LOW</span></td><td><span class="pill low">LOW</span></td><td><code>CLAUDE_HOME</code> 무조건 주입으로 행동학적 제거 (L-7). 잔존: CLI 미구현 → E-1.</td></tr>
+        <tr><td>R-3</td><td>1,000-agent 시 <code>.fleet/workflows/runs/</code> 디스크 폭증</td><td><span class="pill low">LOW</span></td><td><span class="pill med">MED</span></td><td>본 MVP 범위 밖 — 부하 테스트 후속 작전</td></tr>
+        <tr><td>R-4</td><td>mutation 롤백 실패 → 부분 적용 영구화</td><td><span class="pill low">LOW</span></td><td><span class="pill high">HIGH</span></td><td>W5 결정, 미결 시 mutation 비활성화</td></tr>
+        <tr><td>R-5</td><td>16-concurrent 한도에서 1,000-agent 달성 시간 초과</td><td><span class="pill low">LOW</span></td><td><span class="pill low">LOW</span></td><td>비기능 — SLA 범위 밖</td></tr>
+        <tr><td>R-6</td><td><code>CARRIER_COLORS</code>·constants 자동 파생 미지원</td><td><span class="pill med">MED</span></td><td><span class="pill low">LOW</span></td><td>W7 수동 등록 fallback 문서화</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>7.4 Escalation Triggers (조건부, 통상 비활성)</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>조건</th><th>조치</th></tr></thead>
+      <tbody>
+        <tr><td>E-1</td><td>Wave 1 Smoke A FAIL — <code>CLAUDE_HOME</code> 미구현 CLI</td><td><code>--no-memory</code> 플래그 탐색 → Admiral Direction Needed</td></tr>
+        <tr><td>E-2</td><td>Wave 1 Smoke B FAIL — JSON <code>result</code> 키 불일치</td><td>버전 핀 + fallback raw-text 전략 → Wave 3 설계 수정</td></tr>
+        <tr><td>E-3</td><td>U-6 롤백 전략 미결</td><td>Wave 5 시작 금지 — Admiral Direction Needed</td></tr>
+        <tr><td>E-4</td><td>TrackStatus <code>"partial"</code> breaking change</td><td>Admiral Direction Needed — 타입 전략 확정</td></tr>
+        <tr><td>E-5</td><td>Wave 1 Smoke C FAIL — Deno pre-flight 미동작</td><td>pre-flight 메시지 강화 + AGENTS.md 안내 + CI <code>setup-deno@v2</code> 필수</td></tr>
+        <tr><td>E-6</td><td>Ohio 코드베이스 수정 압박</td><td>즉시 중단 — L-5 위반, Nimitz 재상신</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="next">
+  <h2><span class="num">§ 08</span> Next Steps</h2>
+
+  <h3>9.1 For Fleet Maintainer (Review Checklist)</h3>
+  <ul>
+    <li>☐ L-1~L-6 결정 사항이 팀 Fleet doctrine과 일치하는가?</li>
+    <li>☐ U-1~U-6 spike 결과가 Wave별 QA Gate를 통과하는가? (Wave 1 선행 후 평가)</li>
+    <li>☐ Wave 5 롤백 전략(E-3)이 팀 git 정책과 충돌하지 않는가?</li>
+    <li>☐ <code>TrackStatus "partial"</code> 추가(U-5)의 하위 호환성이 검토되었는가?</li>
+    <li>☐ 1,000-agent 부하 테스트 후속 작전이 로드맵에 등록되었는가?</li>
+    <li>☐ Ohio 소스 미수정 (L-5) 확인: <code>git diff admiral/carrier/personas/ohio/</code> 변경 없음?</li>
+    <li>☐ 데모 워크플로우(Wave 6)가 재현 가능한 환경에서 실행 확인되었는가?</li>
+  </ul>
+
+  <h3>9.2 For Admiral (수신 후 옵션)</h3>
+  <ol>
+    <li><b>Wave 1 spike 발주</b> — Nimitz/Genesis 협업으로 U-1, U-2, U-3 선행 해소. 결과에 따라 plan_file 갱신.</li>
+    <li><b>메인테이너 컨센서스 수렴</b> — 본 문서를 공유하고 §8.2의 3개 결정에 대한 답을 받는다.</li>
+    <li><b>코드 미발주 유지</b> — 본 청사진을 기준선으로 6개월 후 재평가. 그 사이 Anthropic Dynamic Workflows의 사용 실적·문제점을 관찰.</li>
+  </ol>
+
+  <h3>9.3 Long-term Vision</h3>
+  <div class="callout">
+    <p>
+      Helm 도입 후 Fleet 도크트린은 두 가지 모드로 운영된다:
+      <b>(a) Phase-gated mode</b> — Admiral이 매 phase 결정에 관여하는 현재 모드. 안전성·해석가능성 우선.
+      <b>(b) Workflow mode</b> — Helm이 자율 fan-out하는 신규 모드. 스케일·속도 우선.
+      두 모드는 동일 doctrine을 공유하며 작전 성격에 따라 선택된다.
+    </p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="appendix">
+  <h2><span class="num">§ 09</span> Appendix</h2>
+
+  <h3>10.1 출처 (Public)</h3>
+  <ul>
+    <li><a href="https://claude.com/blog/introducing-dynamic-workflows-in-claude-code" target="_blank" rel="noopener">Anthropic 공식 블로그 — Introducing dynamic workflows in Claude Code</a></li>
+    <li><a href="https://code.claude.com/docs/en/workflows" target="_blank" rel="noopener">Claude Code Docs — Orchestrate subagents at scale with dynamic workflows</a></li>
+    <li>InfoQ — Claude Code Adds Dynamic Workflows for Parallel Agent Coordination (2026-06)</li>
+    <li>GitHub — peymanvahidi/awesome-claude-dynamic-workflows (커뮤니티 예제)</li>
+  </ul>
+
+  <h3>10.2 작전 메타데이터 (Internal)</h3>
+  <div class="table-wrap">
+    <table>
+      <tbody>
+        <tr><th>Nimitz 검토 Job ID</th><td><code>carrier:bc7793e9-20ab-4cfe-a4e2-764faa14cb2a</code></td></tr>
+        <tr><th>Kirov Plan Job ID (cancel)</th><td><code>carrier:e2670013-a451-4db2-ba88-c2bc044cc8d9</code> (외부 워크스페이스 정찰로 중단)</td></tr>
+        <tr><th>Kirov Plan Job ID (final)</th><td><code>carrier:ea0f8ed4-5d17-4766-9019-1f16a29027df</code></td></tr>
+        <tr><th>plan_file 산출</th><td><code>/Users/c86j224s/pg/.fleet/plans/helm-carrier-introduction.md</code> (20.5KB, 334줄)</td></tr>
+        <tr><th>본 문서 산출</th><td><code>/Users/c86j224s/pg/helm-carrier-proposal.html</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>10.3 용어집</h3>
+  <div class="table-wrap">
+    <table>
+      <tbody>
+        <tr><th>Carrier</th><td>Fleet 도크트린 내 독립 캐리어 — 특정 책임을 가진 sub-agent persona.</td></tr>
+        <tr><th>Captain (함장)</th><td>각 Carrier의 페르소나/주체. 본 Fleet에서 Helm은 신규 함장이 된다.</td></tr>
+        <tr><th>WorkflowManifest</th><td>Helm이 발사 전 Admiral에 제출하는 budget·권한·phase 정의 봉투.</td></tr>
+        <tr><th>fan-out</th><td>오케스트레이션 스크립트가 N개 자식 worker를 병렬 spawn하는 동작.</td></tr>
+        <tr><th>N:1 aggregation</th><td>N개 자식 결과를 단일 <code>AggregatedExecResult</code>로 압축하는 집계.</td></tr>
+        <tr><th>Adversarial review</th><td>독립 verifier가 다른 agent의 결과를 비판적으로 검증하는 패턴. Fleet Phase 6과 동등.</td></tr>
+        <tr><th>3-Layer isolation</th><td>CWD + Env whitelist + No session resume 으로 구성된 컨텍스트 격리 모델.</td></tr>
+        <tr><th>quorum policy</th><td>검증 phase에서 N개 중 K개 이상 합의 시 phase 통과로 판정하는 실패 정책.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>10.4 변경 이력</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>버전</th><th>일자</th><th>변경</th></tr></thead>
+      <tbody>
+        <tr><td>v0.1</td><td>2026-06-02</td><td>최초 작성 — Nimitz 7결정 + Kirov 7-wave plan 통합</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr class="sep"/>
+  <p style="color: var(--text-dim); font-size: 12px; text-align: center;">
+    ⚓ FLEET INTERNAL — Maintainer Review Draft<br/>
+    <i>Generated by Admiral coordinating Nimitz · Kirov · Conversational synthesis</i>
+  </p>
+
+</section>
+
+</main>
+</div>
+
+<script type="text/markdown" id="plan-md-source"># Helm Carrier Introduction
+<!-- Blueprint for Fleet maintainer review · Not an active Ohio dispatch -->
+
+---
+
+# Overview
+
+Helm은 Admiral이 작성한 동적 JS 오케스트레이션 스크립트를 격리된 Deno 런타임에서 실행하고,
+최대 16 concurrent / 1,000 total 자식 sub-agent를 fan-out하며,
+중간 결과를 Admiral 컨텍스트 외부에 격리하고, 검증된 최종 결과만 `carrier_jobs` 경로로 반환하는
+신규 독립 캐리어다.
+
+**의도 유형:** Build from Scratch
+**청사진 상태:** 메인테이너 검토용 (실제 코드 발주 아님)
+**원본 Doctrine Decision 출처:** Nimitz `carrier:bc7793e9-20ab-4cfe-a4e2-764faa14cb2a`
+**Wave 1 재정의 출처:** Nimitz `carrier:83767460-d40b-40b3-bebd-876777819a38`
+**목표 완료 추정:** 5.5 ideal-days (contract verification 포함)
+
+---
+
+# Objective
+
+1. Fleet Roster에 Helm을 독립 캐리어로 추가한다.
+2. Deno 격리 런타임 위에서 동적 JS 오케스트레이션을 실행하는 최소 viable 구현을 정의한다.
+3. Admiral 단일 승인 → 자율 fan-out → 격리 결과 반환 흐름을 시연한다.
+4. 사전 결정(U-1-LOCK, U-2-LOCK, U-3-LOCK)의 실환경 성립을 contract verification wave로 확인하고, 잔존 unknowns(U-4~U-6)를 후속 wave에서 해소한다.
+
+---
+
+# Decisions Locked
+<!-- Nimitz 결정 — 재논의 대상 아님 -->
+
+| # | 결정 | 선택값 | 근거 요약 |
+|---|------|--------|----------|
+| L-1 | 샌드박스 | **Deno** `--allow-run=claude --allow-write=.fleet/workflows/` | firejail=macOS 비호환, vm2=deprecated+CVE, Node vm=동일힙, Docker=spin-up 레이턴시 지배적 |
+| L-2 | 호출 메커니즘 | **`claude -p` headless only** | Fleet auth 일원화, EXECUTOR_MCP_TOOL_IDS whitelist 준수, SDK 직접 호출 시 second auth path 생성 |
+| L-3 | 동시성 하드캡 | **`maxConcurrent ≤ 16`** (manifest 선언, runtime 강제) | Anthropic Dynamic Workflows 상한 정렬 |
+| L-4 | Admiral 개입 | **워크플로우 발사 전 1회만** | fan-out 중 재개입 시 컨텍스트 오염 역행 |
+| L-5 | Ohio 관계 | **Helm = 독립 캐리어, Ohio 미수정** | Ohio=정적 wave 실행자, Helm=동적 생성+실행 복합체 — 역할 직교 |
+| L-6 | 자식 worker | **`executeOneShot` 전용** — CarrierSessionStore pool 진입 금지 | 세션 교차오염 차단 |
+| L-7 | 컨텍스트 홈 격리 **(U-1-LOCK)** | **`CLAUDE_HOME=$RUN_DIR/worker-N/.claude-home`** 무조건 주입 (사전 생성 빈 디렉터리) | 부모 `~/.claude/` 트리 물리 접근 차단. `claude -p` 내부 동작 불문 zero-assumption 격리. |
+| L-8 | stdout 파싱 계약 **(U-2-LOCK)** | **`--output-format json` 강제.** 종료 코드 0/non-0 이진 신호. 결과 추출은 `ChildResultRaw { result, is_error?, session_id?, cost_usd? }`. 파싱 실패 시 raw text fallback. CLI semver pre-flight 검증. | 버전 간 추가 필드는 수용, `result` 키 제거는 pre-flight에서 차단. |
+| L-9 | Deno 의존성 정책 **(U-3-LOCK)** | **`package.json` 진입 금지.** 시스템 전제 조건 `deno >= 2.0` LTS. 문서: AGENTS.md + README 설치 섹션. CI: `denoland/setup-deno@v2`. Helm launcher pre-flight: `which deno` + semver → fail-fast. | npm devDependency 방식은 Fleet `allowed native builds` 정책 충돌 및 버전-내-버전 문제 발생. |
+
+---
+
+# Open Unknowns
+<!-- U-1, U-2, U-3: Nimitz에 의해 사전 결정(LOCK)됨 — Wave 1에서 실환경 성립 확인만 수행 -->
+<!-- U-4, U-5, U-6: 잔존 unknowns — 배정된 Wave에서 반드시 해소되어야 함 -->
+
+| # | Unknown | 위험 등급 | 해소 Wave |
+|---|---------|----------|----------|
+| U-4 | `ExecResult` 스키마의 N:1 팬인 집계 지원 여부 | MEDIUM — 결과 취합 아키텍처 영향 | Wave 2 |
+| U-5 | `TrackStatus` enum에 `"partial"` 상태 추가 vs 기존 `"error"` 재사용 | LOW-MEDIUM | Wave 2 |
+| U-6 | 뮤테이션 phase 실패 시 롤백 원자성 — git 기반 vs `.fleet/runs/<id>/snapshot` 기반 | HIGH — 데이터 안전성 | Wave 5 |
+
+---
+
+# File Ownership
+
+| 경로 (예정) | 소유 Carrier | 비고 |
+|-----------|------------|------|
+| `admiral/carrier/personas/helm/` | Helm | 신규 페르소나 디렉터리 |
+| `admiral/carrier/personas/helm/index.ts` | Helm | 캐리어 진입점 |
+| `admiral/carrier/personas/helm/deno-runner.ts` | Helm | Deno subprocess 래퍼 |
+| `admiral/carrier/personas/helm/manifest.schema.ts` | Helm | WorkflowManifest 타입 |
+| `admiral/carrier/personas/helm/fan-out.ts` | Helm | 동시성 제어 + fan-out 엔진 |
+| `admiral/carrier/personas/helm/result-aggregator.ts` | Helm | N:1 팬인 + ExecResult 집계 |
+| `admiral/carrier/personas/helm/failure-policy.ts` | Helm | Phase 타입별 실패 정책 |
+| `.fleet/workflows/` | Helm (런타임 write 대상) | Deno 격리 write zone |
+| `.fleet/workflows/runs/<id>/` | Helm | 실행 단위 격리 디렉터리 |
+| `docs/carriers/helm.md` | Helm | 캐리어 사용 문서 |
+| `docs/architecture/helm-workflow.md` | Helm | 아키텍처 다이어그램 + 흐름도 |
+
+---
+
+# Waves
+
+## Wave 1 — Runtime Contract Verification
+
+- **목표:** L-7(U-1-LOCK), L-8(U-2-LOCK), L-9(U-3-LOCK) 3개 사전 결정이 실제 환경에서 성립함을 smoke test로 확인한다. Unknown 해소가 아닌 사전 결정의 실환경 검증이다.
+- **Target files/modules:**
+  - `AGENTS.md` (Deno 설치 전제 조건 섹션 추가)
+  - smoke test pass record (CI artifact 또는 `docs/spikes/helm-wave1-smoke.md`)
+- **Dependencies:** 없음 (이후 모든 wave의 선행. Wave 0 상당)
+- **Implementation summary:**
+  1. **Smoke A — L-7 (CLAUDE_HOME 격리) 확인:** `CLAUDE_HOME=/tmp/empty claude -p "echo ok"` 실행. `~/.claude/` 트리 미참조 확인 (파일시스템 접근 로그 또는 빈 home 하에 정상 실행 여부). 판정: **PASS / FAIL 이진.**
+  2. **Smoke B — L-8 (`--output-format json` 파싱) 확인:** `claude -p "hello" --output-format json` 실행 → `ChildResultRaw.result` 필드 존재 확인. 비정상 인자로 non-0 종료 유도 → 종료 코드 관찰. 판정: **PASS / FAIL 이진.**
+  3. **Smoke C — L-9 (Deno pre-flight) 확인:** CI matrix에서 Deno 미설치 상태로 Helm pre-flight 실행 → fail-fast 메시지 출력 확인. `denoland/setup-deno@v2` action 포함 후 CI green 확인. 판정: **PASS / FAIL 이진.**
+  4. `AGENTS.md`에 Deno 설치 전제 조건 섹션 추가: `deno >= 2.0` 요구사항, 설치 명령, pre-flight 에러 메시지 예시.
+- **Verification/static checks:**
+  - 3개 smoke test 모두 PASS 기록될 것
+  - AGENTS.md Deno entry 등록 확인
+  - 어느 smoke라도 FAIL 시 정의된 에스컬레이션 경로(E-1, E-2, E-5) 즉시 트리거
+- **Escalation triggers:**
+  - Smoke A FAIL: `CLAUDE_HOME`이 해당 CLI 버전에서 미구현 → `--no-memory` 플래그 탐색으로 에스컬레이션 (E-1)
+  - Smoke B FAIL: `result` 키 이름 불일치 또는 JSON 출력 미지원 → 버전 핀 + fallback raw-text 전략으로 에스컬레이션 (E-2)
+  - Smoke C FAIL: Deno 시스템 미설치 환경 대응 불가 → pre-flight fail-fast 메시지 명시 안내, `npm install -g deno` fallback 비권장 문서화 (E-5)
+- **Ideal-day 추정:** 0.25d
+
+---
+
+## Wave 2 — Schema & Type Foundation
+
+- **목표:** Helm의 핵심 타입 계약(WorkflowManifest, ExecResult 팬인, TrackStatus)을 확정해 이후 구현 wave의 인터페이스를 고정한다.
+- **Target files/modules:**
+  - `admiral/carrier/personas/helm/manifest.schema.ts`
+  - `admiral/carrier/personas/helm/result-aggregator.ts` (스키마 부분)
+  - Fleet 공유 타입 파일 (TrackStatus enum 위치 — U-5 해소 후 결정)
+- **Dependencies:** Wave 1 완료 (U-2 파싱 계약 확정 후 ExecResult 설계 가능)
+- **Implementation summary:**
+  1. **WorkflowManifest** 타입 정의:
+     ```typescript
+     interface WorkflowManifest {
+       budget: { maxAgents: number; tokensPerAgent: number; maxConcurrent: number }
+       toolAllowlist: string[]
+       domainAllowlist: string[]
+       mutationPhases: PhaseId[]
+       phases: PhaseDefinition[]
+     }
+     interface PhaseDefinition {
+       id: PhaseId
+       type: 'analysis' | 'mutation' | 'validation'
+       failurePolicy: 'fail-fast' | 'best-effort' | { quorum: number }
+     }
+     ```
+  2. **U-4 해소:** ExecResult에 `children: ChildResult[]` 필드 추가 또는 별도 `AggregatedExecResult` 래퍼 타입 정의. N:1 팬인 집계 스키마 확정.
+  3. **U-5 해소:** `TrackStatus`에 `"partial"` 추가 여부 결정. quorum 성공·부분 성공 표현에 `"partial"` 도입, 완전 실패는 기존 `"error"` 유지 권장.
+  4. Helm 자체 `CarrierJobReport` (자식 N개 → 단일 carrier_jobs 결과 압축) 초안.
+- **Verification/static checks:**
+  - `tsc --noEmit` 통과
+  - manifest 스키마에 `maxConcurrent > 16` 시 컴파일 타임 경고 또는 Zod/런타임 검증 추가
+- **Escalation triggers:**
+  - TrackStatus 공유 타입이 다른 캐리어에 breaking change를 유발하는 경우 → Admiral Direction Needed
+- **Ideal-day 추정:** 0.5d
+
+---
+
+## Wave 3 — Deno Sandbox & 3-Layer Isolation
+
+- **목표:** Deno 프로세스 샌드박스와 3-layer 컨텍스트 격리를 구현해 자식 worker가 부모 컨텍스트와 완전히 분리되도록 보장한다.
+- **Target files/modules:**
+  - `admiral/carrier/personas/helm/deno-runner.ts`
+  - `.fleet/workflows/runs/` (런타임 생성 디렉터리)
+- **Dependencies:** Wave 1 (Smoke A~C PASS 확인), Wave 2 (WorkflowManifest 타입)
+- **Implementation summary:**
+  1. **Layer 1 — CWD 격리:** 각 `claude -p` 자식 호출은 `.fleet/workflows/runs/<runId>/worker-<n>/` 를 `--cwd`로 지정. 부모 CLAUDE.md 상속 차단.
+  2. **Layer 2 — Env 화이트리스트 + CLAUDE_HOME 강제 (L-7):** 자식 spawn 시 `process.env` 전달 차단. 명시적 허용 목록(`ANTHROPIC_API_KEY`, `FLEET_RUN_ID`) + `CLAUDE_HOME=$RUN_DIR/worker-N/.claude-home`(사전 생성 빈 디렉터리) 무조건 주입.
+  3. **Layer 3 — No session resume:** `--no-resume` 동등 플래그 적용. CarrierSessionStore pool 진입 차단.
+  4. Deno 런타임 내부에서 WorkflowManifest의 `toolAllowlist`·`domainAllowlist` 초과 시도를 throw로 거부하는 permission guard 구현.
+  5. `deno-runner.ts`는 `--allow-run=claude --allow-write=.fleet/workflows/` 외 추가 권한 없이 동작할 것.
+- **Verification/static checks:**
+  - 격리 단위 테스트: 자식 프로세스 env에 `HOME`, `CLAUDE_HOME` 누설 없는지 확인
+  - `deno info` 로 권한 선언 확인
+  - Deno 런타임 내 `fetch()` / `Deno.readFile("../../")` 호출 시 권한 오류 발생 확인
+- **Escalation triggers:**
+  - Wave 1 Smoke A FAIL 전파: `CLAUDE_HOME` 미구현 CLI 버전 사용 중인 경우 → Wave 중단, E-1 트리거
+- **Ideal-day 추정:** 1.0d
+
+---
+
+## Wave 4 — Fan-out Orchestration Engine
+
+- **목표:** maxConcurrent ≤ 16 하드캡 적용 하에 동적 JS 스크립트로부터 자식 worker를 fan-out하고, 결과를 N:1 집계하는 오케스트레이션 엔진을 구현한다.
+- **Target files/modules:**
+  - `admiral/carrier/personas/helm/fan-out.ts`
+  - `admiral/carrier/personas/helm/result-aggregator.ts`
+  - `admiral/carrier/personas/helm/index.ts` (캐리어 진입점)
+- **Dependencies:** Wave 2 (스키마), Wave 3 (Deno sandbox)
+- **Implementation summary:**
+  1. `fan-out.ts`: concurrency semaphore 구현. `maxConcurrent` manifest 값을 런타임 강제. 16 초과 시 즉시 reject.
+  2. 동적 JS 오케스트레이션 스크립트는 Deno 런타임 내에서 `dispatchWorker(prompt: string, opts: WorkerOpts): Promise<ChildResult>` API를 호출. Helm이 이 API를 Deno global scope에 주입.
+  3. `result-aggregator.ts`: Wave 2에서 확정된 `AggregatedExecResult` 스키마로 N개 ChildResult를 취합. `carrier_jobs` 단일 결과로 압축.
+  4. Admiral 승인 흐름: Helm이 manifest + JS script를 Admiral에 제출 → 승인 수신 후 Deno 런타임 시작 → fan-out 자율 진행.
+- **Verification/static checks:**
+  - `maxConcurrent: 17` 설정 시 런타임 에러 발생 단위 테스트
+  - 16 concurrent worker 동시 실행 통합 테스트 (mock `claude -p`)
+  - 집계 결과가 `AggregatedExecResult` 스키마를 만족하는지 타입 체크
+- **Escalation triggers:**
+  - dispatchWorker API 설계가 Deno global injection 방식으로 충돌하는 경우 → 대안(파라미터 주입) 선택 전 Admiral 확인
+- **Ideal-day 추정:** 1.5d
+
+---
+
+## Wave 5 — Failure Policy & Rollback
+
+- **목표:** Phase 타입 기반 이중 실패 정책을 구현하고, 뮤테이션 phase 롤백 원자성(U-6)을 해소한다.
+- **Target files/modules:**
+  - `admiral/carrier/personas/helm/failure-policy.ts`
+  - `.fleet/workflows/runs/<id>/snapshot/` (롤백 스냅샷 디렉터리, 런타임 생성)
+- **Dependencies:** Wave 4 (팬인 엔진), Wave 1 (U-6 rollback 전략 선행 확인)
+- **Implementation summary:**
+  1. Phase 타입별 기본 정책 구현:
+     - `analysis`: `best-effort` (>50% 완료 시 phase 성공)
+     - `mutation`: `fail-fast` (1개 실패 → 즉시 중단 + 롤백 트리거)
+     - `validation`: `quorum(2/3)` (2/3 이상 합의 시 통과)
+  2. manifest `phases[N].failurePolicy` override 지원.
+  3. **U-6 해소 — 롤백 전략 선택:**
+     - **Option A (git 기반):** mutation phase 시작 전 `git stash` + 실패 시 `git stash pop`. 원자성 보장되나 git 상태 의존.
+     - **Option B (snapshot 기반):** `.fleet/workflows/runs/<id>/snapshot/`에 영향 파일 사전 복사 + 실패 시 복원. git 독립적이나 대용량 파일 시 오버헤드.
+     - **Wave 5 결정 지점:** 팀 git 정책 확인 후 선택. Admiral Direction Needed if 미결.
+  4. `TrackStatus "partial"` (Wave 2 확정 시) quorum 부분 성공 케이스에 적용.
+- **Verification/static checks:**
+  - mutation phase 1개 실패 시나리오에서 롤백 적용 여부 확인 통합 테스트
+  - best-effort phase에서 49% 실패 시 phase 실패 판정 단위 테스트
+  - quorum 정확히 2/3 경계값 단위 테스트
+- **Escalation triggers:**
+  - **U-6 미해소 시 Wave 5 시작 불가** → 롤백 전략(git vs snapshot) Admiral Direction Needed
+  - git 기반 롤백이 다른 캐리어 실행과 충돌하는 경우 → snapshot 방식으로 강제 전환
+- **Ideal-day 추정:** 1.0d
+
+---
+
+## Wave 6 — Demo Workflow & End-to-End Validation
+
+- **목표:** 최소 워크플로우 1개를 end-to-end 시연해 Helm 캐리어가 실제로 동작함을 증명한다.
+- **Target files/modules:**
+  - `.fleet/workflows/examples/multi-file-analysis.js` (데모 오케스트레이션 스크립트)
+  - `docs/carriers/helm.md` (사용 예시 포함)
+- **Dependencies:** Wave 3, 4, 5 완료
+- **Implementation summary:**
+  1. 데모 시나리오: "지정 디렉터리의 파일 목록을 분석 phase로 fan-out, 각 파일에 대해 `claude -p`로 요약 생성, 결과를 집계해 단일 summary 반환"
+  2. 오케스트레이션 스크립트는 순수 JS. `dispatchWorker` API만 사용. 외부 npm import 없음 (Deno 격리 원칙).
+  3. Admiral 승인 → Deno 실행 → fan-out → 집계 → `carrier_jobs` 결과 반환 전체 흐름 실행.
+  4. 실행 로그 `runs/<id>/` 하위에 worker별 stdout 보존 확인.
+- **Verification/static checks:**
+  - 데모 워크플로우 완주 후 `carrier_jobs(action:"result")` 응답이 `AggregatedExecResult` 스키마 만족
+  - Admiral 컨텍스트 외부 격리 확인 (Admiral 세션에 중간 worker 출력 없음)
+  - maxConcurrent ≤ 16 준수 로그 확인
+- **Escalation triggers:**
+  - 데모 워크플로우가 환경 의존성(Deno 미설치, claude CLI 버전 불일치 등)으로 실행 불가 시 → 설치 전제조건 문서화 후 Wave 6 완료 마킹
+- **Ideal-day 추정:** 0.75d
+
+---
+
+## Wave 7 — Documentation & Fleet Roster Update
+
+- **목표:** Helm 캐리어를 Fleet doctrine 문서에 공식 등록하고 운영 가이드를 완성한다.
+- **Target files/modules:**
+  - `docs/carriers/helm.md`
+  - `docs/architecture/helm-workflow.md`
+  - Fleet Roster 문서 (캐리어 목록 업데이트)
+  - `CLAUDE.md` (Helm 진입점 기술 추가)
+- **Dependencies:** Wave 6 (데모 결과 기반 실제 동작 검증 후 문서화)
+- **Implementation summary:**
+  1. `docs/carriers/helm.md`: 역할 정의, WorkflowManifest 필드 설명, 사용 예시, 제한사항(1,000-agent 부하 테스트는 별도 후속).
+  2. `docs/architecture/helm-workflow.md`: Admiral → Helm → Deno → workers → aggregator → carrier_jobs 흐름 다이어그램 (Mermaid).
+  3. Fleet Roster에 Helm 페르소나 등록. `CARRIER_COLORS`, `constants.ts` 자동 파생 체계 적용 여부 확인 (Wave 1 spike 결과 반영).
+  4. 1,000-agent 부하 테스트를 명시적 후속 작전으로 `docs/roadmap/helm-load-test.md`에 예고.
+- **Verification/static checks:**
+  - 모든 코드 예시가 Wave 6 실제 동작 기준으로 검증됨
+  - Mermaid 다이어그램 렌더링 확인
+- **Escalation triggers:**
+  - CARRIER_COLORS / constants.ts 자동 파생 체계 비적용 확인 시 → 수동 등록 절차 문서화
+- **Ideal-day 추정:** 0.5d
+
+---
+
+# QA Gates
+
+| Gate | 조건 | 통과 기준 |
+|------|------|----------|
+| G-1 | Wave 1 완료 후 | 3개 smoke test (A/B/C) 모두 PASS 기록, AGENTS.md Deno entry 등록 확인 |
+| G-2 | Wave 2 완료 후 | `tsc --noEmit` 통과, manifest maxConcurrent 검증 통과 |
+| G-3 | Wave 3 완료 후 | 격리 단위 테스트 통과, env 누설 없음 확인 |
+| G-4 | Wave 4 완료 후 | maxConcurrent ≤ 16 강제 테스트 통과, 집계 스키마 타입 체크 통과 |
+| G-5 | Wave 5 완료 후 | 실패 정책 단위 테스트 전체 통과, 롤백 전략 결정 문서화 |
+| G-6 | Wave 6 완료 후 | 데모 워크플로우 end-to-end 완주, carrier_jobs 결과 스키마 만족 |
+| G-7 | Wave 7 완료 후 | 문서 완성, Fleet Roster 업데이트, 후속 부하 테스트 작전 예고 등록 |
+
+---
+
+# Acceptance Criteria
+
+1. **격리:** 데모 실행 중 Admiral 컨텍스트에 자식 worker 중간 출력이 노출되지 않는다.
+2. **하드캡:** `maxConcurrent > 16` manifest 제출 시 런타임 reject된다.
+3. **단일 승인:** Admiral은 워크플로우 발사 전 1회만 개입한다. fan-out 중 추가 개입 없음.
+4. **실패 정책:** mutation phase 1개 실패 시 즉시 중단 + 롤백이 트리거된다.
+5. **결과 반환:** 집계된 최종 결과가 `carrier_jobs` 경로를 통해 단일 응답으로 반환된다.
+6. **데모 완주:** 예시 오케스트레이션 스크립트가 Deno 런타임에서 end-to-end 실행된다.
+7. **Ohio 무결성:** Ohio 소스에 변경이 없다.
+8. **Contract 확인 + Unknown 해소:** Wave 1 smoke A~C PASS, U-4~U-6 전체가 배정 wave 보고서에 명시적 판정과 함께 기록된다.
+
+---
+
+# Documentation Updates
+
+| 문서 | 변경 유형 | 담당 Wave |
+|------|---------|---------|
+| `docs/carriers/helm.md` | 신규 생성 | Wave 7 |
+| `docs/architecture/helm-workflow.md` | 신규 생성 (Mermaid 다이어그램) | Wave 7 |
+| Fleet Roster (캐리어 목록) | Helm 페르소나 추가 | Wave 7 |
+| `CLAUDE.md` | Helm 진입점 기술 추가 | Wave 7 |
+| `AGENTS.md` | Deno 설치 전제 조건 섹션 추가 | Wave 1 |
+| `docs/spikes/helm-wave1-smoke.md` | 신규 생성 (smoke test pass record) | Wave 1 |
+| `docs/roadmap/helm-load-test.md` | 신규 생성 (후속 작전 예고) | Wave 7 |
+
+---
+
+# Escalation Triggers
+
+| 트리거 | 조건 | 조치 |
+|--------|------|------|
+| E-1 | Wave 1 Smoke A FAIL: `CLAUDE_HOME`이 현재 CLI 버전에서 미구현된 경우 | `--no-memory` 플래그 존재 여부 탐색으로 에스컬레이션 → Admiral Direction Needed |
+| E-2 | Wave 1 Smoke B FAIL: JSON schema 하위 버전에서 `result` 키 이름 불일치 | 버전 핀 확정 + fallback raw-text 처리 전략 Admiral 승인 → Wave 3 설계 수정 |
+| E-3 | U-6: 롤백 전략(git vs snapshot) 미결 | Wave 5 시작 금지 — Admiral Direction Needed |
+| E-4 | TrackStatus `"partial"` 추가가 기존 캐리어에 breaking change 유발 | Admiral Direction Needed — 타입 전략 확정 |
+| E-5 | Wave 1 Smoke C FAIL: Deno 시스템 미설치 환경에서 pre-flight fail-fast 미동작 | pre-flight 에러 메시지 강화 + AGENTS.md 안내 명시. `npm install -g deno` fallback 비권장 문서화. CI `denoland/setup-deno@v2` 필수 명기. |
+| E-6 | Ohio 코드베이스 수정 압박 발생 | 즉시 중단 — L-5 결정 위반, Nimitz에 재상신 |
+
+---
+
+# Risk Register
+
+| ID | 리스크 | 확률 | 영향 | 완화 전략 |
+|----|--------|------|------|----------|
+| R-1 | `claude -p` 동작이 버전별로 비일관적 — 파싱 계약 불안정 | LOW | MEDIUM | `--output-format json` 고정 + raw text fallback + CLI semver pre-flight 핀으로 흡수 (L-8) |
+| R-2 | Deno 격리가 `~/.claude/MEMORY.md` 를 막지 못함 | LOW | LOW | `CLAUDE_HOME` 무조건 주입으로 행동학적 제거 (L-7). 잔존 리스크: CLI 미구현 버전 — E-1 에스컬레이션 경로로 처리. |
+| R-3 | 1,000-agent 총량 실행 시 `.fleet/workflows/runs/` 디스크 폭증 | LOW | MEDIUM | 본 작전 범위 밖, 부하 테스트 후속 작전에서 해소 |
+| R-4 | mutation 롤백 원자성 보장 실패 → 부분 적용 상태 영구화 | LOW | HIGH | git stash 또는 snapshot 전략 Wave 5에서 확정, 미결 시 mutation phase 비활성화 |
+| R-5 | 16-concurrent 한도에서 총 1,000-agent 목표 달성 시간 초과 | LOW | LOW | 비기능 요구사항 — 성능 SLA는 본 MVP 범위 밖 |
+| R-6 | CARRIER_COLORS 등 CLI constants 자동 파생 체계 미지원 | MEDIUM | LOW | Wave 7에서 수동 등록 fallback 절차 문서화 |
+
+---
+
+# Final Review Loop
+
+**메인테이너 검토 체크리스트:**
+
+- [ ] L-1~L-9 결정 사항이 팀 Fleet doctrine과 일치하는가?
+- [ ] Wave 1 smoke test A/B/C 모두 PASS 기록되었는가?
+- [ ] U-4~U-6 해소 결과가 Wave별 QA Gate를 통과하는가?
+- [ ] Wave 5 롤백 전략(E-3)이 git 정책과 충돌하지 않는가?
+- [ ] TrackStatus `"partial"` 추가(U-5)의 하위 호환성이 검토되었는가?
+- [ ] 1,000-agent 부하 테스트 후속 작전이 로드맵에 등록되었는가?
+- [ ] Ohio 소스 미수정 (L-5) 확인: `git diff admiral/carrier/personas/ohio/` 변경 없음?
+- [ ] 데모 워크플로우(Wave 6)가 재현 가능한 환경에서 실행 확인되었는가?
+
+**총 ideal-day 합산:** 5.5d (Wave 1: 0.25d + Wave 2: 0.5d + Wave 3: 1.0d + Wave 4: 1.5d + Wave 5: 1.0d + Wave 6: 0.75d + Wave 7: 0.5d)
+**1,000-agent 부하 테스트:** 별도 후속 작전 — 본 MVP 범위 외 명시 제외.
+</script>
+
+<script>
+  // Theme toggle
+  const themeKey = 'helm-proposal-theme';
+  const saved = localStorage.getItem(themeKey);
+  if (saved === 'light') document.body.classList.add('light');
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    document.body.classList.toggle('light');
+    localStorage.setItem(themeKey, document.body.classList.contains('light') ? 'light' : 'dark');
+  });
+
+  // Tabs (Nimitz)
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tabs = btn.closest('.tabs');
+      tabs.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      tabs.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      tabs.querySelector('#' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // Active TOC on scroll
+  const sections = document.querySelectorAll('section[id]');
+  const tocLinks = document.querySelectorAll('.toc a');
+  const setActive = () => {
+    const y = window.scrollY + 100;
+    let active = sections[0]?.id;
+    sections.forEach(s => { if (s.offsetTop <= y) active = s.id; });
+    tocLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + active));
+  };
+  window.addEventListener('scroll', setActive, { passive: true });
+  setActive();
+
+  // Code copy buttons
+  document.querySelectorAll('pre').forEach(pre => {
+    if (pre.querySelector('.copy-btn')) return;
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = 'COPY';
+    btn.addEventListener('click', async () => {
+      const code = pre.querySelector('code')?.innerText || pre.innerText;
+      try { await navigator.clipboard.writeText(code); btn.textContent = 'COPIED'; setTimeout(() => btn.textContent = 'COPY', 1200); }
+      catch(e) { btn.textContent = 'ERR'; }
+    });
+    pre.appendChild(btn);
+  });
+
+  // Smooth anchor links inject
+  document.querySelectorAll('h2[id], h3[id]').forEach(h => {
+    const a = document.createElement('a');
+    a.href = '#' + h.id;
+    a.className = 'anchor-link';
+    a.textContent = '§';
+    h.appendChild(a);
+  });
+
+  // Copy plan_file markdown source to clipboard
+  const copyMdBtn = document.getElementById('copyMdBtn');
+  if (copyMdBtn) {
+    copyMdBtn.addEventListener('click', async (e) => {
+      // Prevent details toggle and TOC link follow
+      e.stopPropagation();
+      e.preventDefault();
+      const src = document.getElementById('plan-md-source');
+      const md = src ? src.textContent.replace(/^\s*\n/, '') : '';
+      const setState = (text, cls) => {
+        copyMdBtn.textContent = text;
+        copyMdBtn.classList.remove('copied', 'errored');
+        if (cls) copyMdBtn.classList.add(cls);
+      };
+      const reset = () => setState('📋 COPY MARKDOWN', null);
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(md);
+        } else {
+          // Fallback for non-secure contexts (e.g., file:// in some browsers)
+          const ta = document.createElement('textarea');
+          ta.value = md;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+        }
+        setState('✓ COPIED ' + Math.round(md.length / 1024) + ' KB', 'copied');
+      } catch (err) {
+        console.error('clipboard copy failed', err);
+        setState('✗ COPY FAILED', 'errored');
+      }
+      setTimeout(reset, 1800);
+    });
+  }
+</script>
+
+</body>
+</html>

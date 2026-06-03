@@ -1,0 +1,1706 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>tmux 완전 가이드</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --bg2: #161b22;
+  --bg3: #21262d;
+  --border: #30363d;
+  --text: #c9d1d9;
+  --text2: #8b949e;
+  --green: #3fb950;
+  --blue: #58a6ff;
+  --orange: #f0883e;
+  --purple: #bc8cff;
+  --red: #ff7b72;
+  --yellow: #d29922;
+  --cyan: #39c5cf;
+  --accent: #238636;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+.hero {
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #1a2332 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 60px 20px 40px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(ellipse at center, rgba(63,185,80,0.05) 0%, transparent 60%);
+  pointer-events: none;
+}
+.hero-term {
+  display: inline-block;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  color: var(--green);
+  margin-bottom: 24px;
+  letter-spacing: 1px;
+}
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--green), var(--cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 16px;
+}
+.hero p {
+  color: var(--text2);
+  font-size: 1.1rem;
+  max-width: 600px;
+  margin: 0 auto 32px;
+}
+.badge-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.badge {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 13px;
+  color: var(--text2);
+}
+.badge span { color: var(--green); font-weight: 600; }
+
+nav {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.nav-btn {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 14px 20px;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.nav-btn:hover { color: var(--text); }
+.nav-btn.active {
+  color: var(--green);
+  border-bottom-color: var(--green);
+}
+
+.container { max-width: 1100px; margin: 0 auto; padding: 40px 20px; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Section titles */
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+.section-sub {
+  color: var(--text2);
+  margin-bottom: 32px;
+  font-size: 14px;
+}
+
+/* Architecture diagram */
+.arch-diagram {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px;
+  margin-bottom: 32px;
+  overflow-x: auto;
+}
+.arch-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text2);
+  margin-bottom: 24px;
+}
+.arch-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.arch-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.arch-box {
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  min-width: 120px;
+  flex-shrink: 0;
+}
+.arch-box.server { background: rgba(188,140,255,0.15); border: 1px solid rgba(188,140,255,0.4); color: var(--purple); }
+.arch-box.session { background: rgba(63,185,80,0.12); border: 1px solid rgba(63,185,80,0.4); color: var(--green); }
+.arch-box.window { background: rgba(88,166,255,0.12); border: 1px solid rgba(88,166,255,0.4); color: var(--blue); }
+.arch-box.pane { background: rgba(240,136,62,0.12); border: 1px solid rgba(240,136,62,0.4); color: var(--orange); }
+.arch-box.client { background: rgba(57,197,207,0.12); border: 1px solid rgba(57,197,207,0.4); color: var(--cyan); }
+.arch-desc {
+  font-size: 13px;
+  color: var(--text2);
+  padding-top: 14px;
+  flex: 1;
+}
+.arch-connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 4px;
+  padding-top: 14px;
+}
+.arch-line { width: 2px; height: 20px; background: var(--border); }
+.arch-arrow { color: var(--border); font-size: 10px; }
+
+/* CS model */
+.cs-model {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 16px;
+  align-items: center;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px;
+  margin-bottom: 32px;
+}
+.cs-box {
+  background: var(--bg3);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+}
+.cs-box h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+.cs-box.srv h3 { color: var(--purple); }
+.cs-box.cli h3 { color: var(--cyan); }
+.cs-box p { font-size: 12px; color: var(--text2); }
+.cs-arrow {
+  text-align: center;
+  color: var(--text2);
+  font-size: 12px;
+}
+.cs-arrow .arr { font-size: 24px; color: var(--border); display: block; }
+
+/* Info cards */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+}
+.card-icon { font-size: 24px; margin-bottom: 10px; }
+.card h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+.card p { font-size: 13px; color: var(--text2); }
+.card ul { padding-left: 16px; margin-top: 8px; }
+.card ul li { font-size: 13px; color: var(--text2); margin-bottom: 4px; }
+
+/* Shortcut tables */
+.search-bar {
+  position: relative;
+  margin-bottom: 24px;
+}
+.search-bar input {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  padding: 10px 16px 10px 40px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.search-bar input:focus { border-color: var(--green); }
+.search-bar::before {
+  content: '🔍';
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+}
+
+.shortcut-group { margin-bottom: 32px; }
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.group-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.group-title { font-size: 14px; font-weight: 700; }
+.group-count {
+  background: var(--bg3);
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 11px;
+  color: var(--text2);
+  margin-left: auto;
+}
+
+.shortcut-table {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  width: 100%;
+}
+.shortcut-row {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.shortcut-row:last-child { border-bottom: none; }
+.shortcut-row:hover { background: var(--bg3); }
+.shortcut-row.hidden { display: none; }
+.key-cell {
+  padding: 10px 16px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.desc-cell {
+  padding: 10px 16px;
+  font-size: 13px;
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+}
+kbd {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-bottom: 2px solid #484f58;
+  border-radius: 4px;
+  color: var(--text);
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+kbd.prefix { background: rgba(63,185,80,0.12); border-color: rgba(63,185,80,0.4); color: var(--green); }
+.plus { color: var(--text2); font-size: 11px; }
+
+/* Commands */
+.cmd-section { margin-bottom: 32px; }
+.cmd-group-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text2);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.cmd-list { display: flex; flex-direction: column; gap: 6px; }
+.cmd-item {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.cmd-item:hover { border-color: var(--blue); }
+.cmd-code {
+  background: var(--bg3);
+  padding: 10px 14px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: var(--blue);
+  border-right: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cmd-code .prompt { color: var(--text2); user-select: none; }
+.cmd-desc {
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+}
+.copy-btn {
+  background: none;
+  border: none;
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 12px;
+  margin-left: auto;
+  padding: 2px 6px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: all 0.2s;
+}
+.cmd-item:hover .copy-btn { opacity: 1; }
+.copy-btn:hover { background: var(--bg3); color: var(--text); }
+
+/* Tips */
+.tip-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.tip-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+}
+.tip-card.green::before { background: var(--green); }
+.tip-card.blue::before { background: var(--blue); }
+.tip-card.orange::before { background: var(--orange); }
+.tip-card.purple::before { background: var(--purple); }
+.tip-card.cyan::before { background: var(--cyan); }
+.tip-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+.tip-tag.green { background: rgba(63,185,80,0.15); color: var(--green); }
+.tip-tag.blue { background: rgba(88,166,255,0.15); color: var(--blue); }
+.tip-tag.orange { background: rgba(240,136,62,0.15); color: var(--orange); }
+.tip-tag.purple { background: rgba(188,140,255,0.15); color: var(--purple); }
+.tip-tag.cyan { background: rgba(57,197,207,0.15); color: var(--cyan); }
+.tip-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
+.tip-card p { font-size: 13px; color: var(--text2); margin-bottom: 12px; }
+.code-block {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: var(--text);
+  overflow-x: auto;
+  white-space: pre;
+  line-height: 1.8;
+}
+.code-block .comment { color: var(--text2); }
+.code-block .cmd { color: var(--blue); }
+.code-block .arg { color: var(--orange); }
+.code-block .str { color: var(--green); }
+.code-block .flag { color: var(--purple); }
+
+/* Config */
+.config-block {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+.config-header {
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.config-header h3 { font-size: 14px; font-weight: 700; }
+.config-header p { font-size: 12px; color: var(--text2); }
+.config-code {
+  padding: 20px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 2;
+  overflow-x: auto;
+  white-space: pre;
+}
+.cfg-comment { color: var(--text2); }
+.cfg-key { color: var(--blue); }
+.cfg-val { color: var(--green); }
+.cfg-str { color: var(--orange); }
+
+/* Status bar */
+.statusbar-preview {
+  background: #000;
+  border-radius: 8px;
+  padding: 0;
+  overflow: hidden;
+  margin: 16px 0;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+}
+.sb-terminal {
+  background: #1a1a1a;
+  padding: 20px;
+  color: #ccc;
+  min-height: 60px;
+  font-size: 13px;
+}
+.sb-bar {
+  display: flex;
+  align-items: center;
+  padding: 4px 0;
+  background: #333;
+}
+.sb-left { display: flex; }
+.sb-right { display: flex; margin-left: auto; }
+.sb-seg {
+  padding: 2px 12px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.sb-session { background: #3fb950; color: #000; font-weight: 700; }
+.sb-win-active { background: #58a6ff; color: #000; font-weight: 700; }
+.sb-win { background: #444; color: #ccc; }
+.sb-right-seg { background: #555; color: #ccc; padding: 2px 10px; font-size: 12px; }
+.sb-time { background: #3fb950; color: #000; padding: 2px 10px; font-size: 12px; font-weight: 700; }
+
+/* Pane layout visualizer */
+.pane-viz {
+  background: #000;
+  border-radius: 8px;
+  padding: 16px;
+  display: grid;
+  gap: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #aaa;
+  margin: 12px 0;
+}
+.pane-box {
+  background: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 10px;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.pane-box.active { border-color: var(--green); }
+.pane-prompt { color: var(--green); }
+.pane-label {
+  font-size: 10px;
+  color: #555;
+  margin-bottom: 4px;
+}
+
+/* Hover tooltip */
+.has-tooltip { position: relative; cursor: help; }
+.tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--text);
+  white-space: nowrap;
+  z-index: 200;
+  pointer-events: none;
+}
+.has-tooltip:hover .tooltip { display: block; }
+
+/* Scroll to top */
+.scroll-top {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: all 0.2s;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 999;
+}
+.scroll-top.visible { opacity: 1; pointer-events: all; }
+.scroll-top:hover { background: var(--bg2); border-color: var(--green); }
+
+/* Info box */
+.info-box {
+  background: rgba(88,166,255,0.08);
+  border: 1px solid rgba(88,166,255,0.3);
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 20px;
+}
+.info-box strong { color: var(--blue); }
+
+/* Responsive */
+@media (max-width: 700px) {
+  .cs-model { grid-template-columns: 1fr; }
+  .cs-arrow .arr { transform: rotate(90deg); }
+  .shortcut-row { grid-template-columns: 1fr; }
+  .key-cell { border-right: none; border-bottom: 1px solid var(--border); }
+  .cmd-item { grid-template-columns: 1fr; }
+  .cmd-code { border-right: none; border-bottom: 1px solid var(--border); }
+  nav { padding: 0 4px; }
+  .nav-btn { padding: 12px 12px; font-size: 13px; }
+}
+
+.no-results {
+  text-align: center;
+  color: var(--text2);
+  padding: 40px;
+  font-size: 14px;
+}
+
+/* animate in */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.tab-content.active { animation: fadeUp 0.25s ease; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-term">$ tmux new-session -s main</div>
+  <h1>tmux 완전 가이드</h1>
+  <p>터미널 멀티플렉서 tmux의 원리, 구조, 단축키, 실전 활용법을 한 곳에 정리한 인터랙티브 레퍼런스</p>
+  <div class="badge-row">
+    <div class="badge">버전 <span>3.x</span></div>
+    <div class="badge">세션 <span>·</span> 윈도우 <span>·</span> 패인</div>
+    <div class="badge">클라이언트-서버 아키텍처</div>
+    <div class="badge">단축키 <span>70+</span></div>
+  </div>
+</div>
+
+<nav id="main-nav">
+  <button class="nav-btn active" onclick="showTab('arch', this)">🏗️ 구조·원리</button>
+  <button class="nav-btn" onclick="showTab('keys', this)">⌨️ 단축키</button>
+  <button class="nav-btn" onclick="showTab('cmds', this)">💻 CLI 명령어</button>
+  <button class="nav-btn" onclick="showTab('tips', this)">💡 실전 활용</button>
+  <button class="nav-btn" onclick="showTab('conf', this)">⚙️ 설정 파일</button>
+  <button class="nav-btn" onclick="showTab('macos', this)">🍎 macOS 노트</button>
+</nav>
+
+<!-- ── TAB 1: 구조·원리 ── -->
+<div id="tab-arch" class="tab-content active container">
+  <p class="section-title">tmux 구조와 동작 원리</p>
+  <p class="section-sub">tmux가 어떻게 동작하는지, 세션·윈도우·패인의 계층 구조를 이해합니다.</p>
+
+  <div class="cs-model">
+    <div class="cs-box srv">
+      <h3>🖥️ tmux server</h3>
+      <p>백그라운드 데몬으로 실행.<br>모든 세션·윈도우·패인을 소유하고 상태를 유지.</p>
+    </div>
+    <div class="cs-arrow">
+      <span class="arr">⟷</span>
+      Unix socket<br>(tmp/tmux-*/default)
+    </div>
+    <div class="cs-box cli">
+      <h3>🖱️ tmux client(s)</h3>
+      <p>터미널에서 소켓으로 서버에 연결.<br>여러 클라이언트가 동시에 같은 세션에 Attach 가능.</p>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <strong>핵심 원리:</strong> 터미널을 닫아도 서버 프로세스는 살아있으므로, <kbd>Ctrl+b d</kbd>로 분리(Detach)하면 세션 상태가 그대로 보존됩니다. SSH 연결이 끊겨도 작업이 계속 실행됩니다.
+  </div>
+
+  <div class="arch-diagram">
+    <div class="arch-title">계층 구조 (Hierarchy)</div>
+    <div style="display:flex;flex-direction:column;gap:0;">
+
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px;">
+        <div class="arch-box server" style="min-width:100px;">Server</div>
+        <div style="font-size:13px;color:var(--text2);">tmux 서버 프로세스 — 하나만 실행됨 (PID 유지)</div>
+      </div>
+      <div style="margin-left:30px;color:var(--border);font-size:18px;">│</div>
+
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px;margin-left:40px;">
+        <div class="arch-box session" style="min-width:100px;">Session</div>
+        <div style="font-size:13px;color:var(--text2);">독립적인 작업 공간 (예: project-A, project-B) — 여러 개 가능</div>
+      </div>
+      <div style="margin-left:70px;color:var(--border);font-size:18px;">│</div>
+
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px;margin-left:80px;">
+        <div class="arch-box window" style="min-width:100px;">Window</div>
+        <div style="font-size:13px;color:var(--text2);">탭과 유사 — 브라우저의 탭처럼 전환 가능, 번호로 식별</div>
+      </div>
+      <div style="margin-left:110px;color:var(--border);font-size:18px;">│</div>
+
+      <div style="display:flex;align-items:center;gap:16px;margin-left:120px;">
+        <div class="arch-box pane" style="min-width:100px;">Pane</div>
+        <div style="font-size:13px;color:var(--text2);">화면 분할 단위 — 하나의 윈도우 안에서 수평/수직 분할</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Pane layout viz -->
+  <p class="section-title" style="font-size:1.1rem;margin-bottom:12px;">패인 레이아웃 예시</p>
+  <div class="pane-viz" style="grid-template-columns:1fr 1fr;grid-template-rows:auto auto;">
+    <div class="pane-box active" style="grid-column:1;grid-row:1 2;">
+      <div class="pane-label">pane 0 (active)</div>
+      <div class="pane-prompt">$ vim main.go▌</div>
+    </div>
+    <div class="pane-box" style="grid-column:2;grid-row:1;">
+      <div class="pane-label">pane 1</div>
+      <div class="pane-prompt">$ go build ./...</div>
+    </div>
+    <div class="pane-box" style="grid-column:2;grid-row:2;">
+      <div class="pane-label">pane 2</div>
+      <div class="pane-prompt">$ tail -f app.log</div>
+    </div>
+  </div>
+
+  <!-- Status bar -->
+  <p class="section-title" style="font-size:1.1rem;margin:24px 0 12px;">상태 바 (Status Bar) 구성</p>
+  <div class="statusbar-preview">
+    <div class="sb-terminal">$ ls -la &nbsp;&nbsp;&nbsp; # 명령 실행 중...</div>
+    <div class="sb-bar">
+      <div class="sb-left">
+        <div class="sb-seg sb-session">[main]</div>
+        <div class="sb-seg sb-win-active">0:vim*</div>
+        <div class="sb-seg sb-win">1:bash</div>
+        <div class="sb-seg sb-win">2:logs</div>
+      </div>
+      <div class="sb-right">
+        <div class="sb-right-seg">서버명</div>
+        <div class="sb-time">14:32</div>
+      </div>
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--text2);margin-top:8px;">좌: 세션명 + 윈도우 목록 (* = 현재 윈도우) &nbsp;|&nbsp; 우: 호스트명 + 시간</p>
+
+  <div class="card-grid" style="margin-top:32px;">
+    <div class="card">
+      <div class="card-icon">🔌</div>
+      <h3>Attach / Detach</h3>
+      <p>클라이언트가 세션에서 분리(Detach)되어도 서버는 계속 실행. 나중에 다시 Attach하면 이전 상태 그대로 복원.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📡</div>
+      <h3>공유 세션</h3>
+      <p>두 클라이언트가 동시에 같은 세션에 Attach 가능. 페어 프로그래밍이나 라이브 데모에 활용.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🖥️</div>
+      <h3>가상 터미널</h3>
+      <p>각 패인은 독립된 pseudo-terminal(pty). 서로 다른 셸이나 프로그램을 동시 실행.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">💾</div>
+      <h3>상태 보존</h3>
+      <p>SSH 연결 끊김, 터미널 종료에도 작업 지속. 장시간 실행 작업에 필수적.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── TAB 2: 단축키 ── -->
+<div id="tab-keys" class="tab-content container">
+  <p class="section-title">단축키 레퍼런스</p>
+  <p class="section-sub">기본 Prefix 키는 <kbd class="prefix">Ctrl+b</kbd>입니다. Prefix 후 다음 키를 입력하세요.</p>
+
+  <div class="search-bar">
+    <input type="text" id="key-search" placeholder="단축키 또는 기능 검색..." oninput="filterKeys(this.value)">
+  </div>
+
+  <div id="no-results" class="no-results" style="display:none;">🔍 검색 결과가 없습니다.</div>
+
+  <!-- 세션 -->
+  <div class="shortcut-group" data-group="session">
+    <div class="group-header">
+      <div class="group-dot" style="background:var(--green);"></div>
+      <div class="group-title">세션 관리</div>
+      <div class="group-count">8개</div>
+    </div>
+    <div class="shortcut-table">
+      <div class="shortcut-row" data-search="새 세션 시작 new session">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>:new</kbd></div>
+        <div class="desc-cell">새 세션 생성</div>
+      </div>
+      <div class="shortcut-row" data-search="세션 분리 detach">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>d</kbd></div>
+        <div class="desc-cell">현재 세션에서 분리 (Detach) — 세션은 백그라운드에서 계속 실행</div>
+      </div>
+      <div class="shortcut-row" data-search="세션 목록 list sessions">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>s</kbd></div>
+        <div class="desc-cell">세션 목록 보기 (화살표로 이동, Enter로 전환)</div>
+      </div>
+      <div class="shortcut-row" data-search="세션 이름 변경 rename">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>$</kbd></div>
+        <div class="desc-cell">현재 세션 이름 변경</div>
+      </div>
+      <div class="shortcut-row" data-search="다음 세션 next session switch">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>(</kbd></div>
+        <div class="desc-cell">이전 세션으로 전환</div>
+      </div>
+      <div class="shortcut-row" data-search="이전 세션 prev session switch">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>)</kbd></div>
+        <div class="desc-cell">다음 세션으로 전환</div>
+      </div>
+      <div class="shortcut-row" data-search="세션 전환 last session">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>L</kbd></div>
+        <div class="desc-cell">마지막으로 사용한 세션으로 전환</div>
+      </div>
+      <div class="shortcut-row" data-search="세션 종료 kill session">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>:kill-session</kbd></div>
+        <div class="desc-cell">현재 세션 종료</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 윈도우 -->
+  <div class="shortcut-group" data-group="window">
+    <div class="group-header">
+      <div class="group-dot" style="background:var(--blue);"></div>
+      <div class="group-title">윈도우 관리</div>
+      <div class="group-count">11개</div>
+    </div>
+    <div class="shortcut-table">
+      <div class="shortcut-row" data-search="새 윈도우 new window">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>c</kbd></div>
+        <div class="desc-cell">새 윈도우 생성</div>
+      </div>
+      <div class="shortcut-row" data-search="다음 윈도우 next window">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>n</kbd></div>
+        <div class="desc-cell">다음 윈도우로 이동</div>
+      </div>
+      <div class="shortcut-row" data-search="이전 윈도우 previous window">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>p</kbd></div>
+        <div class="desc-cell">이전 윈도우로 이동</div>
+      </div>
+      <div class="shortcut-row" data-search="윈도우 번호 이동 select window">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>0~9</kbd></div>
+        <div class="desc-cell">번호로 윈도우 바로 이동</div>
+      </div>
+      <div class="shortcut-row" data-search="윈도우 목록 list windows">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>w</kbd></div>
+        <div class="desc-cell">윈도우 목록 대화형으로 보기</div>
+      </div>
+      <div class="shortcut-row" data-search="이전 윈도우 last window">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>l</kbd></div>
+        <div class="desc-cell">마지막으로 사용한 윈도우로 전환</div>
+      </div>
+      <div class="shortcut-row" data-search="윈도우 찾기 find window search">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>f</kbd></div>
+        <div class="desc-cell">윈도우 이름으로 검색</div>
+      </div>
+      <div class="shortcut-row" data-search="윈도우 이름 변경 rename window">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>,</kbd></div>
+        <div class="desc-cell">현재 윈도우 이름 변경</div>
+      </div>
+      <div class="shortcut-row" data-search="윈도우 종료 close window">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>&amp;</kbd></div>
+        <div class="desc-cell">현재 윈도우 닫기 (확인 필요)</div>
+      </div>
+      <div class="shortcut-row" data-search="윈도우 이동 swap move">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>.</kbd></div>
+        <div class="desc-cell">윈도우 번호 변경 (이동)</div>
+      </div>
+      <div class="shortcut-row" data-search="윈도우 번호 swap">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>:swap-window</kbd></div>
+        <div class="desc-cell">윈도우 순서 교환</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 패인 -->
+  <div class="shortcut-group" data-group="pane">
+    <div class="group-header">
+      <div class="group-dot" style="background:var(--orange);"></div>
+      <div class="group-title">패인 관리</div>
+      <div class="group-count">17개</div>
+    </div>
+    <div class="shortcut-table">
+      <div class="shortcut-row" data-search="수직 분할 split vertical">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>%</kbd></div>
+        <div class="desc-cell">패인 수직 분할 (좌우)</div>
+      </div>
+      <div class="shortcut-row" data-search="수평 분할 split horizontal">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>"</kbd></div>
+        <div class="desc-cell">패인 수평 분할 (상하)</div>
+      </div>
+      <div class="shortcut-row" data-search="패인 이동 화살표 navigate arrow">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>↑↓←→</kbd></div>
+        <div class="desc-cell">화살표 방향으로 패인 이동</div>
+      </div>
+      <div class="shortcut-row" data-search="패인 이동 vim hjkl">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>h/j/k/l</kbd></div>
+        <div class="desc-cell">Vim 방향키로 패인 이동 (설정 필요)</div>
+      </div>
+      <div class="shortcut-row" data-search="패인 다음 next pane">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>o</kbd></div>
+        <div class="desc-cell">다음 패인으로 포커스 이동</div>
+      </div>
+      <div class="shortcut-row" data-search="이전 패인 마지막 패인 last pane">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>;</kbd></div>
+        <div class="desc-cell">마지막으로 사용한 패인으로 이동</div>
+      </div>
+      <div class="shortcut-row" data-search="패인 목록 pane list">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>q</kbd></div>
+        <div class="desc-cell">패인 번호 표시 (번호 입력 시 이동)</div>
+      </div>
+      <div class="shortcut-row" data-search="패인 크기 resize mac macos">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>Ctrl+↑↓←→</kbd></div>
+        <div class="desc-cell">패인 크기 조절 (1칸씩) &nbsp;<span style="color:var(--orange);font-size:12px;">⚠ macOS: Mission Control의 Spaces 단축키와 충돌 — 해제 필요</span></div>
+      </div>
+      <div class="shortcut-row" data-search="패인 크기 resize large mac macos alt option">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>Alt+↑↓←→</kbd></div>
+        <div class="desc-cell">패인 크기 조절 (5칸씩) &nbsp;<span style="color:var(--orange);font-size:12px;">⚠ macOS: ⌥ 키가 Meta로 인식되지 않음 — 🍎 macOS 노트 탭 참고</span></div>
+      </div>
+      <div class="shortcut-row" data-search="패인 최대화 zoom maximize">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>z</kbd></div>
+        <div class="desc-cell">현재 패인 전체화면 토글 (Zoom)</div>
+      </div>
+      <div class="shortcut-row" data-search="패인 닫기 close pane kill">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>x</kbd></div>
+        <div class="desc-cell">현재 패인 닫기 (확인 필요)</div>
+      </div>
+      <div class="shortcut-row" data-search="패인 이동 윈도우 break">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>!</kbd></div>
+        <div class="desc-cell">현재 패인을 새 윈도우로 분리</div>
+      </div>
+      <div class="shortcut-row" data-search="패인 레이아웃 layout">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>Space</kbd></div>
+        <div class="desc-cell">패인 레이아웃 순환 (tiled/even-horizontal/etc.)</div>
+      </div>
+      <div class="shortcut-row" data-search="패인 순서 rotate swap">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>{</kbd> / <kbd>}</kbd></div>
+        <div class="desc-cell">패인 위치 왼쪽/오른쪽으로 교환</div>
+      </div>
+      <div class="shortcut-row" data-search="동기화 synchronize panes broadcast">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>:set sync</kbd></div>
+        <div class="desc-cell">synchronize-panes — 모든 패인에 동시 입력</div>
+      </div>
+      <div class="shortcut-row" data-search="패인 번호 index pane number">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>q 0~9</kbd></div>
+        <div class="desc-cell">번호 표시 중 숫자 누르면 해당 패인으로 이동</div>
+      </div>
+      <div class="shortcut-row" data-search="마우스 패인 선택 mouse">
+        <div class="key-cell"><kbd>마우스 클릭</kbd></div>
+        <div class="desc-cell">마우스 모드 활성화 시 클릭으로 패인 선택·크기 조절</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 복사 모드 -->
+  <div class="shortcut-group" data-group="copy">
+    <div class="group-header">
+      <div class="group-dot" style="background:var(--purple);"></div>
+      <div class="group-title">복사 모드 (Copy Mode)</div>
+      <div class="group-count">10개</div>
+    </div>
+    <div class="shortcut-table">
+      <div class="shortcut-row" data-search="복사 모드 진입 copy mode scroll">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>[</kbd></div>
+        <div class="desc-cell">복사 모드(스크롤 모드) 진입</div>
+      </div>
+      <div class="shortcut-row" data-search="복사 모드 종료 exit copy mode">
+        <div class="key-cell"><kbd>q</kbd> 또는 <kbd>Esc</kbd></div>
+        <div class="desc-cell">복사 모드 종료</div>
+      </div>
+      <div class="shortcut-row" data-search="검색 위 search up copy mode">
+        <div class="key-cell"><kbd>/</kbd></div>
+        <div class="desc-cell">복사 모드에서 아래 방향 검색</div>
+      </div>
+      <div class="shortcut-row" data-search="검색 아래 search down copy mode">
+        <div class="key-cell"><kbd>?</kbd></div>
+        <div class="desc-cell">복사 모드에서 위 방향 검색</div>
+      </div>
+      <div class="shortcut-row" data-search="선택 시작 begin selection copy">
+        <div class="key-cell"><kbd>Space</kbd></div>
+        <div class="desc-cell">선택 시작 (vi 모드)</div>
+      </div>
+      <div class="shortcut-row" data-search="복사 yank copy selection">
+        <div class="key-cell"><kbd>Enter</kbd> 또는 <kbd>y</kbd></div>
+        <div class="desc-cell">선택 영역 복사 후 복사 모드 종료</div>
+      </div>
+      <div class="shortcut-row" data-search="붙여넣기 paste">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>]</kbd></div>
+        <div class="desc-cell">복사된 텍스트 붙여넣기</div>
+      </div>
+      <div class="shortcut-row" data-search="페이지 위 page up scroll">
+        <div class="key-cell"><kbd>Ctrl+u</kbd></div>
+        <div class="desc-cell">반 페이지 위로 스크롤</div>
+      </div>
+      <div class="shortcut-row" data-search="페이지 아래 page down scroll">
+        <div class="key-cell"><kbd>Ctrl+d</kbd></div>
+        <div class="desc-cell">반 페이지 아래로 스크롤</div>
+      </div>
+      <div class="shortcut-row" data-search="줄 처음 끝 line start end">
+        <div class="key-cell"><kbd>0</kbd> / <kbd>$</kbd></div>
+        <div class="desc-cell">줄 처음 / 끝으로 이동 (vi 모드)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 기타 -->
+  <div class="shortcut-group" data-group="misc">
+    <div class="group-header">
+      <div class="group-dot" style="background:var(--cyan);"></div>
+      <div class="group-title">기타 / 시스템</div>
+      <div class="group-count">8개</div>
+    </div>
+    <div class="shortcut-table">
+      <div class="shortcut-row" data-search="명령어 모드 command prompt">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>:</kbd></div>
+        <div class="desc-cell">tmux 명령어 입력 모드</div>
+      </div>
+      <div class="shortcut-row" data-search="설정 리로드 reload config source">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>r</kbd></div>
+        <div class="desc-cell">설정 파일 재로드 (설정 필요)</div>
+      </div>
+      <div class="shortcut-row" data-search="시간 clock show">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>t</kbd></div>
+        <div class="desc-cell">현재 시간 표시</div>
+      </div>
+      <div class="shortcut-row" data-search="tmux 정보 info">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>i</kbd></div>
+        <div class="desc-cell">현재 윈도우 정보 표시</div>
+      </div>
+      <div class="shortcut-row" data-search="prefix 두번 ctrl b send">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>Ctrl+b</kbd></div>
+        <div class="desc-cell">Prefix 키(Ctrl+b)를 그대로 전송</div>
+      </div>
+      <div class="shortcut-row" data-search="서버 종료 kill server">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>:kill-server</kbd></div>
+        <div class="desc-cell">tmux 서버 및 모든 세션 종료</div>
+      </div>
+      <div class="shortcut-row" data-search="환경 변수 show options">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>:show-options -g</kbd></div>
+        <div class="desc-cell">전역 옵션 목록 보기</div>
+      </div>
+      <div class="shortcut-row" data-search="단축키 목록 key list help">
+        <div class="key-cell"><kbd class="prefix">Ctrl+b</kbd><span class="plus">+</span><kbd>?</kbd></div>
+        <div class="desc-cell">현재 설정된 모든 단축키 목록 보기</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TAB 3: CLI 명령어 ── -->
+<div id="tab-cmds" class="tab-content container">
+  <p class="section-title">CLI 명령어 레퍼런스</p>
+  <p class="section-sub">터미널에서 직접 실행하는 tmux 명령어들. 항목을 클릭하면 명령어가 복사됩니다.</p>
+
+  <div class="cmd-section">
+    <div class="cmd-group-title">세션 관리</div>
+    <div class="cmd-list">
+      <div class="cmd-item" onclick="copyCmd(this)">
+        <div class="cmd-code"><span class="prompt">$</span> tmux<button class="copy-btn">복사</button></div>
+        <div class="cmd-desc">새 세션 시작 (이름 자동 지정)</div>
+      </div>
+      <div class="cmd-item" onclick="copyCmd(this)">
+        <div class="cmd-code"><span class="prompt">$</span> tmux new -s mysession<button class="copy-btn">복사</button></div>
+        <div class="cmd-desc">이름이 'mysession'인 새 세션 생성</div>
+      </div>
+      <div class="cmd-item" onclick="copyCmd(this)">
+        <div class="cmd-code"><span class="prompt">$</span> tmux ls<button class="copy-btn">복사</button></div>
+        <div class="cmd-desc">실행 중인 세션 목록 출력</div>
+      </div>
+      <div class="cmd-item" onclick="copyCmd(this)">
+        <div class="cmd-code"><span class="prompt">$</span> tmux attach -t mysession<button class="copy-btn">복사</button></div>
+        <div class="cmd-desc">이름으로 세션에 재접속 (Attach)</div>
+      </div>
+      <div class="cmd-item" onclick="copyCmd(this)">
+        <div class="cmd-code"><span class="prompt">$</span> tmux attach -t 0<button class="copy-btn">복사</button></div>
+        <div class="cmd-desc">세션 번호로 재접속</div>
+      </div>
+      <div class="cmd-item" onclick="copyCmd(this)">
+        <div class="cmd-code"><span class="prompt">$</span> tmux a<button class="copy-btn">복사</button></div>
+        <div class="cmd-desc">가장 최근 세션에 바로 재접속</div>
+      </div>
+      <div class="cmd-item" onclick="copyCmd(this)">
+        <div class="cmd-code"><span class="prompt">$</span> tmux kill-session -t mysession<button class="copy-btn">복사</button></div>
+        <div class="cmd-desc">특정 세션 종료</div>
+      </div>
+      <div class="cmd-item" onclick="copyCmd(this)">
+        <div class="cmd-code"><span class="prompt">$</span> tmux kill-server<button class="copy-btn">복사</button></div>
+        <div class="cmd-desc">tmux 서버 및 모든 세션 강제 종료</div>
+      </div>
+      <div class="cmd-item" onclick="copyCmd(this)">
+        <div class="cmd-code"><span class="prompt">$</span> tmux rename-session -t old new<button class="copy-btn">복사</button></div>
+        <div class="cmd-desc">세션 이름 변경</div>
+      </div>
+      <div class="cmd-item" onclick="copyCmd(this)">
+        <div class="cmd-code"><span class="prompt">$</span> tmux new -s work -d<button class="copy-btn">복사</button></div>
+        <div class="cmd-desc">백그라운드로 새 세션 생성 (Detached)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cmd-section">
+    <div class="cmd-group-title">윈도우 / 패인 관리</div>
+    <div class="cmd-list">
+      <div class="cmd-item" onclick="copyCmd(this)">
+        <div class="cmd-code"><span class="prompt">$</span> tmux new-window -n mywin<button class="copy-btn">복사</button></div>
+        <div class="cmd-desc">이름이 'mywin'인 새 윈도우 생성</div>
+      </div>
+      <div class="cmd-item" onclick="copyCmd(this)">
+        <div class="cmd-code"><span class="prompt">$</span> tmux split-window -h<button class="copy-btn">복사</button></div>
+        <div class="cmd-desc">현재 패인 수직 분할 (좌우)</div>
+      </div>
+      <div class="cmd-item" onclick="copyCmd(this)">
+        <div class="cmd-code"><span class="prompt">$</span> tmux split-window -v<button class="copy-btn">복사</button></div>
+        <div class="cmd-desc">현재 패인 수평 분할 (상하)</div>
+      </div>
+      <div class="cmd-item" onclick="copyCmd(this)">
+        <div class="cmd-code"><span class="prompt">$</span> tmux select-pane -t 2<button class="copy-btn">복사</button></div>
+        <div class="cmd-desc">번호로 패인 선택</div>
+      </div>
+      <div class="cmd-item" onclick="copyCmd(this)">
+        <div class="cmd-code"><span class="prompt">$</span> tmux resize-pane -D 5<button class="copy-btn">복사</button></div>
+        <div class="cmd-desc">현재 패인 아래로 5칸 크기 조절</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cmd-section">
+    <div class="cmd-group-title">명령 전송 (send-keys)</div>
+    <div class="cmd-list">
+      <div class="cmd-item" onclick="copyCmd(this)">
+        <div class="cmd-code"><span class="prompt">$</span> tmux send-keys -t mysession 'ls -la' Enter<button class="copy-btn">복사</button></div>
+        <div class="cmd-desc">세션에 명령어 전송 (스크립트에서 자주 사용)</div>
+      </div>
+      <div class="cmd-item" onclick="copyCmd(this)">
+        <div class="cmd-code"><span class="prompt">$</span> tmux send-keys -t 0:1.0 'vim' Enter<button class="copy-btn">복사</button></div>
+        <div class="cmd-desc">세션:윈도우.패인 지정하여 명령 전송</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cmd-section">
+    <div class="cmd-group-title">스크립팅 / 자동화</div>
+    <div class="cmd-list">
+      <div class="cmd-item" onclick="copyCmd(this)">
+        <div class="cmd-code"><span class="prompt">$</span> tmux has-session -t mysession 2>/dev/null<button class="copy-btn">복사</button></div>
+        <div class="cmd-desc">세션 존재 여부 확인 (종료코드 0=존재)</div>
+      </div>
+      <div class="cmd-item" onclick="copyCmd(this)">
+        <div class="cmd-code"><span class="prompt">$</span> tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index}'<button class="copy-btn">복사</button></div>
+        <div class="cmd-desc">모든 패인 목록 포맷으로 출력</div>
+      </div>
+      <div class="cmd-item" onclick="copyCmd(this)">
+        <div class="cmd-code"><span class="prompt">$</span> tmux source-file ~/.tmux.conf<button class="copy-btn">복사</button></div>
+        <div class="cmd-desc">설정 파일 즉시 재로드</div>
+      </div>
+      <div class="cmd-item" onclick="copyCmd(this)">
+        <div class="cmd-code"><span class="prompt">$</span> tmux set-option -g mouse on<button class="copy-btn">복사</button></div>
+        <div class="cmd-desc">실행 중 옵션 즉시 변경 (마우스 모드 켜기)</div>
+      </div>
+      <div class="cmd-item" onclick="copyCmd(this)">
+        <div class="cmd-code"><span class="prompt">$</span> tmux display-message "Hello!"<button class="copy-btn">복사</button></div>
+        <div class="cmd-desc">상태바에 메시지 표시</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TAB 4: 실전 활용 ── -->
+<div id="tab-tips" class="tab-content container">
+  <p class="section-title">실전 활용 패턴</p>
+  <p class="section-sub">tmux를 효과적으로 활용하는 워크플로우와 실전 팁들을 소개합니다.</p>
+
+  <div class="tip-card green">
+    <div class="tip-tag green">원격 작업 필수 패턴</div>
+    <h3>SSH 연결 끊김 방지 — Detach & Reattach</h3>
+    <p>장시간 실행되는 작업(빌드, 학습, 배포 등)을 SSH 세션 안에서 그냥 실행하면 연결 끊김 시 작업이 중단됩니다. tmux 세션 안에서 실행 후 Detach하면 SSH가 끊겨도 작업이 계속됩니다.</p>
+    <div class="code-block"><span class="comment"># 서버 접속 후 세션 생성</span>
+<span class="cmd">tmux new -s training</span>
+
+<span class="comment"># 작업 실행</span>
+<span class="cmd">python</span> <span class="arg">train.py --epochs 100</span>
+
+<span class="comment"># Ctrl+b d 로 Detach (SSH 끊어도 OK)</span>
+<span class="comment"># ... 나중에 SSH 재접속 후 ...</span>
+
+<span class="cmd">tmux attach -t training</span>  <span class="comment"># 작업 상태 확인</span></div>
+  </div>
+
+  <div class="tip-card blue">
+    <div class="tip-tag blue">개발 환경 자동 구성</div>
+    <h3>프로젝트 시작 스크립트</h3>
+    <p>프로젝트별 tmux 레이아웃을 스크립트로 자동화하면 매번 수동으로 패인을 나누지 않아도 됩니다.</p>
+    <div class="code-block"><span class="comment">#!/bin/bash  # dev.sh</span>
+SESSION=<span class="str">"myapp"</span>
+
+<span class="comment"># 세션이 없을 때만 생성</span>
+<span class="cmd">tmux has-session -t</span> <span class="arg">$SESSION</span> <span class="str">2>/dev/null</span>
+<span class="flag">if</span> [ $? != 0 ]; then
+  <span class="cmd">tmux new-session -d -s</span> <span class="arg">$SESSION -c ~/myapp</span>
+
+  <span class="comment"># 윈도우 0: 에디터</span>
+  <span class="cmd">tmux rename-window -t</span> <span class="arg">$SESSION:0 editor</span>
+  <span class="cmd">tmux send-keys -t</span> <span class="arg">$SESSION:0</span> <span class="str">'vim .'</span> Enter
+
+  <span class="comment"># 윈도우 1: 서버 + 로그 (수직 분할)</span>
+  <span class="cmd">tmux new-window -t</span> <span class="arg">$SESSION:1 -n server</span>
+  <span class="cmd">tmux send-keys -t</span> <span class="arg">$SESSION:1</span> <span class="str">'npm run dev'</span> Enter
+  <span class="cmd">tmux split-window -h -t</span> <span class="arg">$SESSION:1</span>
+  <span class="cmd">tmux send-keys -t</span> <span class="arg">$SESSION:1.1</span> <span class="str">'tail -f logs/app.log'</span> Enter
+
+  <span class="comment"># 윈도우 2: 쉘</span>
+  <span class="cmd">tmux new-window -t</span> <span class="arg">$SESSION:2 -n shell</span>
+<span class="flag">fi</span>
+
+<span class="cmd">tmux attach -t</span> <span class="arg">$SESSION</span></div>
+  </div>
+
+  <div class="tip-card orange">
+    <div class="tip-tag orange">다중 서버 동시 작업</div>
+    <h3>synchronize-panes로 동시 입력</h3>
+    <p>여러 서버에 동일한 명령을 동시에 실행할 때 활용합니다. 모든 패인이 같은 입력을 받습니다.</p>
+    <div class="code-block"><span class="comment"># 각 패인에서 서버 SSH 접속</span>
+<span class="comment"># pane 0: ssh server1</span>
+<span class="comment"># pane 1: ssh server2</span>
+<span class="comment"># pane 2: ssh server3</span>
+
+<span class="comment"># 모든 패인 동시 입력 활성화</span>
+<span class="cmd">Ctrl+b</span> : set-window-option synchronize-panes <span class="str">on</span>
+
+<span class="comment"># 이제 입력하는 모든 내용이 3개 서버에 동시 전달</span>
+<span class="arg">sudo systemctl restart nginx</span>
+
+<span class="comment"># 동기화 해제</span>
+<span class="cmd">Ctrl+b</span> : set-window-option synchronize-panes <span class="str">off</span></div>
+  </div>
+
+  <div class="tip-card purple">
+    <div class="tip-tag purple">페어 프로그래밍</div>
+    <h3>같은 세션 공유로 실시간 협업</h3>
+    <p>두 사람이 같은 tmux 세션에 Attach하면 화면을 공유하며 실시간 페어 프로그래밍이 가능합니다.</p>
+    <div class="code-block"><span class="comment"># 호스트: 세션 생성</span>
+<span class="cmd">tmux new -s pair</span>
+
+<span class="comment"># 게스트: 같은 세션에 Attach (읽기 전용도 가능)</span>
+<span class="cmd">tmux attach -t pair</span>              <span class="comment"># 동일한 뷰</span>
+<span class="cmd">tmux attach -t pair -r</span>           <span class="comment"># 읽기 전용</span>
+
+<span class="comment"># 별도 윈도우 크기로 독립 접속 (그룹 세션)</span>
+<span class="cmd">tmux new-session -t pair</span>         <span class="comment"># 같은 세션, 독립 뷰포트</span></div>
+  </div>
+
+  <div class="tip-card cyan">
+    <div class="tip-tag cyan">생산성 팁</div>
+    <h3>tmux + fzf 세션 퀵 스위처</h3>
+    <p>fzf와 조합하면 세션/윈도우 간 퀵 스위칭이 가능합니다. .bashrc/.zshrc에 추가하세요.</p>
+    <div class="code-block"><span class="comment"># ~/.zshrc에 추가</span>
+<span class="cmd">tm()</span> {
+  <span class="flag">local</span> session
+  session=$(<span class="cmd">tmux list-sessions -F</span> <span class="str">"#{session_name}"</span> 2>/dev/null \
+    | <span class="cmd">fzf</span> <span class="flag">--height 40%</span> <span class="flag">--reverse</span> \
+        <span class="flag">--preview</span> <span class="str">'tmux list-windows -t {}'</span>)
+  <span class="flag">if</span> [ -n <span class="str">"$session"</span> ]; then
+    <span class="cmd">tmux attach -t</span> <span class="str">"$session"</span> || <span class="cmd">tmux new -s</span> <span class="str">"$session"</span>
+  <span class="flag">fi</span>
+}
+<span class="comment"># 사용: tm (엔터 후 세션 선택)</span></div>
+  </div>
+
+  <div class="tip-card green">
+    <div class="tip-tag green">플러그인 추천</div>
+    <h3>TPM (Tmux Plugin Manager) 필수 플러그인</h3>
+    <div class="code-block"><span class="comment"># ~/.tmux.conf</span>
+<span class="cfg-key">set -g @plugin</span> <span class="str">'tmux-plugins/tpm'</span>
+
+<span class="comment"># 세션 자동 저장/복원 (재부팅 후에도 복원)</span>
+<span class="cfg-key">set -g @plugin</span> <span class="str">'tmux-plugins/tmux-resurrect'</span>
+<span class="cfg-key">set -g @plugin</span> <span class="str">'tmux-plugins/tmux-continuum'</span>
+
+<span class="comment"># 향상된 복사/붙여넣기 (클립보드 연동)</span>
+<span class="cfg-key">set -g @plugin</span> <span class="str">'tmux-plugins/tmux-yank'</span>
+
+<span class="comment"># 패인 검색 및 URL 열기</span>
+<span class="cfg-key">set -g @plugin</span> <span class="str">'tmux-plugins/tmux-open'</span>
+
+<span class="comment"># 플러그인 설치: Prefix + I</span>
+<span class="comment"># 플러그인 업데이트: Prefix + U</span></div>
+  </div>
+</div>
+
+<!-- ── TAB 5: 설정 파일 ── -->
+<div id="tab-conf" class="tab-content container">
+  <p class="section-title">~/.tmux.conf 설정 가이드</p>
+  <p class="section-sub">tmux 시작 시 자동으로 로드되는 설정 파일입니다.</p>
+
+  <div class="tip-card orange" style="margin-bottom:24px;">
+    <div class="tip-tag orange">⚠ 가장 흔한 함정</div>
+    <h3>설정을 붙여넣었는데 안 보인다면 — 리로드를 안 한 것</h3>
+    <p>tmux 서버는 한 번 떠있으면 <code>~/.tmux.conf</code>를 다시 읽지 않습니다. 파일을 수정해도 <strong>현재 attached 세션은 옛날 설정 그대로 돌고 있습니다.</strong> 색상 테마, status-bar 포맷, 키바인딩 변경 등이 안 보이는 이유의 90%는 이것입니다.</p>
+    <p style="margin-top:10px;"><strong style="color:var(--text);">적용 방법 (위에서부터 권장):</strong></p>
+    <ol style="padding-left:22px;line-height:1.9;color:var(--text2);font-size:13px;margin-top:6px;">
+      <li>아래 "단축키 커스터마이징" 블록의 <code>bind r source-file ...</code>을 먼저 conf에 넣고 한 번 리로드 → 이후엔 <kbd class="prefix">Ctrl+b</kbd> <kbd>r</kbd> 한 방.</li>
+      <li>CLI에서 <code>tmux source-file ~/.tmux.conf</code> — 현재 세션에 즉시 적용.</li>
+      <li>완전 리셋: <code>tmux kill-server</code> 후 <code>tmux</code>로 새 세션 — 모든 캐시 상태 초기화.</li>
+    </ol>
+    <p style="margin-top:12px;color:var(--text2);font-size:12px;">📌 <strong style="color:var(--orange);">예외:</strong> <code>default-terminal</code>처럼 세션 생성 시점에만 적용되는 옵션은 source-file로는 부족하고 새 세션을 만들어야 반영됩니다. 색상이 이상하면 <code>kill-server</code> 후 새로 시작해보세요.</p>
+    <p style="margin-top:6px;color:var(--text2);font-size:12px;">📌 source-file 시 에러가 나면 그 줄부터 아래는 무시되니, 부분만 적용된 것처럼 보일 수 있습니다. <code>tmux source ~/.tmux.conf</code> 출력에 에러 메시지가 있는지 확인하세요.</p>
+  </div>
+
+  <div class="config-block">
+    <div class="config-header">
+      <div>
+        <h3>기본 필수 설정</h3>
+        <p>처음 시작할 때 반드시 설정하면 좋은 옵션들</p>
+      </div>
+    </div>
+    <div class="config-code"><span class="cfg-comment"># Prefix 키 변경: Ctrl+b → Ctrl+a (더 편한 위치)</span>
+<span class="cfg-key">unbind C-b</span>
+<span class="cfg-key">set -g prefix</span> <span class="cfg-val">C-a</span>
+<span class="cfg-key">bind C-a send-prefix</span>
+
+<span class="cfg-comment"># 256색 + True Color 지원</span>
+<span class="cfg-key">set -g default-terminal</span> <span class="cfg-str">"tmux-256color"</span>
+<span class="cfg-key">set -ag terminal-overrides</span> <span class="cfg-str">",xterm-256color:RGB"</span>
+
+<span class="cfg-comment"># 마우스 지원 (스크롤, 패인 선택, 크기 조절)</span>
+<span class="cfg-key">set -g mouse</span> <span class="cfg-val">on</span>
+
+<span class="cfg-comment"># 인덱스를 0이 아닌 1부터 시작 (키보드 배열상 더 편리)</span>
+<span class="cfg-key">set -g base-index</span> <span class="cfg-val">1</span>
+<span class="cfg-key">setw -g pane-base-index</span> <span class="cfg-val">1</span>
+
+<span class="cfg-comment"># 윈도우 닫힐 때 번호 자동 재정렬</span>
+<span class="cfg-key">set -g renumber-windows</span> <span class="cfg-val">on</span>
+
+<span class="cfg-comment"># 스크롤백 버퍼 크기 (기본 2000 → 50000)</span>
+<span class="cfg-key">set -g history-limit</span> <span class="cfg-val">50000</span>
+
+<span class="cfg-comment"># Escape 키 딜레이 제거 (Vim 사용 시 필수)</span>
+<span class="cfg-key">set -s escape-time</span> <span class="cfg-val">0</span>
+
+<span class="cfg-comment"># 시스템 클립보드 통합 (OSC52 — iTerm2 / WezTerm / kitty 등 지원)</span>
+<span class="cfg-key">set -g set-clipboard</span> <span class="cfg-val">on</span></div>
+  </div>
+
+  <div class="config-block">
+    <div class="config-header">
+      <div>
+        <h3>Extended Keys — 고급 modifier 조합 통과 (tmux 3.2+)</h3>
+        <p>Ctrl+/, Ctrl+;, Ctrl+Shift+P, Shift+Enter 같이 전통 ASCII 인코딩으로 표현할 수 없는 modifier 조합을 tmux 안의 vim/nvim까지 손실 없이 전달합니다.</p>
+      </div>
+    </div>
+    <div class="config-code"><span class="cfg-comment"># 외부 터미널이 보내는 extended 키 시퀀스를 수신 (DA 응답으로 자동 협상)</span>
+<span class="cfg-key">set -g extended-keys</span> <span class="cfg-val">on</span>             <span class="cfg-comment"># on=협상 시 수신, always=무조건 emit</span>
+
+<span class="cfg-comment"># 안쪽 프로그램에 emit할 때 사용할 인코딩</span>
+<span class="cfg-key">set -g extended-keys-format</span> <span class="cfg-val">csi-u</span>   <span class="cfg-comment"># 또는 xterm (modifyOtherKeys 형식)</span></div>
+    <div style="padding:16px 20px;border-top:1px solid var(--border);font-size:13px;color:var(--text2);">
+      <p style="margin-bottom:10px;"><strong style="color:var(--text);">왜 필요한가:</strong> 터미널은 ASCII control 코드 기반이라 <code>Ctrl+A</code>는 0x01로 보내지지만 <code>Ctrl+Shift+A</code>나 <code>Ctrl+/</code>는 표준 인코딩이 없어 손실됩니다. 두 옵션이 이걸 해결합니다.</p>
+      <p style="margin-bottom:6px;"><strong style="color:var(--text);">두 가지 포맷:</strong></p>
+      <ul style="padding-left:20px;line-height:1.9;margin-bottom:10px;">
+        <li><code>csi-u</code> — Paul Evans "fixterms" 표준. <strong>kitty / foot / WezTerm / iTerm2 3.5+ / Ghostty</strong> 등이 지원. 권장.</li>
+        <li><code>xterm</code> — xterm modifyOtherKeys level 2. 전통 xterm 호환.</li>
+      </ul>
+      <p style="margin-bottom:6px;"><strong style="color:var(--text);">실제 효과 (tmux 안 nvim 기준):</strong></p>
+      <ul style="padding-left:20px;line-height:1.9;margin-bottom:10px;">
+        <li><kbd>Ctrl+;</kbd> <kbd>Ctrl+,</kbd> <kbd>Ctrl+.</kbd> — IDE 스타일 단축키</li>
+        <li><kbd>Ctrl+/</kbd> — 주석 토글 / 검색</li>
+        <li><kbd>Ctrl+Shift+P</kbd> — 커맨드 팔레트</li>
+        <li><kbd>Shift+Enter</kbd> <kbd>Ctrl+Enter</kbd> — 멀티라인 입력</li>
+        <li><kbd>Ctrl+Tab</kbd> <kbd>Ctrl+Shift+Tab</kbd> — 탭 전환</li>
+      </ul>
+      <p style="margin-top:12px;"><strong style="color:var(--orange);">⚠ 주의:</strong> 터미널이 지원해야 의미가 있습니다. <strong>Terminal.app은 미지원</strong>이라 켜도 효과 없음(피해도 없음). 안쪽 프로그램도 알아야 — <strong>nvim 0.10+ 네이티브 지원</strong>, 구버전 vim은 추가 매핑 필요. 평범한 셸 작업만 한다면 체감 효과 거의 없음, <strong>에디터·IDE 흉내 키바인딩 쓸 때 의미가 큼</strong>.</p>
+    </div>
+  </div>
+
+  <div class="config-block">
+    <div class="config-header">
+      <div>
+        <h3>단축키 커스터마이징</h3>
+        <p>더 직관적인 단축키 재배치</p>
+      </div>
+    </div>
+    <div class="config-code"><span class="cfg-comment"># 설정 파일 즉시 리로드</span>
+<span class="cfg-key">bind r source-file ~/.tmux.conf</span> \; <span class="cfg-key">display</span> <span class="cfg-str">"Config reloaded!"</span>
+
+<span class="cfg-comment"># 직관적인 패인 분할 (현재 디렉토리 유지)</span>
+<span class="cfg-key">bind |</span> split-window -h -c <span class="cfg-str">"#{pane_current_path}"</span>
+<span class="cfg-key">bind -</span> split-window -v -c <span class="cfg-str">"#{pane_current_path}"</span>
+<span class="cfg-key">unbind '"'</span>
+<span class="cfg-key">unbind %</span>
+
+<span class="cfg-comment"># Vim 스타일 패인 이동</span>
+<span class="cfg-key">bind h select-pane -L</span>
+<span class="cfg-key">bind j select-pane -D</span>
+<span class="cfg-key">bind k select-pane -U</span>
+<span class="cfg-key">bind l select-pane -R</span>
+
+<span class="cfg-comment"># Vim 스타일 패인 크기 조절 (Prefix 없이 반복 가능)</span>
+<span class="cfg-key">bind -r H resize-pane -L</span> <span class="cfg-val">5</span>
+<span class="cfg-key">bind -r J resize-pane -D</span> <span class="cfg-val">5</span>
+<span class="cfg-key">bind -r K resize-pane -U</span> <span class="cfg-val">5</span>
+<span class="cfg-key">bind -r L resize-pane -R</span> <span class="cfg-val">5</span>
+
+<span class="cfg-comment"># 복사 모드 Vi 키 설정</span>
+<span class="cfg-key">setw -g mode-keys</span> <span class="cfg-val">vi</span>
+<span class="cfg-key">bind -T copy-mode-vi v send -X begin-selection</span>
+<span class="cfg-key">bind -T copy-mode-vi y send -X copy-selection-and-cancel</span></div>
+  </div>
+
+  <div class="config-block">
+    <div class="config-header">
+      <div>
+        <h3>상태 바 커스터마이징</h3>
+        <p>정보가 풍부한 상태 바 설정</p>
+      </div>
+    </div>
+    <div class="config-code"><span class="cfg-comment"># 상태 바 위치 및 갱신 주기</span>
+<span class="cfg-key">set -g status-position</span> <span class="cfg-val">bottom</span>
+<span class="cfg-key">set -g status-interval</span> <span class="cfg-val">5</span>
+
+<span class="cfg-comment"># 색상 테마</span>
+<span class="cfg-key">set -g status-bg</span> <span class="cfg-str">"#1e2030"</span>
+<span class="cfg-key">set -g status-fg</span> <span class="cfg-str">"#c8d3f5"</span>
+
+<span class="cfg-comment"># 좌측: 세션 이름</span>
+<span class="cfg-key">set -g status-left-length</span> <span class="cfg-val">30</span>
+<span class="cfg-key">set -g status-left</span> <span class="cfg-str">"#[bg=#82aaff,fg=#1e2030,bold] #S #[default] "</span>
+
+<span class="cfg-comment"># 우측: 시스템 정보</span>
+<span class="cfg-key">set -g status-right-length</span> <span class="cfg-val">80</span>
+<span class="cfg-key">set -g status-right</span> <span class="cfg-str">"#[fg=#636da6] %Y-%m-%d  #[fg=#82aaff,bold]%H:%M #[default]"</span>
+
+<span class="cfg-comment"># 윈도우 탭 스타일</span>
+<span class="cfg-key">set -g window-status-format</span> <span class="cfg-str">" #I:#W "</span>
+<span class="cfg-key">set -g window-status-current-format</span> <span class="cfg-str">"#[bg=#82aaff,fg=#1e2030,bold] #I:#W #[default]"</span>
+
+<span class="cfg-comment"># 패인 테두리 색상</span>
+<span class="cfg-key">set -g pane-border-style</span> <span class="cfg-str">"fg=#363a4f"</span>
+<span class="cfg-key">set -g pane-active-border-style</span> <span class="cfg-str">"fg=#82aaff"</span></div>
+  </div>
+
+  <div class="config-block">
+    <div class="config-header">
+      <div>
+        <h3>TPM 플러그인 설정 (선택)</h3>
+        <p>세션 자동 저장·복원 및 클립보드 통합</p>
+      </div>
+    </div>
+    <div class="config-code"><span class="cfg-comment"># TPM 설치: git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm</span>
+
+<span class="cfg-key">set -g @plugin</span> <span class="cfg-str">'tmux-plugins/tpm'</span>
+<span class="cfg-key">set -g @plugin</span> <span class="cfg-str">'tmux-plugins/tmux-sensible'</span>    <span class="cfg-comment"># 권장 기본값</span>
+<span class="cfg-key">set -g @plugin</span> <span class="cfg-str">'tmux-plugins/tmux-resurrect'</span>    <span class="cfg-comment"># 세션 저장/복원</span>
+<span class="cfg-key">set -g @plugin</span> <span class="cfg-str">'tmux-plugins/tmux-continuum'</span>    <span class="cfg-comment"># 자동 저장</span>
+<span class="cfg-key">set -g @plugin</span> <span class="cfg-str">'tmux-plugins/tmux-yank'</span>         <span class="cfg-comment"># 클립보드 연동</span>
+
+<span class="cfg-comment"># tmux-continuum: 15분마다 자동 저장</span>
+<span class="cfg-key">set -g @continuum-restore</span> <span class="cfg-str">'on'</span>
+<span class="cfg-key">set -g @continuum-save-interval</span> <span class="cfg-str">'15'</span>
+
+<span class="cfg-comment"># tmux-resurrect: vim/nvim 세션도 함께 복원</span>
+<span class="cfg-key">set -g @resurrect-strategy-vim</span> <span class="cfg-str">'session'</span>
+<span class="cfg-key">set -g @resurrect-strategy-nvim</span> <span class="cfg-str">'session'</span>
+
+<span class="cfg-comment"># 반드시 파일 맨 마지막 줄에 위치</span>
+<span class="cfg-key">run</span> <span class="cfg-str">'~/.tmux/plugins/tpm/tpm'</span></div>
+  </div>
+
+</div>
+
+<!-- ── TAB 6: macOS 노트 ── -->
+<div id="tab-macos" class="tab-content container">
+  <p class="section-title">macOS에서 tmux 사용 시 알아둘 것</p>
+  <p class="section-sub">Terminal.app / iTerm2 환경에서 기본 단축키 일부가 동작하지 않는 케이스와 해결법, 그리고 시스템 클립보드 연동을 정리합니다.</p>
+
+  <div class="info-box">
+    <strong>핵심:</strong> macOS의 터미널 에뮬레이터는 기본적으로 <kbd>Option(⌥)</kbd>을 "특수문자 입력 키"로, <kbd>Ctrl+←/→</kbd>를 "Mission Control의 Spaces 이동"으로 가로챕니다. 그래서 tmux의 <kbd class="prefix">Ctrl+b</kbd> <kbd>Alt+↑↓←→</kbd> 같은 단축키가 tmux까지 도달하지 못합니다.
+  </div>
+
+  <div class="tip-card orange">
+    <div class="tip-tag orange">가장 흔한 함정</div>
+    <h3>Alt(⌥) 키가 tmux에서 동작하지 않음 — 패인 리사이즈·Vim 매핑 등 Alt 전반</h3>
+    <p>증상: <kbd class="prefix">Ctrl+b</kbd> 후 <kbd>Alt+↑↓←→</kbd>를 눌러도 패인 크기가 바뀌지 않거나, Vim/Neovim 안에서 Alt 기반 단축키가 먹히지 않음. 원인은 macOS 터미널이 ⌥을 "Meta 키"가 아닌 "특수문자 modifier"로 해석하기 때문 — Alt 키 시퀀스 자체가 tmux에 도달하지 않습니다. 해결법은 세 가지입니다.</p>
+
+    <h3 style="margin-top:18px;font-size:14px;color:var(--cyan);">방법 1 — iTerm2: Option을 Esc+ (Meta)로 설정 <span style="color:var(--green);font-size:12px;font-weight:700;">✓ 권장</span></h3>
+    <p style="margin-bottom:8px;font-size:13px;color:var(--text2);">Alt 관련 모든 문제의 근본 해결책. 이것만 해도 대부분의 Alt 키 이슈가 사라집니다.</p>
+    <div class="code-block"><span class="comment"># Settings → Profiles → Keys → General</span>
+<span class="comment">#   Left Option Key:  Esc+</span>
+<span class="comment">#   Right Option Key: Esc+   (선택)</span></div>
+
+    <h3 style="margin-top:18px;font-size:14px;color:var(--cyan);">방법 2 — Terminal.app: "Use Option as Meta key" 체크</h3>
+    <div class="code-block"><span class="comment"># Terminal → Settings → Profiles → 사용 중인 프로파일 선택</span>
+<span class="comment"># → Keyboard 탭 → "Use Option as Meta key" 체크</span></div>
+
+    <h3 style="margin-top:18px;font-size:14px;color:var(--green);">방법 3 — 권장: ⌥ 없는 tmux 키바인딩으로 교체</h3>
+    <p>1·2번 설정을 켜면 ⌥+숫자/알파벳으로 입력하던 특수문자(€, ©, ñ, 한글 일부 IME 등)를 잃습니다. 다국어 입력이 잦다면 차라리 tmux 단축키를 ⌥ 없는 형태로 바꾸는 게 깔끔합니다.</p>
+    <div class="code-block"><span class="cfg-comment"># ~/.tmux.conf — Vim 스타일 반복 가능한 리사이즈 (-r 플래그)</span>
+<span class="cfg-key">bind -r H resize-pane -L</span> <span class="cfg-val">5</span>
+<span class="cfg-key">bind -r J resize-pane -D</span> <span class="cfg-val">5</span>
+<span class="cfg-key">bind -r K resize-pane -U</span> <span class="cfg-val">5</span>
+<span class="cfg-key">bind -r L resize-pane -R</span> <span class="cfg-val">5</span>
+
+<span class="cfg-comment"># 또는 Shift+Arrow 매핑 (직관적)</span>
+<span class="cfg-key">bind -r S-Left  resize-pane -L</span> <span class="cfg-val">5</span>
+<span class="cfg-key">bind -r S-Down  resize-pane -D</span> <span class="cfg-val">5</span>
+<span class="cfg-key">bind -r S-Up    resize-pane -U</span> <span class="cfg-val">5</span>
+<span class="cfg-key">bind -r S-Right resize-pane -R</span> <span class="cfg-val">5</span></div>
+    <p style="margin-top:10px;"><kbd class="prefix">Ctrl+b</kbd>를 누른 직후 <kbd>H</kbd>/<kbd>J</kbd>/<kbd>K</kbd>/<kbd>L</kbd>을 반복 입력하면 prefix를 다시 누르지 않고도 계속 크기를 조절할 수 있습니다(<code>-r</code> = repeatable).</p>
+  </div>
+
+  <div class="tip-card cyan">
+    <div class="tip-tag cyan">클립보드 통합</div>
+    <h3>tmux ↔ macOS 시스템 클립보드 (pbcopy / pbpaste)</h3>
+    <p>복사 모드에서 선택한 내용을 ⌘V로 다른 앱에 붙여넣고, ⌘C로 복사한 외부 텍스트를 tmux 안에서 붙여넣을 수 있게 합니다.</p>
+    <div class="code-block"><span class="cfg-comment"># ~/.tmux.conf</span>
+<span class="cfg-key">setw -g mode-keys</span> <span class="cfg-val">vi</span>
+<span class="cfg-key">set -g set-clipboard</span> <span class="cfg-val">on</span>      <span class="cfg-comment"># OSC52 (iTerm2 / WezTerm 지원)</span>
+
+<span class="cfg-comment"># 키보드 복사: prefix [ → v 로 선택 시작 → y 로 복사</span>
+<span class="cfg-key">bind -T copy-mode-vi v</span>  send-keys -X begin-selection
+<span class="cfg-key">bind -T copy-mode-vi y</span>  send-keys -X copy-pipe-and-cancel <span class="cfg-str">"pbcopy"</span>
+
+<span class="cfg-comment"># 마우스로 드래그 → 손 떼는 순간 pbcopy</span>
+<span class="cfg-key">bind -T copy-mode-vi MouseDragEnd1Pane</span> \
+   send-keys -X copy-pipe-and-cancel <span class="cfg-str">"pbcopy"</span>
+
+<span class="cfg-comment"># prefix + p 로 pbpaste 내용 붙여넣기</span>
+<span class="cfg-key">bind p</span> run <span class="cfg-str">"pbpaste | tmux load-buffer - && tmux paste-buffer"</span></div>
+    <p style="margin-top:10px;">iTerm2 사용자는 <kbd>Settings → General → Selection</kbd>에서 "Applications in terminal may access clipboard"를 켜야 <code>set-clipboard on</code>(OSC52)이 동작합니다. Terminal.app은 OSC52를 지원하지 않으므로 <code>pbcopy</code> 파이프 방식이 사실상 필수입니다.</p>
+  </div>
+
+  <div class="tip-card blue">
+    <div class="tip-tag blue">readline 키 통과</div>
+    <h3>⌘+←/→ (줄 처음/끝 이동)이 tmux 안에서 안 먹을 때</h3>
+    <p><strong>원인:</strong> ⌘(Cmd) 키는 macOS가 OS/앱용으로 가로채므로 tmux나 셸에 직접 도달하지 않습니다. ⌘+Arrow의 "줄 처음/끝" 동작은 사실 <strong>터미널 앱이 ⌘+Left를 <code>Ctrl+A</code> 같은 시퀀스로 변환해서 셸 readline에 전달</strong>하는 매핑입니다. tmux 안에서만 안 된다면 tmux 잘못이 아니라 터미널의 키 매핑이 빠져있다는 뜻입니다 (Ctrl+A/E는 tmux를 그대로 통과합니다).</p>
+
+    <h3 style="margin-top:18px;font-size:14px;color:var(--cyan);">iTerm2 — Natural Text Editing 프리셋 (가장 쉬움)</h3>
+    <div class="code-block"><span class="comment"># Settings → Profiles → 프로파일 → Keys → Key Mappings</span>
+<span class="comment"># 하단의 "Presets..." → "Natural Text Editing" 선택</span>
+
+<span class="comment"># 자동 매핑되는 항목:</span>
+<span class="comment">#   ⌘+←       → 0x01 (Ctrl+A)  : 줄 처음</span>
+<span class="comment">#   ⌘+→       → 0x05 (Ctrl+E)  : 줄 끝</span>
+<span class="comment">#   ⌘+Delete  → 0x15 (Ctrl+U)  : 줄 처음까지 삭제</span>
+<span class="comment">#   ⌥+←/→     → Esc B / Esc F  : 단어 단위 이동</span>
+<span class="comment">#   ⌥+Delete  → Esc Del        : 단어 단위 삭제</span></div>
+
+    <h3 style="margin-top:18px;font-size:14px;color:var(--cyan);">Terminal.app — 수동 매핑</h3>
+    <p>프리셋이 없어 손으로 추가합니다. <code>Terminal → Settings → Profiles → Keyboard → Key Mappings</code>에서 <strong>+</strong> 로:</p>
+    <div class="code-block"><span class="comment"># Modifier   Key       Action       Value</span>
+⌘          ←         Send Text    \001       <span class="comment"># Ctrl+A: 줄 처음</span>
+⌘          →         Send Text    \005       <span class="comment"># Ctrl+E: 줄 끝</span>
+⌘          Delete    Send Text    \025       <span class="comment"># Ctrl+U: 줄 처음까지 삭제</span>
+⌥          ←         Send Text    \033b      <span class="comment"># Esc B:  단어 앞</span>
+⌥          →         Send Text    \033f      <span class="comment"># Esc F:  단어 뒤</span></div>
+    <p style="margin-top:8px;color:var(--text2);">매핑이 적용된 뒤에는 tmux 안에서도 동일하게 동작합니다. 시퀀스 자체는 모두 단순한 control 문자나 escape 조합이라 tmux가 별다른 조작 없이 그대로 통과시킵니다.</p>
+  </div>
+
+  <div class="tip-card cyan">
+    <div class="tip-tag cyan">readline 치트시트</div>
+    <h3>⌘+Arrow 매핑 대신 외워두면 어디서나 통하는 단축키</h3>
+    <p>readline은 bash/zsh의 라인 편집 라이브러리로, tmux·SSH·도커 컨테이너 어디서든 동일하게 동작합니다. ⌘+Arrow 매핑이 환경마다 달라 신뢰하기 어렵다면 처음부터 이 키들에 손을 익히는 게 가장 범용적입니다.</p>
+
+    <div class="shortcut-table" style="margin-top:14px;">
+      <div class="shortcut-row"><div class="key-cell"><kbd>Ctrl+A</kbd></div><div class="desc-cell">줄 처음으로 이동 (Home)</div></div>
+      <div class="shortcut-row"><div class="key-cell"><kbd>Ctrl+E</kbd></div><div class="desc-cell">줄 끝으로 이동 (End)</div></div>
+      <div class="shortcut-row"><div class="key-cell"><kbd>Ctrl+B</kbd> / <kbd>Ctrl+F</kbd></div><div class="desc-cell">한 글자 뒤/앞 이동 (← / →)</div></div>
+      <div class="shortcut-row"><div class="key-cell"><kbd>Esc</kbd> <kbd>B</kbd> / <kbd>Esc</kbd> <kbd>F</kbd></div><div class="desc-cell">한 단어 뒤/앞 이동 (⌥+← / ⌥+→ 대체)</div></div>
+      <div class="shortcut-row"><div class="key-cell"><kbd>Ctrl+U</kbd></div><div class="desc-cell">커서부터 줄 처음까지 삭제 (kill backward)</div></div>
+      <div class="shortcut-row"><div class="key-cell"><kbd>Ctrl+K</kbd></div><div class="desc-cell">커서부터 줄 끝까지 삭제 (kill forward)</div></div>
+      <div class="shortcut-row"><div class="key-cell"><kbd>Ctrl+W</kbd></div><div class="desc-cell">커서 직전 한 단어 삭제</div></div>
+      <div class="shortcut-row"><div class="key-cell"><kbd>Esc</kbd> <kbd>D</kbd></div><div class="desc-cell">커서 직후 한 단어 삭제</div></div>
+      <div class="shortcut-row"><div class="key-cell"><kbd>Ctrl+Y</kbd></div><div class="desc-cell">방금 삭제한 텍스트 다시 붙여넣기 (yank)</div></div>
+      <div class="shortcut-row"><div class="key-cell"><kbd>Ctrl+T</kbd></div><div class="desc-cell">커서 좌우 두 글자 교환</div></div>
+      <div class="shortcut-row"><div class="key-cell"><kbd>Ctrl+L</kbd></div><div class="desc-cell">화면 클리어 (clear와 동일, 입력 라인 유지)</div></div>
+      <div class="shortcut-row"><div class="key-cell"><kbd>Ctrl+R</kbd></div><div class="desc-cell">히스토리 역방향 증분 검색</div></div>
+      <div class="shortcut-row"><div class="key-cell"><kbd>Ctrl+P</kbd> / <kbd>Ctrl+N</kbd></div><div class="desc-cell">히스토리 이전/다음 (↑ / ↓)</div></div>
+      <div class="shortcut-row"><div class="key-cell"><kbd>Ctrl+C</kbd></div><div class="desc-cell">현재 입력 취소 (실행 중이면 SIGINT)</div></div>
+      <div class="shortcut-row"><div class="key-cell"><kbd>Ctrl+D</kbd></div><div class="desc-cell">빈 라인이면 셸 종료, 아니면 커서 위치 글자 삭제</div></div>
+      <div class="shortcut-row"><div class="key-cell"><kbd>Ctrl+Z</kbd></div><div class="desc-cell">실행 중 프로세스를 백그라운드로 일시정지 (SIGTSTP)</div></div>
+    </div>
+
+    <p style="margin-top:14px;color:var(--text2);font-size:12px;">📌 <kbd>Esc</kbd> 조합은 <kbd>Esc</kbd>를 누르고 <em>뗀 뒤</em> 다음 키를 누르는 시퀀스입니다. 터미널이 ⌥을 Meta로 인식하도록 설정되어 있다면 <kbd>Alt(⌥)+B</kbd>처럼 동시 입력도 동일하게 동작합니다.</p>
+    <p style="margin-top:6px;color:var(--text2);font-size:12px;">📌 zsh를 vi 모드(<code>bindkey -v</code>)로 쓰는 경우 일부 키가 다르게 바인딩될 수 있습니다. 기본은 emacs 모드(<code>bindkey -e</code>)이며 위 표는 emacs 모드 기준입니다.</p>
+  </div>
+
+  <div class="tip-card blue">
+    <div class="tip-tag blue">마우스 모드와 ⌘C</div>
+    <h3>마우스 모드를 켜도 ⌘C로 직접 복사하려면 — Option 드래그</h3>
+    <p><code>set -g mouse on</code>이 켜져 있으면 드래그 선택을 tmux가 가로채서 ⌘C가 평소처럼 동작하지 않습니다. macOS에서는 드래그하는 동안 <kbd>Option(⌥)</kbd>을 누르고 있으면 터미널이 tmux를 우회해 직접 텍스트를 선택하므로 그대로 ⌘C로 시스템 클립보드에 복사됩니다 (Terminal.app · iTerm2 공통).</p>
+    <p style="margin-top:8px;color:var(--text2);">즉, "tmux 복사 모드 → y" 와 "Option 드래그 → ⌘C" 두 가지 경로를 상황에 맞게 쓰면 됩니다.</p>
+  </div>
+
+  <div class="tip-card purple">
+    <div class="tip-tag purple">기타 충돌</div>
+    <h3>그 외 macOS에서 잘 안 먹는 키 조합</h3>
+    <ul style="margin-top:8px;padding-left:20px;color:var(--text2);font-size:13px;line-height:1.9;">
+      <li><kbd>Ctrl+←</kbd> / <kbd>Ctrl+→</kbd> — Mission Control "Spaces 간 이동" 단축키와 충돌. <code>System Settings → Keyboard → Keyboard Shortcuts → Mission Control</code>에서 해당 항목 해제 시 tmux로 전달됩니다. (Prefix 후 <kbd>Ctrl+↑↓←→</kbd>로 리사이즈하려면 필요)</li>
+      <li><kbd>Ctrl+Space</kbd> — 기본 "입력 소스 전환" 단축키. <code>Keyboard Shortcuts → Input Sources</code>에서 해제 권장.</li>
+      <li><kbd>F1</kbd>~<kbd>F12</kbd> — 기본은 밝기/볼륨 등 미디어 키. <kbd>Fn</kbd>과 함께 누르거나 <code>Keyboard → "Use F1, F2, etc. keys as standard function keys"</code>를 켜야 합니다.</li>
+      <li><kbd>Cmd</kbd> (⌘) — tmux는 ⌘를 modifier로 받을 수 없습니다(터미널이 자체적으로만 소비). 단축키 설계 시 ⌘를 가정하지 말 것.</li>
+      <li><kbd>Ctrl+b</kbd> Prefix 자체는 macOS와 충돌이 없으나, readline의 "한 글자 뒤로(backward-char)" 단축키와 같아 셸 작업 중 잠깐 혼동이 생길 수 있습니다. 거슬리면 Prefix를 <kbd>Ctrl+a</kbd> 또는 <kbd>Ctrl+space</kbd> 등으로 바꾸세요(설정 탭의 기본 설정 참고).</li>
+    </ul>
+  </div>
+
+  <div class="tip-card green">
+    <div class="tip-tag green">설치 & 버전</div>
+    <h3>Homebrew로 최신 tmux 설치</h3>
+    <p>macOS는 시스템 기본 tmux가 없거나 오래된 버전일 수 있습니다. Homebrew로 최신을 설치하세요. <code>set-clipboard</code>, <code>extended-keys</code>, <code>S-Up</code> 같은 신문법은 tmux 3.2+가 필요합니다.</p>
+    <div class="code-block"><span class="cmd">brew install tmux</span>
+<span class="cmd">tmux -V</span>            <span class="comment"># tmux 3.x 확인</span>
+
+<span class="comment"># 설정 즉시 적용</span>
+<span class="cmd">tmux source-file</span> <span class="arg">~/.tmux.conf</span></div>
+  </div>
+
+  <div class="tip-card orange">
+    <div class="tip-tag orange">macOS 권장 .tmux.conf 스니펫</div>
+    <h3>위 내용을 한 덩어리로 — 복사해서 바로 사용</h3>
+    <div class="code-block"><span class="cfg-comment"># --- macOS 친화 tmux 설정 ---</span>
+<span class="cfg-key">set -g mouse</span> <span class="cfg-val">on</span>
+<span class="cfg-key">set -g set-clipboard</span> <span class="cfg-val">on</span>
+<span class="cfg-key">set -g extended-keys</span> <span class="cfg-val">on</span>
+<span class="cfg-key">set -g extended-keys-format</span> <span class="cfg-val">csi-u</span>
+<span class="cfg-key">setw -g mode-keys</span> <span class="cfg-val">vi</span>
+
+<span class="cfg-comment"># Option(Alt) 없이 패인 리사이즈 — prefix 후 H/J/K/L 반복</span>
+<span class="cfg-key">bind -r H resize-pane -L</span> <span class="cfg-val">5</span>
+<span class="cfg-key">bind -r J resize-pane -D</span> <span class="cfg-val">5</span>
+<span class="cfg-key">bind -r K resize-pane -U</span> <span class="cfg-val">5</span>
+<span class="cfg-key">bind -r L resize-pane -R</span> <span class="cfg-val">5</span>
+
+<span class="cfg-comment"># 시스템 클립보드 연동</span>
+<span class="cfg-key">bind -T copy-mode-vi v</span> send-keys -X begin-selection
+<span class="cfg-key">bind -T copy-mode-vi y</span> send-keys -X copy-pipe-and-cancel <span class="cfg-str">"pbcopy"</span>
+<span class="cfg-key">bind -T copy-mode-vi MouseDragEnd1Pane</span> \
+   send-keys -X copy-pipe-and-cancel <span class="cfg-str">"pbcopy"</span>
+<span class="cfg-key">bind p run</span> <span class="cfg-str">"pbpaste | tmux load-buffer - && tmux paste-buffer"</span></div>
+  </div>
+</div>
+
+<button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<script>
+// Tab switching
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+  window.scrollTo({top: document.querySelector('nav').offsetTop - 10, behavior: 'smooth'});
+}
+
+// Shortcut search
+function filterKeys(q) {
+  q = q.toLowerCase().trim();
+  let total = 0, visible = 0;
+  document.querySelectorAll('.shortcut-row').forEach(row => {
+    total++;
+    const text = (row.dataset.search || '') + row.textContent.toLowerCase();
+    if (!q || text.includes(q)) {
+      row.classList.remove('hidden');
+      visible++;
+    } else {
+      row.classList.add('hidden');
+    }
+  });
+  // Show/hide group headers
+  document.querySelectorAll('.shortcut-group').forEach(grp => {
+    const anyVisible = [...grp.querySelectorAll('.shortcut-row')].some(r => !r.classList.contains('hidden'));
+    grp.style.display = anyVisible ? '' : 'none';
+  });
+  document.getElementById('no-results').style.display = (q && visible === 0) ? 'block' : 'none';
+}
+
+// Copy command
+function copyCmd(el) {
+  const code = el.querySelector('.cmd-code');
+  const text = code.innerText.replace(/^\$ /, '').replace(/복사$/, '').trim();
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = el.querySelector('.copy-btn');
+    const prev = btn.textContent;
+    btn.textContent = '✓ 복사됨';
+    btn.style.color = 'var(--green)';
+    setTimeout(() => { btn.textContent = prev; btn.style.color = ''; }, 1500);
+  });
+}
+
+// Scroll to top visibility
+window.addEventListener('scroll', () => {
+  const btn = document.getElementById('scrollTop');
+  btn.classList.toggle('visible', window.scrollY > 300);
+});
+
+// Keyboard shortcut for search focus
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    const s = document.getElementById('key-search');
+    if (s) { showTab('keys', document.querySelectorAll('.nav-btn')[1]); s.focus(); }
+  }
+});
+</script>
+</body>
+</html>

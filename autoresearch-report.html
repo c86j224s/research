@@ -1,0 +1,2350 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Karpathy AutoResearch 심층 분석 보고서</title>
+<style>
+:root {
+  --bg: #f8f9fa;
+  --bg-secondary: #f1f5f9;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --text: #1e293b;
+  --text-secondary: #64748b;
+  --accent: #2563eb;
+  --accent-light: #dbeafe;
+  --warn: #f59e0b;
+  --warn-light: #fef3c7;
+  --danger: #ef4444;
+  --danger-light: #fee2e2;
+  --success: #22c55e;
+  --success-light: #dcfce7;
+  --sidebar-w: 260px;
+  --header-h: 56px;
+}
+[data-theme="dark"] {
+  --bg: #0f172a;
+  --bg-secondary: #1e293b;
+  --card: #1e293b;
+  --border: #334155;
+  --text: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --accent: #3b82f6;
+  --accent-light: #1e3a5f;
+  --warn-light: #3d2c00;
+  --danger-light: #3d0f0f;
+  --success-light: #0f2d1a;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+/* 산식 변수/상수 설명 블록 */
+.formula-vars {
+  margin: 4px 0 12px 12px;
+  padding: 8px 12px;
+  border-left: 2px solid var(--border);
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+.formula-vars code {
+  background: var(--bg-secondary);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-family: 'Fira Code', 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  color: var(--accent);
+}
+/* 메트릭 운용 상세 블록 (섹션 2 프로젝트 카드 내) */
+.metrics-detail {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.metrics-detail h5 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--accent);
+}
+.metrics-detail table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.metrics-detail td {
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.metrics-detail td:first-child {
+  font-weight: 600;
+  white-space: nowrap;
+  width: 130px;
+  color: var(--text-secondary);
+}
+html { scroll-behavior: smooth; }
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  transition: background 0.2s, color 0.2s;
+}
+/* Progress bar */
+#progress-bar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  background: var(--accent);
+  z-index: 9999;
+  transition: width 0.1s;
+}
+/* Top header */
+#top-header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--header-h);
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  z-index: 100;
+  gap: 12px;
+}
+#hamburger {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  color: var(--text);
+  font-size: 20px;
+}
+#header-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
+  flex: 1;
+}
+#search-box {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  width: 200px;
+  outline: none;
+}
+#search-box:focus { border-color: var(--accent); }
+#dark-toggle {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 6px 10px;
+  font-size: 16px;
+  color: var(--text);
+}
+/* Sidebar */
+#sidebar {
+  position: fixed;
+  top: var(--header-h);
+  left: 0;
+  width: var(--sidebar-w);
+  height: calc(100vh - var(--header-h));
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  z-index: 90;
+  transition: transform 0.25s;
+}
+#sidebar.hidden { transform: translateX(-100%); }
+#sidebar nav { padding: 12px 0; }
+.nav-section {
+  padding: 4px 0;
+}
+.nav-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  padding: 8px 16px 4px;
+}
+.nav-item {
+  display: block;
+  padding: 7px 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+  cursor: pointer;
+}
+.nav-item:hover { color: var(--accent); background: var(--accent-light); }
+.nav-item.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-light); font-weight: 600; }
+/* Main */
+#main {
+  margin-left: var(--sidebar-w);
+  margin-top: var(--header-h);
+  padding: 32px;
+  max-width: 1000px;
+}
+/* Sections */
+.section {
+  margin-bottom: 56px;
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--border);
+}
+.section-icon { font-size: 24px; }
+.section-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+.section-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+/* Cards */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+.card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.card-header {
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+.card-header:hover { background: var(--bg-secondary); }
+.card-title { font-weight: 600; font-size: 14px; flex: 1; }
+.card-meta { font-size: 12px; color: var(--text-secondary); }
+.card-chevron { color: var(--text-secondary); transition: transform 0.2s; font-size: 12px; }
+.card.open .card-chevron { transform: rotate(90deg); }
+.card-body {
+  display: none;
+  padding: 0 18px 16px;
+  border-top: 1px solid var(--border);
+}
+.card.open .card-body { display: block; }
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.badge-p0 { background: var(--danger-light); color: var(--danger); }
+.badge-p1 { background: var(--warn-light); color: #d97706; }
+.badge-p2 { background: var(--accent-light); color: var(--accent); }
+.badge-p3 { background: var(--bg-secondary); color: var(--text-secondary); }
+.badge-new { background: var(--success-light); color: #15803d; }
+.badge-year { background: var(--bg-secondary); color: var(--text-secondary); }
+/* Tabs */
+.tabs-container { margin-bottom: 8px; }
+.tab-list {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+.tab-btn {
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.tab-btn:hover { color: var(--accent); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+/* Formula blocks */
+.formula {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  padding: 12px 16px;
+  font-family: 'Fira Code', 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--accent);
+  margin: 10px 0;
+  overflow-x: auto;
+}
+/* Code blocks */
+pre.code-block {
+  background: #1a1a2e;
+  color: #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 12px;
+  font-family: 'Fira Code', 'JetBrains Mono', monospace;
+  overflow-x: auto;
+  margin: 12px 0;
+  line-height: 1.5;
+}
+/* Tables */
+.table-wrap { overflow-x: auto; margin: 12px 0; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th {
+  background: var(--bg-secondary);
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+td {
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+tr:hover td { background: var(--bg-secondary); }
+.check-yes { color: var(--success); font-weight: 700; }
+.check-no { color: var(--danger); font-weight: 700; }
+.check-partial { color: var(--warn); font-weight: 700; }
+/* Info boxes */
+.info-box {
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  font-size: 13px;
+}
+.info-box.blue { background: var(--accent-light); border-left: 3px solid var(--accent); }
+.info-box.yellow { background: var(--warn-light); border-left: 3px solid var(--warn); }
+.info-box.green { background: var(--success-light); border-left: 3px solid var(--success); }
+.info-box.red { background: var(--danger-light); border-left: 3px solid var(--danger); }
+/* Metric items */
+.metric-item {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.metric-item:last-child { border-bottom: none; }
+.metric-name { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.metric-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; }
+/* Grid */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 12px 0;
+}
+.stat-card {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 14px;
+  border: 1px solid var(--border);
+}
+.stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary); font-weight: 600; }
+.stat-value { font-size: 22px; font-weight: 700; color: var(--accent); }
+.stat-note { font-size: 12px; color: var(--text-secondary); }
+/* Pipeline */
+.pipeline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.pipe-step {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  text-align: center;
+}
+.pipe-arrow { color: var(--text-secondary); font-size: 16px; }
+/* Highlight for search */
+.highlight { background: #fef08a; border-radius: 2px; }
+[data-theme="dark"] .highlight { background: #713f12; }
+/* References section */
+.ref-list { list-style: none; }
+.ref-list li {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.ref-list li:last-child { border-bottom: none; }
+.ref-list a { color: var(--accent); text-decoration: none; }
+/* Overlay for mobile */
+#sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 80;
+}
+/* Responsive */
+@media (max-width: 768px) {
+  #hamburger { display: block; }
+  #sidebar { transform: translateX(-100%); }
+  #sidebar.open { transform: translateX(0); }
+  #sidebar-overlay { display: block; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+  #sidebar-overlay.show { opacity: 1; pointer-events: all; }
+  #main { margin-left: 0; padding: 16px; }
+  #search-box { width: 130px; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .pipeline { flex-direction: column; align-items: flex-start; }
+}
+p { margin: 8px 0; font-size: 14px; }
+ul, ol { padding-left: 20px; }
+li { font-size: 13px; margin: 4px 0; }
+h3 { font-size: 16px; margin: 16px 0 8px; color: var(--text); }
+h4 { font-size: 14px; margin: 12px 0 6px; color: var(--text-secondary); font-weight: 600; }
+strong { color: var(--text); }
+</style>
+</head>
+<body>
+<div id="progress-bar" style="width:0%"></div>
+<div id="sidebar-overlay"></div>
+
+<!-- Top Header -->
+<header id="top-header">
+  <button id="hamburger" onclick="toggleSidebar()">☰</button>
+  <div id="header-title">Karpathy AutoResearch · 평가 메트릭 분석 보고서</div>
+  <input id="search-box" type="text" placeholder="🔍 검색..." oninput="searchContent(this.value)">
+  <button id="dark-toggle" onclick="toggleDark()" title="다크 모드">🌙</button>
+</header>
+
+<!-- Sidebar -->
+<aside id="sidebar">
+  <nav>
+    <div class="nav-section">
+      <div class="nav-label">보고서 개요</div>
+      <a class="nav-item" onclick="navTo('#s1')">🔬 AutoResearch 개요</a>
+      <a class="nav-item" onclick="navTo('#s2')">🎯 복잡한 적용 사례</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">평가 메트릭</div>
+      <a class="nav-item" onclick="navTo('#s3')">📐 실패 모드별 메트릭</a>
+      <a class="nav-item" onclick="navTo('#s3-tab1')">　❶ 내용 풍부성</a>
+      <a class="nav-item" onclick="navTo('#s3-tab2')">　❷ 근거 공백 탐지</a>
+      <a class="nav-item" onclick="navTo('#s3-tab3')">　❸ 근거 활용</a>
+      <a class="nav-item" onclick="navTo('#s3-tab4')">　❹ 반복 탐지</a>
+      <a class="nav-item" onclick="navTo('#s4')">🧪 추가 심층 메트릭</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">실전 가이드</div>
+      <a class="nav-item" onclick="navTo('#s5')">🔗 메트릭 조합 가이드</a>
+      <a class="nav-item" onclick="navTo('#s6')">💡 실전 적용 가이드</a>
+      <a class="nav-item" onclick="navTo('#s7')">🧭 후속 연구 노트</a>
+      <a class="nav-item" onclick="navTo('#refs')">📚 참고 문헌</a>
+    </div>
+  </nav>
+</aside>
+
+<!-- Main Content -->
+<main id="main">
+
+<!-- Section 1: AutoResearch 개요 -->
+<section class="section" id="s1">
+  <div class="section-header">
+    <span class="section-icon">🔬</span>
+    <div>
+      <div class="section-title">AutoResearch 개요</div>
+      <div class="section-subtitle">Karpathy가 공개한 자율 ML 연구 에이전트 시스템</div>
+    </div>
+  </div>
+
+  <div class="info-box blue">
+    <strong>배경:</strong> Andrej Karpathy가 2026년 3월 7일 공개. GitHub 84,618 stars. 2026년 5월 Anthropic 프리트레이닝 팀 합류 직후 발표.
+  </div>
+
+  <div class="grid-2">
+    <div class="stat-card">
+      <div class="stat-label">GitHub Stars</div>
+      <div class="stat-value">84,618</div>
+      <div class="stat-note">공개 직후 폭발적 반응</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">실험 횟수 (2일)</div>
+      <div class="stat-value">700+</div>
+      <div class="stat-note">자율 실험 루프</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">발견된 최적화</div>
+      <div class="stat-value">~20개</div>
+      <div class="stat-note">훈련 시간 11% 단축</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">실험당 시간 예산</div>
+      <div class="stat-value">5분</div>
+      <div class="stat-note">고정 시간 예산</div>
+    </div>
+  </div>
+
+  <div class="card open" id="card-core">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>⚙️</span>
+      <span class="card-title">핵심 설계 원칙</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <p>AutoResearch는 <strong>3가지 설계 원칙</strong>을 기반으로 합니다.</p>
+      <ul>
+        <li><strong>단일 편집 파일:</strong> <code>train.py</code> (~630줄) — 에이전트가 이 파일 하나만 수정</li>
+        <li><strong>단일 스칼라 메트릭:</strong> <code>val_bpb</code> (validation bits-per-byte) — 하나의 숫자로 성공/실패 판단</li>
+        <li><strong>고정 시간 예산:</strong> 실험당 5분 — 탐욕적 개선 루프를 안정적으로 유지</li>
+      </ul>
+      <h4>에이전트 루프</h4>
+      <div class="pipeline">
+        <div class="pipe-step">git 상태 읽기</div>
+        <span class="pipe-arrow">→</span>
+        <div class="pipe-step">train.py 수정</div>
+        <span class="pipe-arrow">→</span>
+        <div class="pipe-step">git commit</div>
+        <span class="pipe-arrow">→</span>
+        <div class="pipe-step">실행</div>
+        <span class="pipe-arrow">→</span>
+        <div class="pipe-step">val_bpb 측정</div>
+        <span class="pipe-arrow">→</span>
+        <div class="pipe-step">개선 시 유지 / 악화 시 reset</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="card-files">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>📁</span>
+      <span class="card-title">파일 구조 & 기술 스택</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <h4>파일 구조</h4>
+      <ul>
+        <li><code>prepare.py</code> — 읽기 전용 데이터 준비 스크립트</li>
+        <li><code>train.py</code> — 에이전트 편집 대상 (유일한 수정 파일)</li>
+        <li><code>program.md</code> — 인간이 작성하는 연구 방향 가이드</li>
+      </ul>
+      <h4>기술 스택</h4>
+      <ul>
+        <li><strong>모델:</strong> nanochat (GPT + GQA + RoPE + RMSNorm + FlashAttn3)</li>
+        <li><strong>옵티마이저:</strong> Muon + AdamW</li>
+        <li><strong>에이전트:</strong> Claude 3.5 Sonnet</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card" id="card-results">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>📊</span>
+      <span class="card-title">실증 결과 & 한계</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <h4>실증 결과</h4>
+      <ul>
+        <li>2일간 700회 실험 자율 수행</li>
+        <li>약 20개의 유의미한 최적화 발견</li>
+        <li>훈련 시간 11% 단축</li>
+        <li>대형 모델에도 전이 성공 (소형 → 대형 일반화)</li>
+      </ul>
+      <h4>한계</h4>
+      <div class="info-box yellow">
+        <ul>
+          <li><strong>스칼라 메트릭 의존:</strong> val_bpb 하나에만 최적화 → 다차원 품질 무시</li>
+          <li><strong>탐욕적 개선만 가능:</strong> 국소 최적점 탈출 불가</li>
+          <li><strong>Goodhart's Law 위험:</strong> 메트릭이 목표가 되면 실제 목표와 괴리</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 2: 복잡한 적용 사례 -->
+<section class="section" id="s2">
+  <div class="section-header">
+    <span class="section-icon">🎯</span>
+    <div>
+      <div class="section-title">복잡한 애플리케이션 적용 사례</div>
+      <div class="section-subtitle">AutoResearch 패러다임이 적용된 다양한 도메인</div>
+    </div>
+  </div>
+
+  <h3>🔄 범용 AutoResearch 확장</h3>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>🧩</span>
+      <span class="card-title">pi-autoresearch</span>
+      <span class="badge badge-year">2026 · 오픈소스</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <p>Karpathy AutoResearch 패턴을 <strong>도메인에 무관하게 일반화</strong>한 pi AI 코딩 에이전트 확장. CLI로 측정 가능한 <em>모든 스칼라 메트릭</em>(테스트 속도, 번들 크기, 빌드 시간, Lighthouse 점수, LLM 훈련 지표 등)에 대해 자율 최적화 루프를 실행합니다.</p>
+      <ul>
+        <li><strong>작성자:</strong> David Cortés (@davebcn87) · GitHub ★3,500+ · v1.4.0 (2026.05)</li>
+        <li><strong>핵심 혁신:</strong> 도메인 특화(ML) → 도메인 무관(범용)으로 패턴 일반화</li>
+        <li><strong>아키텍처:</strong> 인프라 계층(도구/영속성/UI) ↔ 도메인 지식(스킬) 분리 설계</li>
+        <li><strong>도구 체인:</strong> <code>init_experiment</code> → <code>run_experiment</code> → <code>log_experiment</code> + 라이프사이클 훅 (<code>before.sh</code> / <code>after.sh</code>)</li>
+        <li><strong>영속성:</strong> <code>autoresearch.jsonl</code> (추가 전용 로그) + <code>autoresearch.md</code> (세션 내러티브 — 새 에이전트가 이전 세션 이어받기 가능)</li>
+        <li><strong>UI:</strong> 인라인 위젯 + <code>/autoresearch export</code> 웹 대시보드 + 풀스크린 오버레이 (Ctrl+Shift+F)</li>
+      </ul>
+
+      <div class="grid-2" style="margin-top:12px">
+        <div class="stat-card">
+          <div class="stat-label">Shopify 유닛 테스트</div>
+          <div class="stat-value">300×</div>
+          <div class="stat-note">테스트 속도 향상</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Polaris 빌드 시간</div>
+          <div class="stat-value">65%↓</div>
+          <div class="stat-note">빌드 시간 단축</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Liquid 파싱+렌더</div>
+          <div class="stat-value">53%↓</div>
+          <div class="stat-note">7,469→3,534 μs</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">객체 할당</div>
+          <div class="stat-value">61%↓</div>
+          <div class="stat-note">62,620→24,530</div>
+        </div>
+      </div>
+
+      <div class="metrics-detail">
+        <h5>📊 메트릭 운용 상세</h5>
+        <table>
+          <tr><td>평가 지표</td><td>사용자 정의 셸 스크립트의 스칼라 반환값 (ms, bytes, loss, score 등 도메인 무관)</td></tr>
+          <tr><td>적합도 함수</td><td>단일 스칼라 메트릭 (최소화/최대화 방향 설정 가능). 정확성 검증: <code>autoresearch.checks.sh</code> 통과 필수</td></tr>
+          <tr><td>Keep/Revert</td><td>탐욕적 힐클라이밍: 개선 → <code>git commit</code> · 악화/실패 → <code>git reset</code>. 단조 증가 궤적</td></tr>
+          <tr><td>신뢰도 산식</td><td><code>Confidence = |best_improvement| / MAD</code> (MAD = 세션 전체 메트릭의 중앙 절대 편차). ≥2.0 🟢실질적 · 1.0~2.0 🟡경계 · &lt;1.0 🔴노이즈 이내</td></tr>
+          <tr><td>루프 설정</td><td><code>maxIterations</code> (30~50 권장) via <code>autoresearch.config.json</code>. 시간 제한 없음 (자동 컴팩션으로 컨텍스트 오버플로 관리)</td></tr>
+          <tr><td>Karpathy 대비</td><td>도메인 무관 · MAD 신뢰도 추가 · 모듈형 (스킬/훅/영속성) · JSONL+마크다운 이중 영속</td></tr>
+        </table>
+        <p style="margin-top:8px; font-size:11px; color:var(--text-secondary)">📎 <a href="https://github.com/davebcn87/pi-autoresearch" target="_blank">GitHub</a> · <a href="https://shopify.engineering/autoresearch" target="_blank">Shopify Blog</a> · <a href="https://github.com/jhochenbaum/pi-autoresearch-studio" target="_blank">Studio Dashboard</a></p>
+      </div>
+    </div>
+  </div>
+
+  <h3>🧬 알고리즘 발견 (DeepMind 계열)</h3>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>🔍</span>
+      <span class="card-title">FunSearch</span>
+      <span class="badge badge-year">2023 · Nature</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <p>수학 문제 자동 해결을 위한 <strong>섬 기반 진화 알고리즘 + LLM</strong> 조합.</p>
+      <ul>
+        <li>cap set 문제 최초 해 발견 (수십 년 미해결 문제)</li>
+        <li>자율 프로그램 진화: LLM이 함수 코드를 반복 생성 → 점수 기반 필터링</li>
+        <li>섬 기반 다양성 유지: 서로 다른 "섬"에서 독립 진화 후 이주</li>
+      </ul>
+      <div class="metrics-detail">
+        <h5>📊 메트릭 운용 상세</h5>
+        <table>
+          <tr><td>평가 지표</td><td>사용자 정의 <code>evaluate()</code> 함수의 스칼라 반환값 (문제별 상이)</td></tr>
+          <tr><td>적합도 함수</td><td>Cap set: 집합 크기 (달성 512, 기존 최고 496 in ℤ₃⁸) · Bin packing: 경쟁비(competitive ratio)</td></tr>
+          <tr><td>Keep/Revert</td><td>실행 성공 + 비영(非零) 적합도 → DB 저장 · 실행 실패/0점 → 폐기 (로그 보존)</td></tr>
+          <tr><td>선택 전략</td><td>섬별 클러스터 내 고점수 편향 샘플링 (k=2), 동점 시 짧은 코드 우선</td></tr>
+          <tr><td>인프라</td><td>15 LLM samplers + 150 CPU evaluators (분산), 컴퓨팅 예산 소진까지 반복</td></tr>
+        </table>
+        <p style="margin-top:8px; font-size:11px; color:var(--text-secondary)">📎 <a href="https://www.nature.com/articles/s41586-023-06924-6" target="_blank">Nature Paper</a> · <a href="https://github.com/google-deepmind/funsearch" target="_blank">GitHub</a></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>⚡</span>
+      <span class="card-title">AlphaEvolve</span>
+      <span class="badge badge-year">2025</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <p>알고리즘 및 칩 설계 최적화. <strong>전체 코드베이스</strong>를 진화 대상으로 삼는 확장된 접근.</p>
+      <ul>
+        <li>알고리즘: 10–50% 속도 향상</li>
+        <li>칩 설계: 실제 하드웨어 레이아웃 최적화</li>
+        <li>FunSearch 대비: 단일 함수 → 전체 코드베이스 진화</li>
+      </ul>
+      <div class="metrics-detail">
+        <h5>📊 메트릭 운용 상세</h5>
+        <table>
+          <tr><td>평가 지표</td><td>다목적(multi-objective): 정확성 + 성능 벡터 (작업별 평가기 정의)</td></tr>
+          <tr><td>적합도 함수</td><td>행렬곱: 연산 횟수 (48회, Strassen의 49 갱신) · 스케줄링: 자원회수율 0.7% · 수학: kissing number</td></tr>
+          <tr><td>Keep/Revert</td><td>2단계 캐스케이드: ① 경량 제약조건 검사(필터) → ② 전체 평가. 고점수만 보존</td></tr>
+          <tr><td>선택 전략</td><td>MAP-Elites + 섬 모델 혼합. population=500, islands=5, migration 간격=20세대</td></tr>
+          <tr><td>LLM 앙상블</td><td>Gemini 2.0 Flash (탐색 폭) + Gemini 2.0 Pro (탐색 깊이) 이중 전략</td></tr>
+        </table>
+        <p style="margin-top:8px; font-size:11px; color:var(--text-secondary)">📎 <a href="https://arxiv.org/abs/2506.13131" target="_blank">Paper</a> · <a href="https://deepmind.google/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/" target="_blank">DeepMind Blog</a></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>🌐</span>
+      <span class="card-title">CodeEvolve</span>
+      <span class="badge badge-year">2024 · 오픈소스</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <p><strong>메타 프롬프팅 + 깊이 기반 리파인먼트</strong>로 코드 진화.</p>
+      <ul>
+        <li>메타 프롬프트로 생성 전략 자체를 최적화</li>
+        <li>깊이 기반 리파인먼트: 얕은 수정 → 깊은 재구성 점진적 전환</li>
+        <li>오픈소스 공개로 커뮤니티 확산</li>
+      </ul>
+      <div class="metrics-detail">
+        <h5>📊 메트릭 운용 상세</h5>
+        <table>
+          <tr><td>평가 지표</td><td>실수 벡터: 실행시간 + 메모리 + 목적함수 값 (문제별 정의)</td></tr>
+          <tr><td>적합도 함수</td><td>솔루션 적합도(개별 코드 품질) + 프롬프트 적합도(해당 프롬프트 최대 적합도)</td></tr>
+          <tr><td>Keep/Revert</td><td>샌드박스 실행 (1~5GB, 180~360s 타임아웃) → 성공 시 아카이브, 실패 시 0점+로그</td></tr>
+          <tr><td>진화 설정</td><td>5개 섬 (링 토폴로지), 섬당 40개체, 상위 10% 이주 (40에포크마다), CVT-MAP-Elites</td></tr>
+          <tr><td>탐색 전략</td><td>메타 프롬프팅 탐색확률 p_explr=0.3 · 교차: 고성능 3개 솔루션 참조 · 에포크: 100~200회</td></tr>
+        </table>
+        <p style="margin-top:8px; font-size:11px; color:var(--text-secondary)">📎 <a href="https://arxiv.org/abs/2510.14150" target="_blank">Paper</a> · <a href="https://github.com/inter-co/science-codeevolve" target="_blank">GitHub</a></p>
+      </div>
+    </div>
+  </div>
+
+  <h3>💻 소프트웨어 엔지니어링</h3>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>🤖</span>
+      <span class="card-title">Self-Improving Coding Agent & Live-SWE-agent</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <ul>
+        <li><strong>Self-Improving Coding Agent:</strong> SWE-Bench에서 17–53% 성능 향상</li>
+        <li><strong>Live-SWE-agent:</strong> 75.4% resolve rate (실시간 이슈 해결)</li>
+        <li><strong>LLMLOOP:</strong> 5단계 피드백 루프 — 컴파일 → 정적 분석 → 테스트 → 테스트 품질 → 뮤테이션 테스팅</li>
+        <li><strong>RefAgent:</strong> Coder → Tester → Critic 3-에이전트 루프, 64.7% 개선</li>
+      </ul>
+      <div class="info-box yellow">
+        <strong>현실 벽:</strong> SWE-EVO 25% · FeatureBench 11% · ISO-Bench 17.9% — 복잡한 실제 환경에서 성능 급락
+      </div>
+      <div class="metrics-detail">
+        <h5>📊 메트릭 운용 상세</h5>
+        <table>
+          <tr><td colspan="2" style="font-weight:700; color:var(--accent)">Self-Improving Coding Agent</td></tr>
+          <tr><td>평가 지표</td><td>SWE-Bench Resolve Rate: fail→pass 전환율. 17%→53% 향상</td></tr>
+          <tr><td>루프 방식</td><td>메타-에이전트가 자기 코드/프롬프트 자율 수정. 비구배(non-gradient) 학습</td></tr>
+          <tr><td colspan="2" style="font-weight:700; color:var(--accent)">Live-SWE-agent</td></tr>
+          <tr><td>평가 지표</td><td>Resolve Rate: 75.4% (Claude 4.5) / 77.4% (Gemini 3 Pro). 단일 패스</td></tr>
+          <tr><td>루프 방식</td><td>테스트-타임 스케일링 없음. 경량 반성(reflection) → 런타임 도구 합성</td></tr>
+          <tr><td colspan="2" style="font-weight:700; color:var(--accent)">LLMLOOP (5단계 캐스케이드)</td></tr>
+          <tr><td>평가 지표</td><td>pass@1=80.85% (+9.2%), pass@10=90.24% (+14.02%). HumanEval-X 벤치마크</td></tr>
+          <tr><td>캐스케이드</td><td>① 컴파일 오류 → ② 테스트 실패 → ③ PMD 정적분석 → ④ 커버리지 → ⑤ PIT 뮤테이션 (전 단계 통과 필수)</td></tr>
+          <tr><td colspan="2" style="font-weight:700; color:var(--accent)">RefAgent (Coder→Tester→Critic)</td></tr>
+          <tr><td>평가 지표</td><td>유닛테스트 90% · 컴파일 87-88% · 코드 스멜 52.5% 감소 · QMOOD 품질 +8.6%</td></tr>
+          <tr><td>루프 설정</td><td>Planner→Executor→Tester→Critic 순환. 컴파일러 에이전트 최대 20회 반복</td></tr>
+        </table>
+        <p style="margin-top:8px; font-size:11px; color:var(--text-secondary)">📎 <a href="https://arxiv.org/abs/2504.15228" target="_blank">Self-Improving Agent</a> · <a href="https://arxiv.org/abs/2511.13646" target="_blank">Live-SWE-agent</a> · <a href="https://arxiv.org/abs/2603.23613" target="_blank">LLMLOOP</a> · <a href="https://arxiv.org/abs/2511.03153" target="_blank">RefAgent</a></p>
+      </div>
+    </div>
+  </div>
+
+  <h3>⚡ 컴파일러 최적화</h3>
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>🔧</span>
+      <span class="card-title">COMPILOT & LOOPRAG</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <ul>
+        <li><strong>COMPILOT:</strong> 2.66x ~ 3.54x 속도 향상 — LLM 기반 컴파일러 최적화 패스 자동 선택</li>
+        <li><strong>LOOPRAG:</strong> 11.2x ~ 14.3x 속도 향상 — RAG 강화 루프 최적화, 검색된 패턴 활용</li>
+      </ul>
+      <div class="metrics-detail">
+        <h5>📊 메트릭 운용 상세</h5>
+        <table>
+          <tr><td colspan="2" style="font-weight:700; color:var(--accent)">COMPILOT</td></tr>
+          <tr><td>평가 지표</td><td>기하평균 속도향상: 단일 실행 2.66×, best-of-5 = 3.54× (PolyBench)</td></tr>
+          <tr><td>피드백 루프</td><td>LLM 변환 제안 → Tiramisu 컴파일러 합법성 검사 + 속도 측정 → 피드백 → 재제안</td></tr>
+          <tr><td>Keep/Revert</td><td>속도향상 양수 → 유지 · 음수(성능 하락) → 수정 재시도</td></tr>
+          <tr><td colspan="2" style="font-weight:700; color:var(--accent)">LOOPRAG</td></tr>
+          <tr><td>평가 지표</td><td>속도향상: PolyBench 11.2×, TSVC 14.34×, LORE 9.29× (컴파일러 대비)</td></tr>
+          <tr><td>검증 방식</td><td>뮤테이션 테스팅 + 커버리지 테스팅 + 차등 테스팅으로 등가성 보장</td></tr>
+          <tr><td>루프 설정</td><td>SCoP당 4회 반복 수렴. 루프 인식(loop-aware) RAG로 유사+다양 예시 균형 검색</td></tr>
+        </table>
+        <p style="margin-top:8px; font-size:11px; color:var(--text-secondary)">📎 <a href="https://arxiv.org/abs/2511.00592" target="_blank">COMPILOT</a> · <a href="https://arxiv.org/abs/2512.15766" target="_blank">LOOPRAG</a></p>
+      </div>
+    </div>
+  </div>
+
+  <h3>🎮 게임 AI & 로보틱스</h3>
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>🕹️</span>
+      <span class="card-title">Voyager, PCGRL, Vision-Zero</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <ul>
+        <li><strong>Voyager (Minecraft):</strong> 자동 커리큘럼 + 스킬 라이브러리 + 반복 프롬프팅 → 고유 아이템 3.3배 획득</li>
+        <li><strong>PCGRL:</strong> 프로시저럴 레벨 생성을 MDP(마르코프 결정 과정)로 모델링</li>
+        <li><strong>Vision-Zero:</strong> 레이블 없이 게임 플레이로 VLM 자기개선 → SOTA 달성</li>
+      </ul>
+      <div class="metrics-detail">
+        <h5>📊 메트릭 운용 상세</h5>
+        <table>
+          <tr><td colspan="2" style="font-weight:700; color:var(--accent)">Voyager</td></tr>
+          <tr><td>평가 지표</td><td>고유 아이템 수(3.3×) · 기술트리 도달 속도(15.3×) · 이동거리(2.3×)</td></tr>
+          <tr><td>자기 검증</td><td>GPT-4 크리틱이 게임 상태+작업 설명으로 성공/실패 이진 판정</td></tr>
+          <tr><td>Keep/Revert</td><td>성공 판정 → 스킬 라이브러리 영구 추가 (일방향). 작업당 최대 4라운드 정제</td></tr>
+          <tr><td colspan="2" style="font-weight:700; color:var(--accent)">PCGRL</td></tr>
+          <tr><td>적합도 함수</td><td><code>F = w₁·Solvability + w₂·Intra-Novelty + w₃·Novelty</code></td></tr>
+          <tr><td>검증 방식</td><td>A*/BFS 에이전트 5회 실행 평균. Levenshtein 거리(레벨 간 다양성). 종료: N² 스텝</td></tr>
+          <tr><td colspan="2" style="font-weight:700; color:var(--accent)">Vision-Zero</td></tr>
+          <tr><td>평가 지표</td><td>승률: 50%→71% (Qwen2.5-VL-7B, 100라운드 평가). 보상: 제로섬 + RLVR 그룹 정규화</td></tr>
+          <tr><td>스테이지 전환</td><td>Decision→Clue: 정확도≥0.9 &amp; n/a율≤0.1 · Clue→Decision: 오류율&gt;0.4 | n/a율&gt;0.5</td></tr>
+        </table>
+        <p style="margin-top:8px; font-size:11px; color:var(--text-secondary)">📎 <a href="https://arxiv.org/abs/2305.16291" target="_blank">Voyager</a> · <a href="https://arxiv.org/abs/2001.09212" target="_blank">PCGRL</a> · <a href="https://arxiv.org/abs/2509.25541" target="_blank">Vision-Zero</a></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>🤖</span>
+      <span class="card-title">로보틱스: Code as Policies, GenSwarm, RoboPhD</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <ul>
+        <li><strong>Code as Policies:</strong> LLM이 로봇 제어 코드를 직접 생성 — 자연어 명령 → 실행 가능 정책</li>
+        <li><strong>GenSwarm:</strong> 멀티 로봇 정책 자동 생성 및 협업 조율</li>
+        <li><strong>RoboPhD:</strong> 22줄 시드 코드 → 1,013줄 완전 구현으로 자율 진화</li>
+      </ul>
+      <div class="metrics-detail">
+        <h5>📊 메트릭 운용 상세</h5>
+        <table>
+          <tr><td colspan="2" style="font-weight:700; color:var(--accent)">Code as Policies</td></tr>
+          <tr><td>평가 지표</td><td>실행 성공률: 학습 속성 97.2% · 미학습 속성 88.5% · 미학습 명령+속성 71%</td></tr>
+          <tr><td>검증 방식</td><td>실제 UR5e 로봇 실행. 공간 정밀도 1cm. 단일 생성 시도(재시도 없음)</td></tr>
+          <tr><td colspan="2" style="font-weight:700; color:var(--accent)">GenSwarm</td></tr>
+          <tr><td>평가 지표</td><td>성공률 81% (10개 작업 × 100회 = 1,000회 시험, o1-mini 모델)</td></tr>
+          <tr><td>성공 기준</td><td>거리 메트릭 &lt; 500 (궤적 평균 쌍별 거리 &lt; 0.5). Ansible/Docker 2분 배포</td></tr>
+          <tr><td colspan="2" style="font-weight:700; color:var(--accent)">RoboPhD</td></tr>
+          <tr><td>평가 지표</td><td>Elo 토너먼트 (검증셋 없이 학습 데이터로 경쟁). 고정 예산: 1,500회 평가</td></tr>
+          <tr><td>진화 과정</td><td>22줄→1,013줄 (ARC-AGI: 27.8%→65.8%). ~21세대, 세대당 n=20 예제 대전</td></tr>
+        </table>
+        <p style="margin-top:8px; font-size:11px; color:var(--text-secondary)">📎 <a href="https://arxiv.org/abs/2209.07753" target="_blank">Code as Policies</a> · <a href="https://arxiv.org/abs/2503.23875" target="_blank">GenSwarm</a> · <a href="https://arxiv.org/abs/2604.04347" target="_blank">RoboPhD</a></p>
+      </div>
+    </div>
+  </div>
+
+  <h3>🔬 과학 연구 & 창의적 생성</h3>
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>🧬</span>
+      <span class="card-title">AI Scientist v2, Self-Driving Labs, Co-Scientist</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <ul>
+        <li><strong>AI Scientist v2:</strong> 전체 연구 파이프라인(아이디어 → 실험 → 논문) 자동화, <em>ICLR 워크숍 피어리뷰 통과</em></li>
+        <li><strong>Self-Driving Labs:</strong>
+          <ul>
+            <li>Insilico Medicine: 3년 내 Phase II 임상 도달</li>
+            <li>Exscientia: 12개월 내 임상 진입</li>
+          </ul>
+        </li>
+        <li><strong>Co-Scientist:</strong> 멀티에이전트 가설 토론 및 정제 — 에이전트들이 상호 비판으로 가설 개선</li>
+      </ul>
+      <div class="metrics-detail">
+        <h5>📊 메트릭 운용 상세</h5>
+        <table>
+          <tr><td colspan="2" style="font-weight:700; color:var(--accent)">AI Scientist v2</td></tr>
+          <tr><td>평가 지표</td><td>피어리뷰 점수 1~7 스케일. 수용 임계값: 평균 ≥ 6.33 (상위 45%)</td></tr>
+          <tr><td>평가 파이프라인</td><td>5명 리뷰어 앙상블 → 메타-리뷰 결정. VLM 피드백 Figure 정제. 트리 탐색 실험 분기</td></tr>
+          <tr><td colspan="2" style="font-weight:700; color:var(--accent)">Self-Driving Labs</td></tr>
+          <tr><td>평가 지표</td><td>AF(가속비)=n_ref/n_SDL (중간값 ~6) · EF(향상비)=(y_SDL−y_ref)/y_ref</td></tr>
+          <tr><td>루프 설정</td><td>3축: AI 사고 + 자동화 실행 + 인간 감독. 5 AI 에이전트 + 28 전문 모듈. 핵심 분기에 인간 승인 게이트</td></tr>
+          <tr><td colspan="2" style="font-weight:700; color:var(--accent)">Co-Scientist</td></tr>
+          <tr><td>평가 지표</td><td>Elo 레이팅: 쌍대 비교 기반 가설 순위 (인간 전문가 선호와 상관 검증됨)</td></tr>
+          <tr><td>루프 설정</td><td>생성→근접→반성(정확성/신규성/품질)→Elo 순위→진화→재진입. 테스트-타임 컴퓨팅↑=성능↑</td></tr>
+        </table>
+        <p style="margin-top:8px; font-size:11px; color:var(--text-secondary)">📎 <a href="https://arxiv.org/abs/2504.08066" target="_blank">AI Scientist v2</a> · <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10866889/" target="_blank">Self-Driving Labs Survey</a> · <a href="https://deepmind.google/blog/co-scientist-a-multi-agent-ai-partner-to-accelerate-research/" target="_blank">Co-Scientist Blog</a></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>🎵</span>
+      <span class="card-title">창의적 생성: CoComposer, SIDiffAgent</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <ul>
+        <li><strong>CoComposer:</strong> 멜로디 → 하모니 → 악기편성 → 리뷰어 루프, 음악 자동 작곡</li>
+        <li><strong>SIDiffAgent:</strong> 훈련 없이 이미지 생성 자기개선, VQA 점수 0.884</li>
+      </ul>
+      <div class="metrics-detail">
+        <h5>📊 메트릭 운용 상세</h5>
+        <table>
+          <tr><td colspan="2" style="font-weight:700; color:var(--accent)">CoComposer</td></tr>
+          <tr><td>평가 지표</td><td>Meta AudioBox-Aesthetics: 프로덕션 품질(PQ) + 프로덕션 복잡도(PC)</td></tr>
+          <tr><td>리뷰 기준</td><td>5차원: ① 멜로디 구조 ② 화성/대위법 ③ 리듬 복잡성 ④ 편곡/음색 ⑤ 전체 형식</td></tr>
+          <tr><td>루프 설정</td><td>Leader→Melody→Accompaniment→Revision→Review 5에이전트 순환. 성공률 100%</td></tr>
+          <tr><td colspan="2" style="font-weight:700; color:var(--accent)">SIDiffAgent</td></tr>
+          <tr><td>평가 지표</td><td>VQA 점수: 0.884 (GenAIBench). 편집 트리거 임계값 τ=8.0</td></tr>
+          <tr><td>루프 설정</td><td>VQA &lt; 8.0 시 최대 E=2회 편집 재시도. 에피소드 메모리로 다음 세대 가이드 주입</td></tr>
+          <tr><td>성능 향상</td><td>T2I-Copilot 대비 +8.73% · Imagen 3 대비 +5.39% · SD 3.5 대비 +15.70%</td></tr>
+        </table>
+        <p style="margin-top:8px; font-size:11px; color:var(--text-secondary)">📎 <a href="https://arxiv.org/abs/2509.00132" target="_blank">CoComposer Paper</a> · <a href="https://arxiv.org/abs/2602.02051" target="_blank">SIDiffAgent Paper</a></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>💼</span>
+      <span class="card-title">실제 비즈니스 성과</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <div class="grid-2">
+        <div class="stat-card">
+          <div class="stat-label">Shopify 속도 향상</div>
+          <div class="stat-value">53%</div>
+          <div class="stat-note">쇼핑몰 페이지 로딩</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">트레이딩 P99 레이턴시 감소</div>
+          <div class="stat-value">76%</div>
+          <div class="stat-note">고빈도 거래 시스템</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">항공권 절감</div>
+          <div class="stat-value">$2,292</div>
+          <div class="stat-note">$4,716 → $2,424</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">마케팅 lift</div>
+          <div class="stat-value">12x</div>
+          <div class="stat-note">품질 80% 향상</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 3: 평가 메트릭 -->
+<section class="section" id="s3">
+  <div class="section-header">
+    <span class="section-icon">📐</span>
+    <div>
+      <div class="section-title">평가 메트릭 — 실패 모드별 매핑</div>
+      <div class="section-subtitle">4가지 실패 모드를 정확히 탐지하는 메트릭 체계</div>
+    </div>
+  </div>
+
+  <div class="info-box red">
+    <strong>사용자의 4가지 실패 모드:</strong>
+    ❶ 내용이 풍부하지 않음 &nbsp;|&nbsp;
+    ❷ 빈 근거일 때 내용을 채우지 않음 &nbsp;|&nbsp;
+    ❸ 근거를 제대로 활용하지 못함 &nbsp;|&nbsp;
+    ❹ 내용을 반복해서 부풀림
+  </div>
+
+  <div class="tabs-container">
+    <div class="tab-list">
+      <button class="tab-btn active" onclick="switchTab(this, 'tab-richness')">❶ 내용 풍부성</button>
+      <button class="tab-btn" onclick="switchTab(this, 'tab-gap')">❷ 근거 공백 탐지</button>
+      <button class="tab-btn" onclick="switchTab(this, 'tab-grounding')">❸ 근거 활용</button>
+      <button class="tab-btn" onclick="switchTab(this, 'tab-repetition')">❹ 반복 탐지</button>
+    </div>
+
+    <!-- Tab 1: 내용 풍부성 메트릭 -->
+    <div id="s3-tab1"></div>
+    <div class="tab-panel active" id="tab-richness">
+      <div class="info-box blue">내용이 얼마나 정보로 가득 차 있는지를 측정합니다. 빈 말, 형식적 문장 없이 실질적 주장의 밀도를 평가합니다.</div>
+
+      <div class="metric-item">
+        <div class="metric-name">Claim Density</div>
+        <div class="metric-desc">단위 길이당 고유 원자적 주장의 수. 보고서가 실질적 내용을 충분히 담고 있는지 측정.</div>
+        <div class="formula">Claim_Density = |C_unique| / W</div>
+        <div class="formula-vars">
+          <code>|C_unique|</code> = 의미적 중복 제거 후 고유 원자적 주장(atomic claim)의 수. LLM으로 텍스트를 독립 검증 가능한 단위 문장으로 분해한 뒤, 임베딩 코사인 유사도 &gt; 0.85인 것을 병합하여 산출.<br>
+          <code>W</code> = 보고서의 총 단어 수.<br>
+          <strong>해석:</strong> 값이 높을수록 단위 길이당 실질적 정보가 많음. 형식적/반복적 문장이 많으면 하락.
+        </div>
+        <p style="font-size:12px; color:var(--text-secondary)">권장 임계값: &gt; 0.05 (단어 100개당 5개 이상 고유 주장)</p>
+      </div>
+
+      <div class="metric-item">
+        <div class="metric-name">FActScore</div>
+        <div class="metric-desc">원자적 사실 중 실제로 검증된 비율. 허위/미검증 주장에 페널티 부여.</div>
+        <div class="formula">FActScore(M) = |A_supported| / |A_total|</div>
+        <div class="formula-vars">
+          <code>M</code> = 평가 대상 언어 모델(또는 생성 시스템).<br>
+          <code>A_total</code> = 생성 텍스트에서 추출한 전체 원자적 사실(atomic fact) 집합.<br>
+          <code>A_supported</code> = 외부 지식 소스(Wikipedia, KB 등)에 의해 "Supported"로 판정된 사실의 부분집합.<br>
+          <code>γ</code> = 10 (기본값). 길이 보정 파라미터 — |A_total| &lt; γ이면 페널티를 부과하여 지나치게 짧은 응답의 점수를 감점.
+        </div>
+        <p style="font-size:12px; color:var(--text-secondary)">논문: arXiv:2305.14251</p>
+      </div>
+
+      <div class="metric-item">
+        <div class="metric-name">Topic Coverage</div>
+        <div class="metric-desc">쿼리에서 기대되는 토픽 대비 실제로 다룬 토픽의 비율.</div>
+        <div class="formula">Topic_Coverage = |T_covered| / |T_expected|</div>
+        <div class="formula-vars">
+          <code>T_expected</code> = 쿼리에서 LLM이 추출한 "완전한 답변에 필요한 하위 토픽" 집합.<br>
+          <code>T_covered</code> = 생성된 보고서에서 실제로 다룬 토픽 집합 (임베딩 매칭 기반).<br>
+          <strong>해석:</strong> 1.0 = 모든 기대 토픽을 다룸. 0.3 = 30%만 커버 → 보고서가 불완전.
+        </div>
+      </div>
+
+      <div class="metric-item">
+        <div class="metric-name">Completion Rate (Dr. Bench)</div>
+        <div class="metric-desc">복잡한 다단계 과제에서 서브태스크 완료율.</div>
+        <div class="formula">Completion_Rate = |S_done| / |S_total|</div>
+        <div class="formula-vars">
+          <code>S_total</code> = 쿼리를 분해한 전체 서브태스크 집합.<br>
+          <code>S_done</code> = 보고서가 실제로 완료(답변)한 서브태스크의 부분집합.
+        </div>
+        <p style="font-size:12px; color:var(--text-secondary)">논문: arXiv:2510.02190</p>
+      </div>
+    </div>
+
+    <!-- Tab 2: 근거 공백 탐지 메트릭 -->
+    <div id="s3-tab2"></div>
+    <div class="tab-panel" id="tab-gap">
+      <div class="info-box blue">검색/참조 근거가 없을 때 공백을 인정하지 않고 임의로 채우거나, 아무것도 쓰지 않는 문제를 탐지합니다.</div>
+
+      <div class="metric-item">
+        <div class="metric-name">Context Recall (RAGAS)</div>
+        <div class="metric-desc">참조 답변에 필요한 주장 중 검색된 컨텍스트에 의해 지지되는 비율.</div>
+        <div class="formula">Context_Recall = |C_supported| / |C_ref|</div>
+        <div class="formula-vars">
+          <code>C_ref</code> = 참조 답변(ground truth)에 포함된 전체 주장 집합.<br>
+          <code>C_supported</code> = 검색된 컨텍스트가 NLI entailment로 지지하는 참조 주장의 부분집합.<br>
+          <strong>해석:</strong> 낮은 값 = 검색 시스템이 답변에 필요한 정보를 충분히 가져오지 못함.
+        </div>
+      </div>
+
+      <div class="metric-item">
+        <div class="metric-name">Gap Score</div>
+        <div class="metric-desc">보고서가 다루어야 하는 필수 주장 중 실제로 다루지 않은 비율.</div>
+        <div class="formula">Gap_Score = |R_missing| / |R_total|</div>
+        <div class="formula-vars">
+          <code>R_total</code> = 쿼리에서 도출된 필수 정보 항목(required aspects) 집합.<br>
+          <code>R_missing</code> = 보고서에서 다루지 않은 필수 항목의 부분집합.<br>
+          <strong>해석:</strong> 0에 가까울수록 공백 없음. 0.5 이상이면 절반 이상의 필수 주제가 누락.
+        </div>
+      </div>
+
+      <div class="metric-item">
+        <div class="metric-name">Self-RAG Critique Tokens</div>
+        <div class="metric-desc">생성 중 자기비판 토큰으로 각 주장의 근거 상태를 실시간 표시.</div>
+        <ul>
+          <li><code>[ISREL]</code> — 검색 결과가 관련 있는가?</li>
+          <li><code>[ISSUP]</code> — 검색 결과가 주장을 지지하는가?</li>
+          <li><code>[ISUSE]</code> — 이 정보가 유용한가?</li>
+        </ul>
+      </div>
+
+      <div class="metric-item">
+        <div class="metric-name">Evidence Sufficiency</div>
+        <div class="metric-desc">쿼리를 하위 질문으로 분해했을 때 실제로 답할 수 있는 비율.</div>
+        <div class="formula">Evidence_Sufficiency = |Q_answerable| / |Q_total|</div>
+        <div class="formula-vars">
+          <code>Q_total</code> = 원본 쿼리를 분해한 하위 질문(sub-question) 집합.<br>
+          <code>Q_answerable</code> = 검색된 근거만으로 답변 가능한 하위 질문의 부분집합.<br>
+          <strong>용도:</strong> 참조 답변 없이도 검색 결과의 충분성을 측정 가능 (reference-free).
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: 근거 활용(Source Grounding) 메트릭 -->
+    <div id="s3-tab3"></div>
+    <div class="tab-panel" id="tab-grounding">
+      <div class="info-box blue">검색된 소스가 있음에도 보고서가 이를 무시하거나 잘못 인용하는 문제를 탐지합니다.</div>
+
+      <div class="metric-item">
+        <div class="metric-name">Faithfulness (RAGAS)</div>
+        <div class="metric-desc">보고서의 주장 중 실제로 제공된 컨텍스트로 검증 가능한 비율.</div>
+        <div class="formula">Faithfulness = |C_verified| / |C_total|</div>
+        <div class="formula-vars">
+          <code>C_total</code> = 생성된 보고서에서 추출한 전체 원자적 주장 집합.<br>
+          <code>C_verified</code> = 제공된 컨텍스트(검색 결과)에 의해 NLI entailment로 검증된 주장의 부분집합.<br>
+          <strong>범위:</strong> [0, 1]. 1.0 = 모든 주장이 근거에 기반. 0.5 = 절반이 근거 없는 환각.<br>
+          <strong>추천 모델:</strong> Vectara HHEM-2.1-Open (T5 기반, LLM 환각 특화) 또는 DeBERTa-MNLI.
+        </div>
+      </div>
+
+      <div class="metric-item">
+        <div class="metric-name">NLI 스코어링</div>
+        <div class="metric-desc">자연어 추론 모델로 소스와 생성 텍스트의 함의 관계 측정.</div>
+        <div class="formula">ENT = P(entailment | source, claim)</div>
+        <div class="formula">CON = P(contradiction | source, claim)</div>
+        <div class="formula">DIFF = ENT - CON</div>
+        <div class="formula-vars">
+          <code>ENT</code> = 소스가 주장을 함의(지지)할 확률. [0, 1]. 높을수록 충실.<br>
+          <code>CON</code> = 소스가 주장을 반박(모순)할 확률. [0, 1]. 높을수록 환각.<br>
+          <code>DIFF</code> = ENT에서 CON을 뺀 신뢰 점수. [-1, 1]. 양수면 지지, 음수면 환각.<br>
+          <code>source</code> = NLI 모델의 전제(premise) — 검색된 컨텍스트 문서.<br>
+          <code>claim</code> = NLI 모델의 가설(hypothesis) — 보고서의 개별 주장.
+        </div>
+      </div>
+
+      <div class="metric-item">
+        <div class="metric-name">Citation Precision & Recall</div>
+        <div class="metric-desc">인용의 정확성과 누락 측정.</div>
+        <div class="formula">Citation_Precision = TP / (TP + FP)</div>
+        <div class="formula">Citation_Recall = TP / (TP + FN)</div>
+        <div class="formula">Citation_F1 = 2 × P × R / (P + R)</div>
+        <div class="formula-vars">
+          <code>TP</code> (True Positive) = 올바르게 달린 인용 — 인용된 소스가 실제로 해당 주장을 지지.<br>
+          <code>FP</code> (False Positive) = 잘못된 인용 — 달았지만 소스가 해당 주장을 지지하지 않음.<br>
+          <code>FN</code> (False Negative) = 누락된 인용 — 인용이 필요하지만 달지 않음.<br>
+          <strong>Precision:</strong> "달린 인용 중 정확한 비율" | <strong>Recall:</strong> "필요한 인용 중 실제로 단 비율"
+        </div>
+        <p style="font-size:12px; color:var(--text-secondary)">ALCE (arXiv:2305.14627) 기반. 임계값: &gt; 0.85</p>
+      </div>
+
+      <div class="metric-item">
+        <div class="metric-name">Retrieval Utilization Index (RUI)</div>
+        <div class="metric-desc">검색된 전체 결과 중 실제로 보고서에 반영된 비율.</div>
+        <div class="formula">RUI = |D_used| / |D_retrieved|</div>
+        <div class="formula-vars">
+          <code>D_retrieved</code> = 검색 시스템이 가져온 전체 문서/청크 집합.<br>
+          <code>D_used</code> = 최종 보고서에 의미적으로 반영된(cos_sim &gt; 0.3~0.4) 문서의 부분집합.<br>
+          <strong>해석:</strong> 0.3 = 검색 10건 중 3건만 활용 → 나머지 7건은 검색 비용만 발생, 정보 낭비.
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 4: 반복/부풀리기 탐지 메트릭 -->
+    <div id="s3-tab4"></div>
+    <div class="tab-panel" id="tab-repetition">
+      <div class="info-box blue">같은 내용을 다른 말로 반복하거나, 섹션 간 중복을 추가해 분량을 부풀리는 문제를 탐지합니다.</div>
+
+      <div class="metric-item">
+        <div class="metric-name">Self-Repetition Score (SRS)</div>
+        <div class="metric-desc">문서 내 반복적 표현의 로그 스케일 누적 점수.</div>
+        <div class="formula">SRS(d) = log( Σᵢ₌₁ᵏ (Nᵢ + 1) )</div>
+        <div class="formula-vars">
+          <code>d</code> = 평가 대상 문서.<br>
+          <code>k</code> = 문서 내 총 4-gram 수.<br>
+          <code>Nᵢ</code> = i번째 4-gram이 동일 문서 내 다른 위치에 등장하는 횟수 (자기 자신 제외).<br>
+          <code>+1</code> = 로그 안정화 (Nᵢ=0일 때 log(1)=0이 되도록).<br>
+          <strong>해석:</strong> 값이 높을수록 동일한 표현이 문서 내에서 많이 반복됨.
+        </div>
+      </div>
+
+      <div class="metric-item">
+        <div class="metric-name">Self-BLEU</div>
+        <div class="metric-desc">문서 내 단락들 간의 n-gram 중복도. 자기 자신과의 BLEU 점수.</div>
+        <div class="formula">Self-BLEU = (1/n) × Σᵢ BLEU(pᵢ, {pⱼ | j ≠ i})</div>
+        <div class="formula-vars">
+          <code>n</code> = 문서 내 총 단락 수.<br>
+          <code>pᵢ</code> = i번째 단락 (후보 텍스트로 취급).<br>
+          <code>{pⱼ | j ≠ i}</code> = i번째를 제외한 나머지 단락들 (참조 텍스트로 취급).<br>
+          <code>BLEU</code> = n-gram precision의 기하평균 × 길이 보정.<br>
+          <strong>해석:</strong> 높은 Self-BLEU = 단락들이 서로 비슷한 표현 사용 → 패러프레이징 반복 의심.
+        </div>
+      </div>
+
+      <div class="metric-item">
+        <div class="metric-name">Semantic Novelty per Paragraph</div>
+        <div class="metric-desc">각 단락이 이전 단락들과 의미적으로 얼마나 새로운지 측정.</div>
+        <div class="formula">Novelty(pₖ) = 1 - max{ cos_sim(embed(pₖ), embed(pⱼ)) | j &lt; k }</div>
+        <div class="formula-vars">
+          <code>pₖ</code> = 현재 평가 중인 k번째 단락.<br>
+          <code>pⱼ (j &lt; k)</code> = k번째 이전에 등장한 모든 단락들.<br>
+          <code>embed(·)</code> = 문장 임베딩 함수 (예: all-MiniLM-L6-v2, 768차원).<br>
+          <code>cos_sim</code> = 코사인 유사도. [0, 1] 범위.<br>
+          <strong>해석:</strong> 0에 가까움 = 이전 단락과 의미적으로 거의 동일 (반복). 1에 가까움 = 완전히 새로운 정보.<br>
+          <strong>임계값:</strong> &lt; 0.15면 심한 반복 의심. 전체 평균 &lt; 0.25면 문서 전체가 반복적.
+        </div>
+      </div>
+
+      <div class="metric-item">
+        <div class="metric-name">Information Gain per Section & Redundancy</div>
+        <div class="metric-desc">섹션별 고유 사실 비율 및 전체 중복도.</div>
+        <div class="formula">Info_Gain(sₖ) = |F_new(sₖ)| / |F_total(sₖ)|</div>
+        <div class="formula">Redundancy = 1 - (1/n) × Σₖ Info_Gain(sₖ)</div>
+        <div class="formula-vars">
+          <code>sₖ</code> = k번째 섹션.<br>
+          <code>F_total(sₖ)</code> = 섹션 sₖ에 포함된 전체 원자적 사실 집합.<br>
+          <code>F_new(sₖ)</code> = 이전 섹션(s₁..sₖ₋₁)에 없는 신규 사실의 부분집합.<br>
+          <code>n</code> = 총 섹션 수.<br>
+          <strong>해석:</strong> Info_Gain이 0.05 미만인 섹션은 새 정보가 5% 미만 → 통합/제거 대상. Redundancy &gt; 0.4면 심각한 부풀리기.
+        </div>
+        <div class="info-box yellow">Info_Gain &lt; 5% → 해당 섹션 통합 또는 제거 대상</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 4: 추가 메트릭 -->
+<section class="section" id="s4">
+  <div class="section-header">
+    <span class="section-icon">🧪</span>
+    <div>
+      <div class="section-title">추가 심층 메트릭</div>
+      <div class="section-subtitle">KB 특화, 장문 합성, 다양성, 견고성, 담화 구조 메트릭</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>🗄️</span>
+      <span class="card-title">KB(지식 베이스) 특화 메트릭</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <div class="metric-item">
+        <div class="metric-name">Entity Coverage & Relation Coverage</div>
+        <div class="formula">Entity_Coverage = |E_covered| / |E_domain|</div>
+        <div class="formula">Relation_Coverage = |R_extracted| / |R_expected|</div>
+        <div class="formula-vars">
+          <code>E_domain</code> = 해당 도메인의 KB에 존재하는 전체 엔티티 집합.<br>
+          <code>E_covered</code> = 보고서가 언급하거나 활용한 엔티티의 부분집합.<br>
+          <code>R_expected</code> = 쿼리 주제에 관련된 기대 관계(relation) 집합.<br>
+          <code>R_extracted</code> = 보고서에서 실제로 추출/활용된 관계의 부분집합.
+        </div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-name">KB Quality (종합)</div>
+        <div class="formula">KB_Quality = α × accuracy + β × coverage + γ × consistency</div>
+        <div class="formula-vars">
+          <code>α = 0.4</code> = 정확도 가중치 — 엔티티/관계 추출의 정확성.<br>
+          <code>β = 0.4</code> = 커버리지 가중치 — 도메인 표현의 폭.<br>
+          <code>γ = 0.2</code> = 일관성 가중치 — 논리적 무모순성 (사실 간 충돌 없음).
+        </div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-name">ALCE Citation Quality</div>
+        <div class="formula">ALCE_Score = |Cite_entailed| / |Cite_total|</div>
+        <div class="formula-vars">
+          <code>Cite_total</code> = 보고서에 달린 전체 인용(citation span) 수.<br>
+          <code>Cite_entailed</code> = NLI 모델이 인용된 소스가 해당 주장을 entail(함의)한다고 판정한 인용 수.<br>
+          <strong>판정 기준:</strong> NLI(citation_span, claim) ∈ {entailment}이면 유효한 인용.
+        </div>
+        <p style="font-size:12px; color:var(--text-secondary)">임계값: &gt; 0.85 / 논문: arXiv:2305.14627</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>📝</span>
+      <span class="card-title">장문 합성 품질 메트릭</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <div class="metric-item">
+        <div class="metric-name">UniEval</div>
+        <div class="metric-desc">coherence, consistency, fluency, relevance를 Boolean QA 방식으로 평가. 인간 평가 대비 23% 높은 상관관계.</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-name">QuestEval</div>
+        <div class="metric-desc">소스 → 질문 생성 → 요약으로 답변 확인하는 방식. Precision + Recall의 조화 평균.</div>
+        <div class="formula">QuestEval = 2 × (QA_P × QA_R) / (QA_P + QA_R)</div>
+        <div class="formula-vars">
+          <code>QA_R</code> (recall) = 소스에서 생성한 질문 중 요약/보고서가 답할 수 있는 비율 → 커버리지 측정.<br>
+          <code>QA_P</code> (precision) = 요약에서 생성한 질문 중 정확하게 답변된 비율 → 정확성 측정.<br>
+          <strong>산식:</strong> 조화 평균(F1) — Precision과 Recall의 균형. 임계값: &gt; 0.60 권장.
+        </div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-name">SummaC</div>
+        <div class="metric-desc">NLI 기반 비일관성 탐지. 요약문의 각 문장이 소스와 모순되는지 검사.</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-name">BLANC</div>
+        <div class="metric-desc">Reference-free 요약 평가. 요약 조건부 log_prob 향상 측정.</div>
+        <div class="formula">BLANC = log P(D | S) - log P(D | ∅)</div>
+        <div class="formula-vars">
+          <code>D</code> = 원본 문서.<br>
+          <code>S</code> = 평가 대상 요약/보고서.<br>
+          <code>log P(D | S)</code> = 요약 S를 컨텍스트로 줬을 때 언어 모델이 D를 생성할 확률의 로그.<br>
+          <code>log P(D | ∅)</code> = 아무 컨텍스트 없이 D를 생성할 확률의 로그 (베이스라인).<br>
+          <strong>해석:</strong> 차이가 클수록 요약이 문서 이해에 유용한 정보를 많이 담고 있음. 참조 답변 불필요.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>🌈</span>
+      <span class="card-title">다양성 & 정보성 메트릭</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <div class="metric-item">
+        <div class="metric-name">Distinct-n</div>
+        <div class="formula">Distinct-n = |{g : g ∈ G_n}| / |G_n|</div>
+        <div class="formula-vars">
+          <code>G_n</code> = 텍스트에서 추출한 전체 n-gram 리스트 (중복 포함).<br>
+          <code>|{g : g ∈ G_n}|</code> = 고유(unique) n-gram의 수.<br>
+          <code>n</code> = n-gram 크기 (보통 n=1 유니그램, n=2 바이그램).<br>
+          <strong>범위:</strong> [0, 1]. 1에 가까울수록 어휘 다양성 높음. 단, 긴 텍스트일수록 불리(편향 존재).
+        </div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-name">Shannon Entropy</div>
+        <div class="formula">H(P) = -Σᵢ p(xᵢ) × log₂(p(xᵢ))</div>
+        <div class="formula-vars">
+          <code>P</code> = 콘텐츠 요소(토픽, 엔티티, 토큰 등)의 확률 분포.<br>
+          <code>p(xᵢ)</code> = i번째 요소의 출현 확률.<br>
+          <strong>해석:</strong> 최대 엔트로피 = log₂(|지지 집합|) (균등 분포). 실제 엔트로피가 이에 가까울수록 다양.
+        </div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-name">KL Divergence</div>
+        <div class="metric-desc">균등 분포와의 거리. 생성 분포가 얼마나 치우쳐 있는지 측정.</div>
+        <div class="formula">KL(P||Q) = Σᵢ P(xᵢ) × log(P(xᵢ) / Q(xᵢ))</div>
+        <div class="formula-vars">
+          <code>P</code> = 생성 텍스트의 실제 토픽/토큰 분포.<br>
+          <code>Q</code> = 비교 대상 분포 (보통 균등 분포 U).<br>
+          <strong>해석:</strong> KL(P||U)가 클수록 P가 균등에서 벗어남 → 특정 토픽에 치우쳐 있음.
+          다양성 점수 = 1 - KL/H_max 로 변환하면 [0,1] 범위. &gt; 0.6 권장.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>🛡️</span>
+      <span class="card-title">견고성 & 일관성 메트릭</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <div class="metric-item">
+        <div class="metric-name">Cross-Run Consistency</div>
+        <div class="metric-desc">동일 쿼리를 k번 실행했을 때 결과의 의미적 유사도 평균.</div>
+        <div class="formula">CRC = (2 / k(k-1)) × Σᵢ&lt;ⱼ cos_sim(embed(rᵢ), embed(rⱼ))</div>
+        <div class="formula-vars">
+          <code>k</code> = 동일 쿼리에 대한 총 실행 횟수 (권장: 5~10).<br>
+          <code>rᵢ, rⱼ</code> = i, j번째 실행의 생성 결과.<br>
+          <code>embed(·)</code> = 문장 임베딩. <code>cos_sim</code> = 코사인 유사도.<br>
+          <strong>목표:</strong> &gt; 0.75. 같은 질문에 대해 75% 이상 의미적으로 일관된 답변.
+        </div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-name">Perturbation Robustness</div>
+        <div class="metric-desc">쿼리를 변형(동의어 교체, 어순 변경 등)했을 때 정확도 유지율.</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-name">ECE (Expected Calibration Error)</div>
+        <div class="formula">ECE = Σₘ₌₁ᴹ (|Bₘ| / n) × |acc(Bₘ) - conf(Bₘ)|</div>
+        <div class="formula-vars">
+          <code>M</code> = 신뢰도 구간(bin) 수 (보통 10개).<br>
+          <code>Bₘ</code> = m번째 신뢰도 구간에 속하는 예측 집합.<br>
+          <code>|Bₘ|/n</code> = 해당 구간의 비율 (가중치).<br>
+          <code>acc(Bₘ)</code> = 구간 내 실제 정확도. <code>conf(Bₘ)</code> = 구간 내 평균 신뢰도.<br>
+          <strong>해석:</strong> 0에 가까울수록 모델의 자신감과 실제 정확도가 일치 (잘 보정됨).
+        </div>
+        <div class="info-box green">목표: ECE &lt; 0.1 (잘 보정된 시스템)</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-name">Semantic Entropy</div>
+        <div class="metric-desc">다중 생성의 의미 클러스터 엔트로피. 모델이 얼마나 확신하지 못하는지.</div>
+        <div class="formula">SE = -Σᵢ p(cᵢ) × ln(p(cᵢ))</div>
+        <div class="formula-vars">
+          <code>cᵢ</code> = i번째 의미 클러스터 (양방향 NLI entailment로 동치 판정된 응답 그룹).<br>
+          <code>p(cᵢ)</code> = N회 생성 중 클러스터 cᵢ에 속하는 응답의 비율.<br>
+          <strong>방법:</strong> 동일 쿼리로 ~10회 생성 → 의미적 동치 클러스터링 → 엔트로피 계산.<br>
+          <strong>해석:</strong> &gt; 0.8 nats = 높은 불확실성 → "근거 부족" 표시 권장.
+        </div>
+        <div class="info-box yellow">SE &gt; 0.8 bits → 높은 불확실성 경고</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>🗣️</span>
+      <span class="card-title">담화 & 일관성 메트릭</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <div class="metric-item">
+        <div class="metric-name">Entity Grid Coherence</div>
+        <div class="metric-desc">문장 간 엔티티 전환 패턴 추적. 논리적 흐름이 자연스러운지 평가.</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-name">Centering Theory</div>
+        <div class="metric-desc">담화의 초점(center) 연속성 평가. 주제 전환이 적절한지 측정.</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-name">RST (Rhetorical Structure Theory)</div>
+        <div class="metric-desc">수사적 구조 이론 기반. 담화 구조의 계층적 일관성 평가.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>⚡</span>
+      <span class="card-title">실시간 탐지 메트릭</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <div class="metric-item">
+        <div class="metric-name">PrefixNLI</div>
+        <div class="metric-desc">생성 도중 실시간으로 비일관성 탐지. 사후 평가가 아닌 생성 중 개입 가능.</div>
+        <div class="info-box green">장점: 비일관성 발생 즉시 재생성 트리거 가능</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-name">SelfCheckGPT</div>
+        <div class="metric-desc">N개 샘플링 → BERTScore 일관성 측정 → 환각 탐지.</div>
+        <div class="formula">hallucination_score(s) = 1 - (1/N) × Σₖ₌₁ᴺ BERTScore(s, sₖ)</div>
+        <div class="formula-vars">
+          <code>s</code> = 평가 대상 문장.<br>
+          <code>sₖ</code> = 동일 쿼리로 k번째 스토캐스틱 샘플링한 응답에서 s와 가장 유사한 문장.<br>
+          <code>N</code> = 샘플 수 (권장: 5~20).<br>
+          <code>BERTScore</code> = 문맥적 임베딩 기반 유사도 (precision/recall/F1).<br>
+          <strong>해석:</strong> 많은 샘플에서 나타나는 정보 = 사실적 가능성 높음. 0개 샘플에서만 나타남 = 환각 의심.
+        </div>
+        <p style="font-size:12px; color:var(--text-secondary)">논문: arXiv:2303.08896</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 5: 메트릭 조합 가이드 -->
+<section class="section" id="s5">
+  <div class="section-header">
+    <span class="section-icon">🔗</span>
+    <div>
+      <div class="section-title">메트릭 조합 가이드</div>
+      <div class="section-subtitle">여러 메트릭을 하나의 점수로 통합하는 전략</div>
+    </div>
+  </div>
+
+  <h3>5-1. 조합 전략 비교</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>전략</th>
+          <th>산식</th>
+          <th>장점</th>
+          <th>단점</th>
+          <th>적합한 상황</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Weighted Sum</td>
+          <td><code>Σ(wᵢ × mᵢ)</code></td>
+          <td>간단, 해석 가능</td>
+          <td>한 메트릭이 다른 메트릭 보상 가능</td>
+          <td>일반적 사용</td>
+        </tr>
+        <tr>
+          <td>Harmonic Mean</td>
+          <td><code>n / Σ(1/mᵢ)</code></td>
+          <td>최저값에 민감 (비보상적)</td>
+          <td>0값에 취약</td>
+          <td>모든 차원 균형 필요 시</td>
+        </tr>
+        <tr>
+          <td>Geometric Mean</td>
+          <td><code>(∏mᵢ)^(1/n)</code></td>
+          <td>다른 스케일 처리</td>
+          <td>0값에 취약</td>
+          <td>비율 기반 비교</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700">Gate + Weighted ★</td>
+          <td><code>if all ≥ θ: Σ(wᵢ×mᵢ)</code></td>
+          <td>치명적 실패 방지</td>
+          <td>경직적</td>
+          <td><strong>핵심 메트릭 보장 필요 시 (추천)</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="formula-vars">
+    <strong>조합 전략 변수 설명:</strong><br>
+    <code>wᵢ</code> — 메트릭 i에 대한 가중치. 모든 가중치의 합 Σwᵢ = 1 (정규화 조건)<br>
+    <code>mᵢ</code> — 개별 메트릭 i의 점수 (정규화 후 [0,1] 범위)<br>
+    <code>n</code> — 조합에 포함되는 메트릭의 총 개수<br>
+    <code>∏mᵢ</code> — 모든 mᵢ의 곱 (m₁ × m₂ × … × mₙ)<br>
+    <code>θ</code> — Gate 임계값. 이 값 미만인 메트릭이 하나라도 있으면 전체 점수를 0으로 처리 (기본 추천: faithfulness θ=0.7, gap_handling θ=0.5)<br>
+    <strong>Weighted Sum:</strong> 단순 가중 합산. 한 메트릭의 고점이 다른 메트릭의 저점을 보상(compensate) 가능<br>
+    <strong>Harmonic Mean:</strong> 최저값에 강하게 끌림 → 모든 차원이 고르게 높아야 높은 점수. mᵢ=0이면 전체가 0<br>
+    <strong>Geometric Mean:</strong> 곱의 n제곱근. 서로 다른 스케일의 메트릭 비교에 적합. mᵢ=0이면 전체가 0<br>
+    <strong>Gate + Weighted ★:</strong> 게이트 조건(모든 핵심 메트릭 ≥ θ)을 먼저 통과해야 가중합 계산. 치명적 실패를 원천 차단
+  </div>
+
+  <h3>5-2. 가중치 결정 방법</h3>
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>⚖️</span>
+      <span class="card-title">5가지 가중치 결정 전략</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <ul>
+        <li><strong>Kendall's τ / Spearman's ρ:</strong> 각 메트릭과 인간 평가의 순위 상관관계 계산 → 상관 높은 메트릭에 높은 가중치</li>
+        <li><strong>AHP (Analytic Hierarchy Process):</strong> 쌍대 비교 행렬 → 고유벡터 추출 → 일관성 비율(CR) ≤ 0.1 확인</li>
+        <li><strong>Bayesian Optimization:</strong> 가중치 벡터를 하이퍼파라미터로 → 베이지안 최적화로 인간 평가 상관 최대화</li>
+        <li><strong>Learn-to-Rank (LambdaMART):</strong> 메트릭=feature, 인간 선호=label → 학습 기반 가중치</li>
+        <li><strong>Bradley-Terry 모델:</strong> 쌍대 비교 → 전역 순위 추출 (평가자 신뢰도 자동 반영)</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>5-3. 정규화 방법</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>방법</th><th>산식</th><th>특성</th><th>이상치 민감도</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Min-Max</td><td><code>(X-Xmin)/(Xmax-Xmin)</code></td><td>[0,1] 범위 보장</td><td>높음</td></tr>
+        <tr><td>Z-Score</td><td><code>(X-μ)/σ</code></td><td>정규분포 가정</td><td>강건</td></tr>
+        <tr><td>Sigmoid</td><td><code>1/(1+e^(-k×Z))</code></td><td>부드러운 [0,1]</td><td>낮음 (극단 억제)</td></tr>
+        <tr><td>Percentile</td><td>순위 기반</td><td>비모수적</td><td>없음</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="formula-vars">
+    <strong>정규화 산식 변수 설명:</strong><br>
+    <code>X</code> — 정규화할 원래 메트릭 값 (raw score)<br>
+    <code>Xmin</code>, <code>Xmax</code> — 데이터셋 내 해당 메트릭의 최솟값과 최댓값. Min-Max에서 [0,1] 범위를 결정<br>
+    <code>μ</code> — 해당 메트릭의 평균값 (population mean)<br>
+    <code>σ</code> — 해당 메트릭의 표준편차 (population standard deviation). σ=0이면 분모가 0이 되므로 상수 메트릭 제외 필요<br>
+    <code>Z</code> — Z-Score 정규화 결과값 = (X−μ)/σ. Sigmoid 함수의 입력으로 사용<br>
+    <code>k</code> — Sigmoid 기울기(steepness) 파라미터. k가 클수록 0/1에 가까운 이진적 분포, k가 작을수록 완만한 S곡선. 추천값: k=1~3<br>
+    <code>e</code> — 자연상수 (≈ 2.71828)<br>
+    <strong>Min-Max:</strong> [0,1] 범위 보장하지만 이상치(outlier)에 의해 대부분 값이 좁은 구간에 몰림<br>
+    <strong>Z-Score:</strong> 평균=0, 표준편차=1로 변환. 정규분포 가정 시 최적. 범위가 고정되지 않음<br>
+    <strong>Sigmoid:</strong> Z-Score 결과를 [0,1]로 부드럽게 압축. 극단값 억제 효과. <em>추천 정규화</em><br>
+    <strong>Percentile:</strong> 순위 기반으로 변환 → 분포 형태에 무관. 이상치 영향 없음
+  </div>
+
+  <h3>5-4. 다중공선성 검사</h3>
+  <div class="info-box yellow">
+    <strong>VIF (Variance Inflation Factor)</strong>
+    <div class="formula" style="margin-top:8px">VIF = 1 / (1 - R²ⱼ)</div>
+    <div class="formula-vars">
+      <code>VIF</code> — Variance Inflation Factor. 메트릭 j가 다른 메트릭들과 얼마나 공선적(correlated)인지를 나타내는 지표<br>
+      <code>R²ⱼ</code> — 메트릭 j를 종속변수로 놓고 나머지 메트릭들로 회귀분석했을 때의 결정계수 (0~1). R²ⱼ가 1에 가까우면 메트릭 j는 다른 메트릭들의 선형 조합으로 거의 완벽히 예측 가능 → 중복 정보<br>
+      <strong>해석:</strong> VIF = 1 → 공선성 없음 (독립적). VIF = 4 → 메트릭 j의 분산이 75% 설명됨 (조사 필요). VIF = 10 → 90% 설명됨 (심각한 중복 → 제거 또는 PCA 축소)
+    </div>
+    <ul style="margin-top:8px">
+      <li>VIF &gt; 4 → 조사 필요</li>
+      <li>VIF &gt; 10 → 심각한 공선성 → PCA로 차원 축소하거나 중복 메트릭 제거</li>
+    </ul>
+  </div>
+
+  <h3>5-5. 캐스케이딩 파이프라인 (비용 최적화)</h3>
+  <div class="pipeline">
+    <div class="pipe-step" style="border-left:3px solid var(--success)">
+      <div style="font-weight:700; color:var(--success)">Tier 1</div>
+      <div>정규식/휴리스틱</div>
+      <div style="font-size:11px; color:var(--text-secondary)">~$0.001</div>
+    </div>
+    <span class="pipe-arrow">→</span>
+    <div class="pipe-step" style="border-left:3px solid var(--accent)">
+      <div style="font-weight:700; color:var(--accent)">Tier 2</div>
+      <div>임베딩 기반</div>
+      <div style="font-size:11px; color:var(--text-secondary)">~$0.01</div>
+    </div>
+    <span class="pipe-arrow">→</span>
+    <div class="pipe-step" style="border-left:3px solid var(--warn)">
+      <div style="font-weight:700; color:var(--warn)">Tier 3</div>
+      <div>소형 LLM</div>
+      <div style="font-size:11px; color:var(--text-secondary)">~$0.1</div>
+    </div>
+    <span class="pipe-arrow">→</span>
+    <div class="pipe-step" style="border-left:3px solid var(--danger)">
+      <div style="font-weight:700; color:var(--danger)">Tier 4</div>
+      <div>대형 LLM</div>
+      <div style="font-size:11px; color:var(--text-secondary)">~$1.0</div>
+    </div>
+  </div>
+  <p style="font-size:12px; color:var(--text-secondary)">앞 단계에서 통과하면 비싼 단계 스킵. 비용 대비 효과 최대화.</p>
+
+  <h3>5-6. 실패 모드별 메트릭 블라인드 스팟 분석</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>실패 모드</th>
+          <th>BLEU/ROUGE</th>
+          <th>BERTScore</th>
+          <th>NLI 판정기</th>
+          <th>LLM Judge</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>할루시네이션</td>
+          <td class="check-no">✗</td>
+          <td class="check-no">✗</td>
+          <td class="check-yes">✓</td>
+          <td class="check-yes">✓</td>
+        </tr>
+        <tr>
+          <td>반복/부풀리기</td>
+          <td class="check-partial">△</td>
+          <td class="check-no">✗</td>
+          <td class="check-no">✗</td>
+          <td class="check-yes">✓</td>
+        </tr>
+        <tr>
+          <td>근거 미활용</td>
+          <td class="check-no">✗</td>
+          <td class="check-no">✗</td>
+          <td class="check-yes">✓</td>
+          <td class="check-yes">✓</td>
+        </tr>
+        <tr>
+          <td>내용 빈약</td>
+          <td class="check-no">✗</td>
+          <td class="check-no">✗</td>
+          <td class="check-no">✗</td>
+          <td class="check-yes">✓</td>
+        </tr>
+        <tr>
+          <td>논리 비일관</td>
+          <td class="check-no">✗</td>
+          <td class="check-no">✗</td>
+          <td class="check-partial">△</td>
+          <td class="check-yes">✓</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:12px; color:var(--text-secondary)">✓ 탐지 가능 | △ 부분적 | ✗ 탐지 불가</p>
+</section>
+
+<!-- Section 6: 실전 적용 가이드 -->
+<section class="section" id="s6">
+  <div class="section-header">
+    <span class="section-icon">💡</span>
+    <div>
+      <div class="section-title">실전 적용 가이드</div>
+      <div class="section-subtitle">웹서버 지식저장소 deep research 구현을 위한 맞춤 가이드</div>
+    </div>
+  </div>
+
+  <div class="info-box red">
+    <strong>이 섹션은 사용자 상황 맞춤형입니다.</strong> 4가지 실패 모드를 직접 해결하는 구현 코드와 전략을 제공합니다.
+  </div>
+
+  <h3>6-1. 권장 복합 평가 산식</h3>
+  <pre class="code-block">def evaluate_research_report(query, sources, report):
+    """
+    웹서버 지식저장소 deep research 보고서의 품질을 복합 평가하는 함수.
+
+    Args:
+        query   (str):  사용자의 원래 검색/질의 텍스트
+        sources (list): 검색된 근거 문서 리스트 [{text, url, title}, ...]
+        report  (str):  LLM이 생성한 최종 보고서 텍스트
+
+    Returns:
+        float: 0.0~1.0 범위의 종합 품질 점수.
+               게이트 실패 시 0.0 반환 (치명적 품질 미달).
+    """
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # ❶ 풍부함 (Richness) — Claim Density 방식
+    # 보고서가 얼마나 정보 밀도 높은 내용을 담고 있는지 측정
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    # LLM으로 보고서에서 원자적 주장(atomic claim)을 추출
+    # 예: "Python은 1991년에 출시되었다" → 하나의 원자적 주장
+    claims = extract_atomic_claims(report)
+
+    # 의미적 유사도 0.85 이상인 주장들을 중복으로 판정하여 제거
+    # threshold=0.85: cosine similarity 기준, 높을수록 엄격한 중복 판정
+    unique_claims = semantic_deduplicate(claims, threshold=0.85)
+
+    # 100단어당 고유 주장 수 = 정보 밀도 (Claim Density)
+    # max(..., 1)로 분모가 0이 되는 것을 방지
+    # 해석: richness=3.0이면 100단어당 3개의 고유 정보 포함
+    richness = len(unique_claims) / max(word_count(report) / 100, 1)
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # ❷ 근거 공백 대응 (Gap Handling) — Gap Score
+    # 빈 근거일 때 성실하게 대응했는지 측정
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    # 쿼리에서 다뤄야 할 핵심 측면(aspect)을 추출
+    # 예: "Python vs Java 비교" → ["성능", "생태계", "학습곡선", ...]
+    required_aspects = extract_required_aspects(query)
+
+    # 보고서에서 실제로 다룬 측면의 수
+    covered = count_covered_aspects(report, required_aspects)
+
+    # "정보가 부족하여 확인 불가" 등 명시적으로 갭을 인정한 수
+    # 근거 없이 지어내는 것보다 갭을 인정하는 것이 높은 점수
+    acknowledged_gaps = count_acknowledged_gaps(report)
+
+    # (다룬 측면 + 인정한 갭) / 전체 필요 측면 → [0, 1]
+    # 1.0이면 모든 측면을 다루었거나 못 다룬 이유를 명시
+    gap_handling = (covered + acknowledged_gaps) / len(required_aspects)
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # ❸ 근거 활용 (Grounding) — Faithfulness × RUI
+    # 근거를 충실히, 빠짐없이 활용했는지 측정
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    # RAGAS Faithfulness: 보고서의 각 주장이 소스에 의해 뒷받침되는 비율
+    # 높을수록 할루시네이션이 적음. 범위: [0, 1]
+    faithfulness = ragas_faithfulness(report, sources)
+
+    # RUI (Retrieval Utilization Index): 제공된 소스 중 실제 활용된 비율
+    # utilization = (보고서에서 참조한 소스 수) / (전체 소스 수)
+    # 범위: [0, 1]. 낮으면 소스를 무시하고 자체 지식으로 생성한 것
+    utilization = retrieval_utilization_index(sources, report)
+
+    # 두 값의 곱 = 충실성 × 활용도. 둘 다 높아야 높은 점수
+    # 예: faithfulness=0.9, utilization=0.5 → grounding=0.45 (소스 절반 미활용)
+    grounding = faithfulness * utilization
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # ❹ 반복 탐지 (Repetition) — Semantic Novelty
+    # 내용을 반복해서 부풀리는 행위를 감지
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    # 보고서를 문단 단위로 분리
+    paragraphs = split_paragraphs(report)
+
+    # 각 문단이 이전 문단들 대비 얼마나 새로운 정보를 담는지 평균
+    # 높을수록 반복이 적음. 범위: [0, 1]
+    # 내부: 1 - max(cosine_sim(현재문단, 이전문단들))
+    novelty = avg_semantic_novelty(paragraphs)
+
+    # 반복 패널티: novelty가 0.5 미만이면 패널티 부과
+    # novelty=0.3 → penalty=0.4 (상당한 반복), novelty=0.8 → penalty=0 (건강)
+    repetition_penalty = max(0, 1 - novelty * 2)
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # 종합 점수 — Gate + Weighted Hybrid 전략
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    # 게이트 조건: 핵심 메트릭이 임계값 미달이면 즉시 0점 반환
+    # faithfulness < 0.7: 할루시네이션 과다 → 보고서 자체가 신뢰 불가
+    # gap_handling < 0.5: 필수 측면의 절반도 미다룸 → 보고서 가치 없음
+    if faithfulness &lt; 0.7 or gap_handling &lt; 0.5:
+        return 0.0  # 게이트 실패 → 재생성 필요
+
+    # 가중 합산: 각 메트릭에 중요도 기반 가중치 적용
+    # - richness    (0.30): 정보 밀도가 가장 직접적인 품질 지표
+    # - gap_handling(0.20): 근거 공백 대응 (보조 지표)
+    # - grounding   (0.30): 근거 활용 충실성 (핵심 신뢰도 지표)
+    # - 1 - penalty (0.20): 반복 없음 보너스 (패널티 역수)
+    # 가중치 합계: 0.30 + 0.20 + 0.30 + 0.20 = 1.00
+    raw_score = (
+        0.30 * richness +          # 풍부함 기여분
+        0.20 * gap_handling +       # 갭 대응 기여분
+        0.30 * grounding +          # 근거 활용 기여분
+        0.20 * (1 - repetition_penalty)  # 반복 없음 기여분
+    )
+    return raw_score  # [0, 1] 범위. 0.7 이상이면 양호한 보고서</pre>
+
+  <h3>6-2. 자율 개선 루프 설계</h3>
+  <pre class="code-block"># ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# AutoResearch 패턴 기반 자율 개선 루프 (Karpathy 방식 응용)
+# 핵심 원리: edit → run → evaluate → keep/revert
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+MAX_ITERATIONS = 5  # 비용 제한: 최대 5회 반복 (LLM API 호출 비용 고려)
+
+# 각 메트릭별 임계값 (게이트 + 품질 기준)
+THRESHOLDS = {
+    "Claim_Density": 2.0,  # 100단어당 최소 2개 고유 주장
+    "Gap_Score":     0.7,  # 필수 측면의 70% 이상 다룸
+    "Faithfulness":  0.7,  # 주장의 70% 이상이 소스로 뒷받침
+    "Novelty":       0.5,  # 문단 간 평균 신규 정보 비율 50% 이상
+}
+
+# 메트릭 미달 시 에이전트에게 전달할 구체적 피드백 템플릿
+# → 막연한 "개선해라"가 아닌, 실패 원인을 특정한 지시가 핵심
+FEEDBACK_TEMPLATES = {
+    "Claim_Density": "정보 밀도 부족. 더 구체적인 수치, 사례, 비교를 추가하세요.",
+    "Gap_Score":     "주제 '{missing}' 누락. 추가 검색 후 해당 측면을 보완하세요.",
+    "Faithfulness":  "인용-내용 불일치 {count}건 발견. 소스 재확인 후 수정하세요.",
+    "Novelty":       "섹션 {dup_a}이 섹션 {dup_b}과 의미적 중복. 통합 또는 삭제하세요.",
+}
+
+LOOP:  # Karpathy AutoResearch 루프의 응용
+  # ┌─────────────────────────────────────────────┐
+  # │ Step 1: 에이전트가 보고서 초안 생성            │
+  # │ (첫 회차: 원본 쿼리 + 소스로 생성)            │
+  # │ (재시도: 이전 초안 + 구체적 피드백으로 재생성)  │
+  # └─────────────────────────────────────────────┘
+  1. 에이전트가 보고서 초안 생성
+
+  # ┌─────────────────────────────────────────────┐
+  # │ Step 2: 평가 파이프라인 — 4가지 차원 동시 측정  │
+  # │ 각 메트릭이 구체적 실패 유형에 1:1 대응       │
+  # └─────────────────────────────────────────────┘
+  2. 평가 파이프라인 실행:
+     # Claim_Density: 풍부함 측정 → 미달 시 정보 밀도 보강 지시
+     - Claim_Density  →  낮으면: "더 구체적이고 정보가 풍부하게 재작성"
+     # Gap_Score: 누락 측면 탐지 → 미달 시 구체적 누락 주제 명시
+     - Gap_Score      →  높으면: "X 주제가 누락되어 있음. 추가 검색 후 보완"
+     # Faithfulness: 할루시네이션 탐지 → 미달 시 불일치 위치 특정
+     - Faithfulness   →  낮으면: "인용과 내용 불일치 발견. 소스 재확인"
+     # Novelty: 반복/부풀리기 탐지 → 미달 시 중복 섹션 쌍 특정
+     - Novelty        →  낮으면: "섹션 N이 섹션 M과 중복. 통합 또는 삭제"
+
+  # ┌─────────────────────────────────────────────┐
+  # │ Step 3: KEEP 판정 — 모든 메트릭 ≥ 임계값     │
+  # │ Karpathy의 val_bpb 개선 여부 판정과 동일 원리  │
+  # └─────────────────────────────────────────────┘
+  3. 모든 메트릭이 임계값 이상 → keep (최종 보고서 채택)
+
+  # ┌─────────────────────────────────────────────┐
+  # │ Step 4: REVERT 판정 — 하나라도 미달          │
+  # │ 원본 초안 폐기 + 실패 원인별 맞춤 피드백 전달  │
+  # │ 다음 반복에서 피드백을 프롬프트에 주입         │
+  # └─────────────────────────────────────────────┘
+  4. 하나라도 미달 → revert + 구체적 피드백과 함께 재시도
+
+  # 비용 제한: MAX_ITERATIONS(5)회 초과 시 최선의 초안 반환
+  # (무한 루프 방지. 5회 안에 수렴 못 하면 사람이 개입)
+  최대 반복: 5회 (비용 제한)</pre>
+
+  <h3>6-3. 구현 우선순위 매트릭스</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>우선순위</th><th>메트릭</th><th>구현 비용</th><th>임팩트</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge badge-p0">P0</span></td>
+          <td>Faithfulness (RAGAS)</td>
+          <td>Low</td>
+          <td style="color:var(--danger); font-weight:700">Critical</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-p0">P0</span></td>
+          <td>Context Recall</td>
+          <td>Low</td>
+          <td style="color:var(--danger); font-weight:700">Critical</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-p0">P0</span></td>
+          <td>Semantic Novelty per Paragraph</td>
+          <td>Low</td>
+          <td style="color:var(--danger); font-weight:700">Critical</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-p1">P1</span></td>
+          <td>Citation Quality (ALCE)</td>
+          <td>Medium</td>
+          <td style="color:var(--warn); font-weight:700">High</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-p1">P1</span></td>
+          <td>UniEval Coherence</td>
+          <td>Medium</td>
+          <td style="color:var(--warn); font-weight:700">High</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-p1">P1</span></td>
+          <td>Cross-Run Consistency</td>
+          <td>Medium</td>
+          <td style="color:var(--warn); font-weight:700">High</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-p2">P2</span></td>
+          <td>Entity Coverage</td>
+          <td>Medium</td>
+          <td>Medium</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-p2">P2</span></td>
+          <td>Semantic Entropy</td>
+          <td>Medium</td>
+          <td>Medium</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-p3">P3</span></td>
+          <td>Perturbation Robustness</td>
+          <td>High</td>
+          <td>Medium</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>6-4. 추천 도구 스택</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>도구</th><th>용도</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>RAGAS</strong></td><td>Faithfulness, Context Precision/Recall 자동 계산</td></tr>
+        <tr><td><strong>Vectara HHEM-2.1-Open</strong></td><td>NLI 기반 할루시네이션 탐지 (무료 오픈소스)</td></tr>
+        <tr><td><strong>sentence-transformers</strong></td><td>반복 탐지, 근거 매칭, 의미적 중복 제거</td></tr>
+        <tr><td><strong>SemHash</strong></td><td>대규모 의미적 중복 제거 (빠른 해싱 기반)</td></tr>
+        <tr><td><strong>PrefixNLI</strong></td><td>생성 중 실시간 비일관성 탐지 및 개입</td></tr>
+        <tr><td><strong>DeepEval / Phoenix</strong></td><td>종합 평가 프레임워크 + 모니터링 대시보드</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Section 7: 후속 연구 노트 -->
+<section class="section" id="s7">
+  <div class="section-header">
+    <span class="section-icon">🧭</span>
+    <div>
+      <div class="section-title">후속 연구 노트</div>
+      <div class="section-subtitle">이 조사를 마치며 — 더 파고들 만한 방향과 남기는 메모</div>
+    </div>
+  </div>
+
+  <div class="info-box yellow">
+    <strong>이 섹션은 연구자의 메모입니다.</strong> 조사 과정에서 발견한 미해결 문제, 후속 연구 가치가 높은 방향, 그리고 실제 구현 시 주의해야 할 함정을 정리합니다.
+  </div>
+
+  <h3>🔥 높은 우선순위 — 바로 파고들 만한 것</h3>
+
+  <div class="card open">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>⚠️</span>
+      <span class="card-title">Goodhart 함정: "평가 메트릭을 게이밍하는 LLM"</span>
+      <span class="badge badge-p0">핵심</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <p>자율 루프에서 가장 근본적인 위험입니다. LLM이 실제 품질이 아닌 <strong>메트릭 점수 자체를 최적화</strong>하는 법을 학습합니다.</p>
+      <ul>
+        <li><strong>증상:</strong> Faithfulness 점수는 높지만 읽어보면 내용이 빈약. "소스에 따르면…"을 반복하면서 NLI 판정은 통과</li>
+        <li><strong>근본 원인:</strong> 평가 메트릭이 프록시(proxy)이지 실제 목표가 아님</li>
+        <li><strong>조사 방향:</strong>
+          <ul>
+            <li><strong>Red-teaming 평가:</strong> 의도적으로 메트릭을 속이는 적대적 보고서를 생성해서 평가 파이프라인의 블라인드 스팟 탐색</li>
+            <li><strong>메타-평가 (Evaluation of Evaluators):</strong> 평가 메트릭 자체의 정확도를 주기적으로 인간 판단과 비교 측정. Kendall's τ가 시간에 따라 하락하면 게이밍 징후</li>
+            <li><strong>논문:</strong> Gao et al. "Scaling Laws for Reward Model Overoptimization" (2023) — 보상 모델이 과적합되는 속도를 예측하는 스케일링 법칙</li>
+          </ul>
+        </li>
+      </ul>
+      <div class="info-box red" style="margin-top:8px">
+        <strong>실천 권고:</strong> 자율 루프 50회마다 인간 스팟 체크(3~5건 샘플링 + 평가 메트릭과 인간 점수의 순위 상관 비교)를 주기적으로 수행하세요. 상관계수가 떨어지면 메트릭 재캘리브레이션 시점입니다.
+      </div>
+    </div>
+  </div>
+
+  <div class="card open">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>🧪</span>
+      <span class="card-title">생성 중 실시간 개입 (Runtime Intervention)</span>
+      <span class="badge badge-p0">핵심</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <p>현재 보고서에서 다룬 메트릭 대부분은 <strong>사후 평가</strong>(생성 완료 → 평가 → keep/revert)입니다. 하지만 문제가 생기는 시점은 생성 <em>도중</em>입니다.</p>
+      <ul>
+        <li><strong>Self-RAG Critique Tokens:</strong> [ISREL], [ISSUP], [ISUSE] 토큰을 생성 과정에 삽입하여 실시간 품질 판정. 사후 평가 대비 비용 90%↓ 가능성</li>
+        <li><strong>PrefixNLI:</strong> 문장이 완성될 때마다 이전 문장과의 NLI 일관성 검사. 모순 탐지 시 즉시 생성 방향 수정</li>
+        <li><strong>Constrained Decoding:</strong> 인용 형식 강제, 최소 근거 개수 강제 등 구조적 제약을 디코딩 단계에서 적용</li>
+      </ul>
+      <p style="margin-top:8px"><strong>왜 중요한가:</strong> 사후 평가 루프에서 revert가 반복되면 비용이 폭발합니다. 생성 중 개입은 revert 자체를 줄여 루프 효율을 근본적으로 개선합니다.</p>
+      <div class="info-box yellow" style="margin-top:8px">
+        <strong>조사 포인트:</strong> Self-RAG의 critique token을 웹서버 지식저장소 맥락에 맞게 커스터마이즈하는 방법. 특히 [ISSUP] (근거 뒷받침 여부) 토큰이 사용자의 ❸ 실패 모드(근거 미활용)에 직접 대응합니다.
+      </div>
+    </div>
+  </div>
+
+  <div class="card open">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>📊</span>
+      <span class="card-title">pi-autoresearch의 MAD 신뢰도를 평가 파이프라인에 차용</span>
+      <span class="badge badge-p1">추천</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <p>pi-autoresearch의 <code>Confidence = |improvement| / MAD</code> 접근은 단순하지만 강력합니다. LLM 평가 메트릭에도 동일 원리를 적용할 수 있습니다.</p>
+      <ul>
+        <li><strong>문제:</strong> LLM Judge 점수는 동일 입력에도 ±0.1~0.3 변동 (온도, 프롬프트 순서 효과). 개선인지 노이즈인지 구분 불가</li>
+        <li><strong>적용:</strong> 동일 보고서를 3~5회 평가 → MAD 계산 → 개선폭이 MAD의 2배 이상이면 실질적 개선으로 판정</li>
+        <li><strong>비용:</strong> 평가 비용 3~5배 증가하지만, 노이즈에 의한 잘못된 keep/revert를 방지하여 루프 전체 비용 절감 가능</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>🔬 중기 연구 — 깊이 있는 후속 조사</h3>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>🏗️</span>
+      <span class="card-title">Pareto 기반 다목적 최적화 (Gate+Weighted 너머)</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <p>현재 권장하는 Gate+Weighted는 단순하고 효과적이지만, <strong>메트릭 간 트레이드오프를 탐색하지 못합니다.</strong></p>
+      <ul>
+        <li><strong>Pareto Front:</strong> AlphaEvolve의 MAP-Elites 방식처럼 "풍부함은 높지만 간결성은 낮은" vs "간결하지만 밀도 높은" 다양한 최적 해를 동시에 유지</li>
+        <li><strong>NSGA-II / MOEA:</strong> 다목적 진화 알고리즘으로 Faithfulness-Richness-Novelty의 3차원 Pareto Front 탐색</li>
+        <li><strong>적용 시나리오:</strong> 사용자가 "이번엔 상세한 보고서" vs "이번엔 요약형" 같은 선호를 표현할 때, Pareto Front에서 가장 가까운 해를 선택</li>
+      </ul>
+      <p style="font-size:12px; color:var(--text-secondary)">참고: RoboPhD가 Elo 토너먼트로 검증셋 없이도 진화를 구동한 사례가 있음 — 평가 데이터가 적은 환경에서 유효한 전략</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>🔄</span>
+      <span class="card-title">Bilevel AutoResearch — 메타 최적화</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <p>"평가 파이프라인 자체를 자동으로 개선하는 루프"입니다. 현재는 인간이 메트릭과 가중치를 설계하지만, 이것 역시 자동화 가능합니다.</p>
+      <ul>
+        <li><strong>Inner Loop:</strong> 보고서 생성 → 평가 → keep/revert (기존 AutoResearch)</li>
+        <li><strong>Outer Loop:</strong> 평가 파이프라인의 가중치·임계값·프롬프트를 수정 → 인간 판단과의 상관 측정 → keep/revert</li>
+        <li><strong>위험:</strong> 이중 Goodhart — outer loop도 게이밍될 수 있음. 인간 판단 샘플이 부족하면 과적합</li>
+        <li><strong>참고:</strong> pi-autoresearch 생태계에서 이미 "bilevel autoresearch" 개념이 논의되고 있음</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>🌡️</span>
+      <span class="card-title">Semantic Entropy로 "모르는 것을 아는" 시스템</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <p>섹션 4에서 다룬 Semantic Entropy를 <strong>생성 전 필터</strong>로 활용하는 방향입니다.</p>
+      <ul>
+        <li><strong>아이디어:</strong> 쿼리에 대해 LLM을 5회 샘플링 → 의미 클러스터 수 측정 → 클러스터가 많으면(=높은 불확실성) 해당 부분은 "근거 부족" 라벨링 후 솔직하게 갭 인정</li>
+        <li><strong>연결:</strong> 사용자의 ❷ 실패 모드(빈 근거일 때 내용을 채우지 않음)에 대한 사전 방어. 불확실할 때 지어내는 대신 "확인 불가"라고 명시</li>
+        <li><strong>구현 비용:</strong> 추가 5회 샘플링 비용 발생하지만, 할루시네이션 사후 탐지+revert 비용보다 낮을 수 있음</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>📌 놓치기 쉬운 함정들</h3>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>🕳️</span>
+      <span class="card-title">주의해야 할 5가지 함정</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>#</th><th>함정</th><th>증상</th><th>대응</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td><strong>메트릭 플래토</strong></td>
+              <td>점수가 0.85 근처에서 더 이상 안 오름</td>
+              <td>평가 메트릭의 천장 효과(ceiling effect) 확인. 메트릭 자체가 0.85 이상을 구분하지 못하는 것일 수 있음. 더 세밀한 메트릭으로 교체하거나 인간 평가 스팟 체크</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td><strong>LLM Judge 자기 편향</strong></td>
+              <td>GPT-4가 평가하면 GPT-4 생성물에 높은 점수</td>
+              <td>생성 모델과 다른 모델로 평가 (예: Claude로 생성, GPT-4로 평가). 또는 NLI 모델(HHEM-2.1)처럼 비-LLM 평가기 혼합</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td><strong>순서 효과 (Position Bias)</strong></td>
+              <td>A/B 비교 시 먼저 제시된 보고서에 높은 점수</td>
+              <td>평가 순서를 랜덤화하고 양쪽 순서로 2회 평가 후 평균. Pairwise 평가 시 필수</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td><strong>길이 바이어스</strong></td>
+              <td>긴 보고서에 무조건 높은 풍부함 점수</td>
+              <td>Claim Density(주장/100단어)로 정규화. FActScore의 γ=10 길이 패널티 적용. 절대 길이가 아닌 밀도를 측정</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td><strong>벤치마크 오염</strong></td>
+              <td>평가셋이 LLM 훈련 데이터에 포함되어 있어 평가가 무의미</td>
+              <td>시간적 분리 (최신 데이터만 평가셋에 사용) 또는 동적 평가셋 생성. SWE-Bench Pro가 이 문제를 SETUPAGENT로 해결한 사례 참고</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <h3>🗺️ 주시할 만한 프로젝트 & 논문</h3>
+
+  <div class="card">
+    <div class="card-header" onclick="toggleCard(this)">
+      <span>📡</span>
+      <span class="card-title">워치리스트</span>
+      <span class="card-chevron">▶</span>
+    </div>
+    <div class="card-body">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>이름</th><th>왜 주목?</th><th>링크</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>TRACE (2026)</strong></td>
+              <td>Deep research 에이전트의 종합 벤치마크. 사용자 시나리오와 직접 연관</td>
+              <td><a href="https://arxiv.org/abs/2602.21230" target="_blank">arXiv</a></td>
+            </tr>
+            <tr>
+              <td><strong>DREAM (2026)</strong></td>
+              <td>Deep research 평가 메트릭 프레임워크. RAGAS를 넘어서는 차세대</td>
+              <td><a href="https://arxiv.org/abs/2602.18940" target="_blank">arXiv</a></td>
+            </tr>
+            <tr>
+              <td><strong>RIFT (2026)</strong></td>
+              <td>실패 유형 분류 체계 (8가지). 사용자의 4가지 실패 모드를 더 세분화할 때 참고</td>
+              <td><a href="https://arxiv.org/abs/2604.01375" target="_blank">arXiv</a></td>
+            </tr>
+            <tr>
+              <td><strong>Dr. Bench (2025)</strong></td>
+              <td>677개 질의 기반 deep research 벤치마크. 카테고리별 난이도 분류</td>
+              <td><a href="https://arxiv.org/abs/2510.02190" target="_blank">arXiv</a></td>
+            </tr>
+            <tr>
+              <td><strong>Bilevel AutoResearch</strong></td>
+              <td>메타 최적화 — 평가 루프 자체를 자동 개선. 아직 초기 단계</td>
+              <td>pi-autoresearch 생태계 내 논의 중</td>
+            </tr>
+            <tr>
+              <td><strong>OpenEvolve</strong></td>
+              <td>AlphaEvolve 오픈소스 구현. MAP-Elites + 섬 모델 직접 실험 가능</td>
+              <td><a href="https://github.com/codelion/openevolve" target="_blank">GitHub</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <h3>💬 마지막 메모</h3>
+
+  <div class="info-box blue" style="border-left-color: var(--accent)">
+    <p>이 조사에서 가장 중요한 한 가지를 고르라면: <strong>"평가 메트릭은 프록시일 뿐이며, 프록시를 목표로 삼는 순간 프록시로서의 가치를 잃는다"</strong>는 것입니다.</p>
+    <p style="margin-top:8px">FunSearch부터 pi-autoresearch까지, 성공한 프로젝트들은 모두 <em>메트릭이 현실을 반영하는지</em>를 주기적으로 검증하는 메커니즘을 갖추고 있었습니다. 단순한 것부터 시작하되 (RAGAS Faithfulness + Semantic Novelty만으로도 4가지 실패 모드의 절반은 잡을 수 있습니다), <strong>인간 스팟 체크를 루프에 넣는 것을 잊지 마세요.</strong></p>
+    <p style="margin-top:8px; font-size:12px; color:var(--text-secondary)">— 2026.06.02 조사 마침</p>
+  </div>
+</section>
+
+<!-- References -->
+<section class="section" id="refs">
+  <div class="section-header">
+    <span class="section-icon">📚</span>
+    <div>
+      <div class="section-title">참고 문헌</div>
+      <div class="section-subtitle">이 보고서의 주요 소스 및 논문</div>
+    </div>
+  </div>
+  <ul class="ref-list">
+    <li><strong>FActScore</strong> — Min et al. (2023). FActScoring: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation. <a href="https://arxiv.org/abs/2305.14251" target="_blank">arXiv:2305.14251</a></li>
+    <li><strong>SelfCheckGPT</strong> — Manakul et al. (2023). SelfCheckGPT: Zero-Resource Black-Box Hallucination Detection. <a href="https://arxiv.org/abs/2303.08896" target="_blank">arXiv:2303.08896</a></li>
+    <li><strong>Dr. Bench</strong> — (2025). <a href="https://arxiv.org/abs/2510.02190" target="_blank">arXiv:2510.02190</a></li>
+    <li><strong>TRACE</strong> — (2026). <a href="https://arxiv.org/abs/2602.21230" target="_blank">arXiv:2602.21230</a></li>
+    <li><strong>ALCE</strong> — Gao et al. (2023). Enabling Large Language Models to Generate Text with Citations. <a href="https://arxiv.org/abs/2305.14627" target="_blank">arXiv:2305.14627</a></li>
+    <li><strong>RIFT</strong> — (2026). <a href="https://arxiv.org/abs/2604.01375" target="_blank">arXiv:2604.01375</a></li>
+    <li><strong>DREAM</strong> — (2026). <a href="https://arxiv.org/abs/2602.18940" target="_blank">arXiv:2602.18940</a></li>
+    <li><strong>RAGAS</strong> — Es et al. (2023). RAGAS: Automated Evaluation of Retrieval Augmented Generation. RAGAS Documentation.</li>
+    <li><strong>UniEval</strong> — Zhong et al. (2022). Towards a Unified Multi-Dimensional Evaluator for Text Generation.</li>
+    <li><strong>SummaC</strong> — Laban et al. (2022). SummaC: Re-Visiting NLI-based Models for Inconsistency Detection in Summarization.</li>
+    <li><strong>DeepResearch Bench</strong> — (2025). Comprehensive benchmark for deep research agents.</li>
+    <li><strong>FunSearch</strong> — Romera-Paredes et al. (2023). Mathematical discoveries from program search with large language models. Nature.</li>
+    <li><strong>Voyager</strong> — Wang et al. (2023). Voyager: An Open-Ended Embodied Agent with Large Language Models.</li>
+    <li><strong>AI Scientist v2</strong> — Lu et al. (2025). The AI Scientist-v2: Workshop-Level Automated Scientific Discovery.</li>
+  </ul>
+</section>
+
+</main>
+
+<script>
+// Dark mode
+function toggleDark() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('dark-toggle').textContent = isDark ? '🌙' : '☀️';
+  localStorage.setItem('theme', isDark ? 'light' : 'dark');
+}
+
+// Init theme
+(function() {
+  const saved = localStorage.getItem('theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (saved === 'dark' || (!saved && prefersDark)) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.getElementById('dark-toggle').textContent = '☀️';
+  }
+})();
+
+// Progress bar
+window.addEventListener('scroll', function() {
+  const scrollTop = window.scrollY;
+  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const pct = docHeight > 0 ? (scrollTop / docHeight * 100) : 0;
+  document.getElementById('progress-bar').style.width = pct + '%';
+  updateNavActive();
+});
+
+// Card toggle
+function toggleCard(header) {
+  const card = header.parentElement;
+  card.classList.toggle('open');
+}
+
+// Tab switch
+function switchTab(btn, tabId) {
+  const container = btn.closest('.tabs-container');
+  container.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  container.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
+
+// Sidebar toggle (mobile)
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('show');
+}
+document.getElementById('sidebar-overlay').addEventListener('click', function() {
+  document.getElementById('sidebar').classList.remove('open');
+  this.classList.remove('show');
+});
+
+// 사이드바 네비게이션 스크롤 — window.scrollTo()와 이름 충돌 방지를 위해 navTo 사용
+function navTo(selector) {
+  const el = document.querySelector(selector);
+  if (!el) return;
+
+  // 헤더 높이만큼 오프셋 보정 (고정 헤더 아래로 스크롤)
+  const headerOffset = 70;
+  const elementPosition = el.getBoundingClientRect().top + window.pageYOffset;
+  window.scrollTo({ top: elementPosition - headerOffset, behavior: 'smooth' });
+
+  // 모바일 사이드바 닫기
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('show');
+}
+
+// Active nav
+function updateNavActive() {
+  const sections = document.querySelectorAll('.section');
+  const navItems = document.querySelectorAll('.nav-item');
+  let current = '';
+  sections.forEach(s => {
+    const top = s.getBoundingClientRect().top;
+    if (top < 120) current = '#' + s.id;
+  });
+  navItems.forEach(item => {
+    item.classList.remove('active');
+    const onclick = item.getAttribute('onclick') || '';
+    if (current && onclick.includes(current.replace('#',''))) {
+      item.classList.add('active');
+    }
+  });
+}
+
+// Search
+let searchTimeout;
+function searchContent(query) {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    // Remove existing highlights
+    document.querySelectorAll('.highlight').forEach(el => {
+      const parent = el.parentNode;
+      parent.replaceChild(document.createTextNode(el.textContent), el);
+      parent.normalize();
+    });
+    if (!query || query.length < 2) return;
+
+    const main = document.getElementById('main');
+    const walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT, {
+      acceptNode: function(node) {
+        const tag = node.parentElement.tagName.toLowerCase();
+        if (['script', 'style', 'input'].includes(tag)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+
+    const re = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+    let firstMatch = null;
+
+    nodes.forEach(node => {
+      if (re.test(node.textContent)) {
+        re.lastIndex = 0;
+        const frag = document.createDocumentFragment();
+        let last = 0, match;
+        re.lastIndex = 0;
+        const text = node.textContent;
+        while ((match = re.exec(text)) !== null) {
+          if (match.index > last) frag.appendChild(document.createTextNode(text.slice(last, match.index)));
+          const span = document.createElement('span');
+          span.className = 'highlight';
+          span.textContent = match[0];
+          if (!firstMatch) firstMatch = span;
+          frag.appendChild(span);
+          last = re.lastIndex;
+        }
+        if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+
+    if (firstMatch) firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 300);
+}
+</script>
+</body>
+</html>

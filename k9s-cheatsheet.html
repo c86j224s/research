@@ -1,0 +1,1755 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>k9s Cheatsheet</title>
+<style>
+:root {
+  --bg: #0b0f19;
+  --bg-card: #121a2b;
+  --bg-card-hover: #1a2538;
+  --bg-code: #0d1117;
+  --border: #1e293b;
+  --border-active: #6366f1;
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --text-bright: #f8fafc;
+  --accent: #6366f1;
+  --accent-dim: #4f46e5;
+  --green: #22c55e;
+  --yellow: #eab308;
+  --cyan: #06b6d4;
+  --orange: #f97316;
+  --pink: #ec4899;
+  --purple: #a78bfa;
+  --red: #ef4444;
+  --blue: #3b82f6;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+.hero {
+  position: relative;
+  padding: 50px 40px 30px;
+  text-align: center;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: radial-gradient(ellipse at center, rgba(99,102,241,0.1) 0%, transparent 50%);
+  animation: heroPulse 8s ease-in-out infinite;
+}
+@keyframes heroPulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+.hero h1 {
+  font-size: 2.6em;
+  font-weight: 800;
+  background: linear-gradient(135deg, #6366f1, #06b6d4, #22c55e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+  position: relative;
+}
+.hero .subtitle {
+  font-size: 1.1em;
+  color: var(--text-dim);
+  position: relative;
+}
+
+.sticky-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(11, 15, 25, 0.94);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+}
+.sticky-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.search-wrap {
+  position: relative;
+}
+.search-wrap svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-dim);
+  width: 18px; height: 18px;
+}
+.search-input {
+  width: 100%;
+  padding: 10px 14px 10px 40px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.95em;
+  font-family: var(--font-sans);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.search-input:focus { border-color: var(--accent); }
+.search-input::placeholder { color: var(--text-dim); }
+
+.filter-tabs {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.filter-tabs::-webkit-scrollbar { display: none; }
+.filter-btn {
+  padding: 8px 18px;
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  font-family: var(--font-sans);
+}
+.filter-btn:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+.filter-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.section-title {
+  font-size: 1.5em;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin: 30px 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-title .icon {
+  font-size: 0.85em;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  transition: border-color 0.3s, opacity 0.3s, transform 0.3s;
+}
+.card:hover { border-color: var(--border-active); }
+.card.hidden {
+  display: none;
+}
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.card-title {
+  font-size: 1.05em;
+  font-weight: 700;
+  color: var(--text-bright);
+}
+.card-tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.7em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.tag-nav { background: rgba(99,102,241,0.15); color: #818cf8; }
+.tag-view { background: rgba(6,182,212,0.15); color: var(--cyan); }
+.tag-resource { background: rgba(249,115,22,0.15); color: var(--orange); }
+.tag-select { background: rgba(236,72,153,0.15); color: var(--pink); }
+.tag-sort { background: rgba(167,139,250,0.15); color: var(--purple); }
+.tag-pod { background: rgba(34,197,94,0.15); color: var(--green); }
+.tag-log { background: rgba(234,179,8,0.15); color: var(--yellow); }
+.tag-deploy { background: rgba(59,130,246,0.15); color: var(--blue); }
+.tag-context { background: rgba(239,68,68,0.15); color: var(--red); }
+.tag-core { background: rgba(99,102,241,0.15); color: #818cf8; }
+.tag-apps { background: rgba(6,182,212,0.15); color: var(--cyan); }
+.tag-batch { background: rgba(249,115,22,0.15); color: var(--orange); }
+.tag-network { background: rgba(236,72,153,0.15); color: var(--pink); }
+.tag-rbac { background: rgba(239,68,68,0.15); color: var(--red); }
+.tag-storage { background: rgba(167,139,250,0.15); color: var(--purple); }
+.tag-metrics { background: rgba(34,197,94,0.15); color: var(--green); }
+.tag-special { background: rgba(234,179,8,0.15); color: var(--yellow); }
+.tag-filter { background: rgba(59,130,246,0.15); color: var(--blue); }
+.tag-config { background: rgba(99,102,241,0.15); color: #818cf8; }
+.tag-theme { background: rgba(167,139,250,0.15); color: var(--purple); }
+.tag-alias { background: rgba(6,182,212,0.15); color: var(--cyan); }
+.tag-hotkey { background: rgba(249,115,22,0.15); color: var(--orange); }
+.tag-plugin { background: rgba(236,72,153,0.15); color: var(--pink); }
+.tag-views { background: rgba(34,197,94,0.15); color: var(--green); }
+.tag-file { background: rgba(234,179,8,0.15); color: var(--yellow); }
+.tag-ns { background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(6,182,212,0.2)); color: #93c5fd; border: 1px solid rgba(99,102,241,0.25); }
+.tag-detail { background: rgba(167,139,250,0.15); color: var(--purple); }
+.tag-pulse { background: rgba(34,197,94,0.15); color: var(--green); }
+.tag-imgscan { background: rgba(239,68,68,0.15); color: var(--red); }
+.tag-ctxcfg { background: rgba(249,115,22,0.15); color: var(--orange); }
+
+.shortcut-row {
+  display: flex;
+  align-items: baseline;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(30,41,59,0.5);
+  gap: 12px;
+}
+.shortcut-row:last-child { border-bottom: none; }
+
+kbd {
+  display: inline-block;
+  padding: 2px 8px;
+  background: linear-gradient(180deg, #2a3241 0%, #1e2736 100%);
+  border: 1px solid #3a4555;
+  border-radius: 5px;
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  color: var(--text-bright);
+  box-shadow: 0 2px 0 #0d1117, inset 0 1px 0 rgba(255,255,255,0.05);
+  white-space: nowrap;
+  min-width: fit-content;
+}
+.shortcut-key {
+  flex-shrink: 0;
+  min-width: 100px;
+}
+.shortcut-desc {
+  color: var(--text-dim);
+  font-size: 0.9em;
+}
+
+.cmd-row {
+  display: flex;
+  align-items: baseline;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(30,41,59,0.4);
+  gap: 12px;
+}
+.cmd-row:last-child { border-bottom: none; }
+.cmd-code {
+  flex-shrink: 0;
+  min-width: 120px;
+}
+.cmd-code code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  color: var(--cyan);
+  background: rgba(6,182,212,0.08);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.cmd-desc {
+  color: var(--text-dim);
+  font-size: 0.9em;
+}
+
+.cmd-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+.cmd-table th {
+  text-align: left;
+  font-size: 0.8em;
+  color: var(--text-dim);
+  font-weight: 600;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.cmd-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid rgba(30,41,59,0.4);
+  font-size: 0.9em;
+}
+.cmd-table td:first-child {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  color: var(--cyan);
+  white-space: nowrap;
+}
+.cmd-table tr:last-child td { border-bottom: none; }
+
+.config-path {
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  color: var(--purple);
+  background: rgba(167,139,250,0.08);
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+.config-desc {
+  color: var(--text-dim);
+  font-size: 0.9em;
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+.collapsible {
+  margin-top: 10px;
+}
+.collapsible-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(99,102,241,0.06);
+  border: 1px solid rgba(99,102,241,0.15);
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 0.85em;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  transition: background 0.2s;
+  width: 100%;
+  text-align: left;
+}
+.collapsible-toggle:hover { background: rgba(99,102,241,0.12); }
+.collapsible-toggle .arrow {
+  transition: transform 0.3s;
+  font-size: 0.7em;
+}
+.collapsible-toggle.open .arrow { transform: rotate(90deg); }
+.collapsible-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease;
+}
+.collapsible-content.open {
+  max-height: 2000px;
+}
+.collapsible-content pre {
+  margin-top: 8px;
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.key-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.key-item {
+  font-family: var(--font-mono);
+  font-size: 0.8em;
+  color: var(--text-dim);
+  background: rgba(30,41,59,0.5);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.file-loc-row {
+  display: flex;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(30,41,59,0.4);
+  align-items: baseline;
+}
+.file-loc-row:last-child { border-bottom: none; }
+.file-loc-path {
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  color: var(--yellow);
+  flex-shrink: 0;
+}
+.file-loc-desc {
+  color: var(--text-dim);
+  font-size: 0.88em;
+}
+
+.cfg-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 0.88em;
+}
+.cfg-table th {
+  text-align: left;
+  font-size: 0.78em;
+  color: var(--text-dim);
+  font-weight: 600;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.cfg-table td {
+  padding: 5px 10px;
+  border-bottom: 1px solid rgba(30,41,59,0.35);
+  vertical-align: top;
+}
+.cfg-table tr:last-child td { border-bottom: none; }
+.cfg-table td:first-child {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  color: var(--cyan);
+  white-space: nowrap;
+}
+.cfg-table td:nth-child(2) {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  color: var(--purple);
+  white-space: nowrap;
+}
+.cfg-table td:nth-child(3) {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  color: var(--orange);
+  white-space: nowrap;
+}
+.cfg-table td:nth-child(4) {
+  color: var(--text-dim);
+}
+.cfg-table-wrap {
+  overflow-x: auto;
+  margin: 8px 0;
+}
+.badge-new {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 8px;
+  font-size: 0.65em;
+  font-weight: 700;
+  background: rgba(34,197,94,0.18);
+  color: var(--green);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+.card-full {
+  grid-column: 1 / -1;
+}
+.subsection {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(0,0,0,0.15);
+  border: 1px solid rgba(30,41,59,0.5);
+  border-radius: var(--radius);
+}
+.subsection-title {
+  font-size: 0.92em;
+  font-weight: 700;
+  color: var(--cyan);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.config-note {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: rgba(234,179,8,0.06);
+  border-left: 3px solid var(--yellow);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--text-dim);
+  font-size: 0.85em;
+  line-height: 1.5;
+}
+.config-note strong { color: var(--yellow); }
+.ref-link {
+  color: var(--accent);
+  font-size: 0.82em;
+  font-style: italic;
+}
+.skin-sections {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 8px 0;
+}
+@media (max-width: 840px) {
+  .skin-sections { grid-template-columns: 1fr; }
+}
+.skin-section-card {
+  padding: 10px;
+  background: rgba(0,0,0,0.12);
+  border: 1px solid rgba(30,41,59,0.4);
+  border-radius: var(--radius);
+}
+.skin-section-name {
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  color: var(--cyan);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.skin-section-fields {
+  font-size: 0.78em;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.skin-section-fields code {
+  font-family: var(--font-mono);
+  font-size: 0.95em;
+  color: var(--purple);
+}
+.env-var {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  color: var(--green);
+  background: rgba(34,197,94,0.08);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+.builtin-skins {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 8px 0;
+}
+.builtin-skin {
+  font-family: var(--font-mono);
+  font-size: 0.75em;
+  padding: 3px 8px;
+  background: rgba(30,41,59,0.6);
+  border-radius: 4px;
+  color: var(--text-dim);
+}
+
+.no-results {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-dim);
+  font-size: 1.1em;
+  display: none;
+}
+
+@media (max-width: 840px) {
+  .cards-grid { grid-template-columns: 1fr; }
+  .hero h1 { font-size: 1.8em; }
+  .hero { padding: 30px 20px 20px; }
+  .container { padding: 16px; }
+  .shortcut-key { min-width: 80px; }
+  .cmd-code { min-width: 90px; }
+}
+@media (max-width: 480px) {
+  .shortcut-row, .cmd-row { flex-direction: column; gap: 2px; }
+  .shortcut-key, .cmd-code { min-width: unset; }
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>k9s Cheatsheet</h1>
+  <p class="subtitle">Kubernetes TUI 관리도구 k9s의 단축키, 커맨드, 설정을 한눈에</p>
+</div>
+
+<div class="sticky-bar">
+  <div class="sticky-inner">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" class="search-input" id="searchInput" placeholder="검색 — 단축키, 커맨드, 설정 키워드를 입력하세요" aria-label="검색">
+    </div>
+    <div class="filter-tabs">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="shortcuts">Shortcuts</button>
+      <button class="filter-btn" data-filter="commands">Commands</button>
+      <button class="filter-btn" data-filter="configuration">Configuration</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ==================== SHORTCUTS ==================== -->
+  <div class="section-group" data-category="shortcuts">
+    <h2 class="section-title"><span class="icon">⌨</span> Keyboard Shortcuts</h2>
+    <div class="cards-grid">
+
+      <!-- General Navigation -->
+      <div class="card" data-category="shortcuts">
+        <div class="card-head">
+          <span class="card-title">General Navigation</span>
+          <span class="card-tag tag-nav">Navigation</span>
+        </div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>?</kbd></span><span class="shortcut-desc">도움말 표시</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>[</kbd> / <kbd>]</kbd></span><span class="shortcut-desc">이전/다음 뷰 이동</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>-</kbd></span><span class="shortcut-desc">마지막 활성 뷰</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>:</kbd></span><span class="shortcut-desc">명령 모드</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>/</kbd></span><span class="shortcut-desc">정규식 필터 모드</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Ctrl-A</kbd></span><span class="shortcut-desc">모든 리소스 별칭 표시</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Ctrl-C</kbd></span><span class="shortcut-desc">K9s 종료</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>ESC</kbd></span><span class="shortcut-desc">이전으로 / 취소</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Enter</kbd></span><span class="shortcut-desc">리소스 선택 / 드릴다운</span></div>
+      </div>
+
+      <!-- View Toggles -->
+      <div class="card" data-category="shortcuts">
+        <div class="card-head">
+          <span class="card-title">View Toggles</span>
+          <span class="card-tag tag-view">View</span>
+        </div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Ctrl-E</kbd></span><span class="shortcut-desc">헤더/상태표시기 토글</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Ctrl-G</kbd></span><span class="shortcut-desc">빵크럼 토글</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Ctrl-W</kbd></span><span class="shortcut-desc">넓은 컬럼 토글</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Ctrl-Z</kbd></span><span class="shortcut-desc">오류 표시 토글</span></div>
+      </div>
+
+      <!-- Resource Operations -->
+      <div class="card" data-category="shortcuts">
+        <div class="card-head">
+          <span class="card-title">Resource Operations</span>
+          <span class="card-tag tag-resource">Resource</span>
+        </div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>y</kbd></span><span class="shortcut-desc">YAML 보기</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>d</kbd></span><span class="shortcut-desc">kubectl describe</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>e</kbd></span><span class="shortcut-desc">편집</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Ctrl-D</kbd></span><span class="shortcut-desc">삭제</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Ctrl-K</kbd></span><span class="shortcut-desc">강제 삭제 (Kill)</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Ctrl-S</kbd></span><span class="shortcut-desc">파일 저장</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Ctrl-R</kbd></span><span class="shortcut-desc">새로고침</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>x</kbd></span><span class="shortcut-desc">Base64 시크릿 디코딩</span></div>
+      </div>
+
+      <!-- Selection & Marking -->
+      <div class="card" data-category="shortcuts">
+        <div class="card-head">
+          <span class="card-title">Selection & Marking</span>
+          <span class="card-tag tag-select">Select</span>
+        </div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Space</kbd></span><span class="shortcut-desc">현재 행 마크</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Ctrl-Space</kbd></span><span class="shortcut-desc">범위 마크</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Ctrl-\</kbd></span><span class="shortcut-desc">모든 마크 해제</span></div>
+      </div>
+
+      <!-- Sorting -->
+      <div class="card" data-category="shortcuts">
+        <div class="card-head">
+          <span class="card-title">Sorting</span>
+          <span class="card-tag tag-sort">Sort</span>
+        </div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Shift-A</kbd></span><span class="shortcut-desc">나이 정렬</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Shift-N</kbd></span><span class="shortcut-desc">이름 정렬</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Shift-O</kbd></span><span class="shortcut-desc">선택 컬럼 정렬</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Shift-P</kbd></span><span class="shortcut-desc">네임스페이스 정렬</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Shift-S</kbd></span><span class="shortcut-desc">상태 정렬</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Shift-C</kbd></span><span class="shortcut-desc">CPU 기준 정렬</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Shift-M</kbd></span><span class="shortcut-desc">메모리 기준 정렬</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Shift-I</kbd></span><span class="shortcut-desc">IP 주소 기준 정렬</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Shift-R</kbd></span><span class="shortcut-desc">Ready 상태 정렬</span></div>
+      </div>
+
+      <!-- Pod View -->
+      <div class="card" data-category="shortcuts">
+        <div class="card-head">
+          <span class="card-title">Pod View</span>
+          <span class="card-tag tag-pod">Pod</span>
+        </div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>l</kbd></span><span class="shortcut-desc">로그 보기</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>s</kbd></span><span class="shortcut-desc">Shell 진입</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>a</kbd></span><span class="shortcut-desc">Attach</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>t</kbd></span><span class="shortcut-desc">파일 Transfer</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>o</kbd></span><span class="shortcut-desc">Node 보기</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Shift-F</kbd></span><span class="shortcut-desc">포트 포워딩</span></div>
+      </div>
+
+      <!-- Log View -->
+      <div class="card" data-category="shortcuts">
+        <div class="card-head">
+          <span class="card-title">Log View</span>
+          <span class="card-tag tag-log">Log</span>
+        </div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>0</kbd></span><span class="shortcut-desc">Tail (기본)</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>1</kbd></span><span class="shortcut-desc">1분</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>2</kbd></span><span class="shortcut-desc">5분</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>3</kbd></span><span class="shortcut-desc">15분</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>4</kbd></span><span class="shortcut-desc">30분</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>5</kbd></span><span class="shortcut-desc">1시간</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>6</kbd></span><span class="shortcut-desc">24시간 <span class="badge-new">v0.50.x</span></span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>s</kbd></span><span class="shortcut-desc">자동스크롤 토글</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>f</kbd></span><span class="shortcut-desc">전체화면</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>t</kbd></span><span class="shortcut-desc">타임스탬프 토글</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>w</kbd></span><span class="shortcut-desc">줄바꿈 토글</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>m</kbd></span><span class="shortcut-desc">Mark line (현재 줄 마크)</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>a</kbd></span><span class="shortcut-desc">모든 컨테이너 로그 토글</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>c</kbd></span><span class="shortcut-desc">복사 (Copy)</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Shift-C</kbd></span><span class="shortcut-desc">로그 초기화</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Shift-L</kbd></span><span class="shortcut-desc">컬럼 잠금</span></div>
+      </div>
+
+      <!-- Deployment View -->
+      <div class="card" data-category="shortcuts">
+        <div class="card-head">
+          <span class="card-title">Deployment View</span>
+          <span class="card-tag tag-deploy">Deploy</span>
+        </div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>z</kbd></span><span class="shortcut-desc">ReplicaSets 보기</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Shift-U</kbd></span><span class="shortcut-desc">Scale</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Shift-I</kbd></span><span class="shortcut-desc">Set Image</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>r</kbd></span><span class="shortcut-desc">Restart</span></div>
+      </div>
+
+      <!-- Other Context-Specific -->
+      <div class="card" data-category="shortcuts">
+        <div class="card-head">
+          <span class="card-title">Other Context-Specific</span>
+          <span class="card-tag tag-context">Context</span>
+        </div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>u</kbd></span><span class="shortcut-desc">Node — Cordon</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>r</kbd></span><span class="shortcut-desc">Node — Drain</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>t</kbd></span><span class="shortcut-desc">CronJob — Trigger</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>s</kbd></span><span class="shortcut-desc">CronJob — Suspend/Resume</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>r</kbd></span><span class="shortcut-desc">Context — Rename</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Shift-F</kbd></span><span class="shortcut-desc">Container — Port-Forward</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>f</kbd></span><span class="shortcut-desc">Container — PF 표시</span></div>
+      </div>
+
+      <!-- Namespace Slots -->
+      <div class="card" data-category="shortcuts">
+        <div class="card-head">
+          <span class="card-title">Namespace Slots</span>
+          <span class="card-tag tag-ns">Namespace</span>
+        </div>
+        <div class="config-note" style="margin-top:0;margin-bottom:12px"><strong>참고:</strong> 리소스 브라우저 뷰에서만 동작. Log 뷰의 <kbd>0</kbd>~<kbd>5</kbd> 시간 필터와는 별개.</div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>0</kbd></span><span class="shortcut-desc">All Namespaces (클러스터 전체)</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>1</kbd>~<kbd>9</kbd></span><span class="shortcut-desc">즐겨찾기 네임스페이스 슬롯 (LRU 방식, 최대 9개)</span></div>
+        <div class="config-desc" style="margin-top:10px;font-size:0.85em">
+          네임스페이스 전환 시 자동으로 favorites에 LRU 추가됨. all-namespaces 권한이 없으면 <kbd>0</kbd> 미사용.<br>
+          <code>lockFavorites: true</code> 설정 시 수동 관리 전용. &rarr; <strong>Configuration &gt; Context Config</strong> 참조
+        </div>
+      </div>
+
+      <!-- Detail/YAML View -->
+      <div class="card" data-category="shortcuts">
+        <div class="card-head">
+          <span class="card-title">Detail / YAML View</span>
+          <span class="card-tag tag-detail">Detail</span>
+        </div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>n</kbd></span><span class="shortcut-desc">다음 검색 결과 (Next Match)</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Shift-N</kbd></span><span class="shortcut-desc">이전 검색 결과 (Prev Match)</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>q</kbd></span><span class="shortcut-desc">뒤로가기 (ESC와 동일)</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Delete</kbd></span><span class="shortcut-desc">내용 지우기</span></div>
+      </div>
+
+      <!-- Pulse View -->
+      <div class="card" data-category="shortcuts">
+        <div class="card-head">
+          <span class="card-title">Pulse View</span>
+          <span class="card-tag tag-pulse">Pulse</span>
+        </div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Tab</kbd> / <kbd>Shift-Tab</kbd></span><span class="shortcut-desc">포커스 네비게이션</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>h</kbd>/<kbd>j</kbd>/<kbd>k</kbd>/<kbd>l</kbd></span><span class="shortcut-desc">Vim 스타일 이동</span></div>
+      </div>
+
+      <!-- Image Scan View -->
+      <div class="card" data-category="shortcuts">
+        <div class="card-head">
+          <span class="card-title">Image Scan View</span>
+          <span class="card-tag tag-imgscan">Image Scan</span>
+        </div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Shift-L</kbd></span><span class="shortcut-desc">Sort by Library</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Shift-S</kbd></span><span class="shortcut-desc">Sort by Severity</span></div>
+        <div class="shortcut-row"><span class="shortcut-key"><kbd>Shift-V</kbd></span><span class="shortcut-desc">Sort by Vulnerability</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== COMMANDS ==================== -->
+  <div class="section-group" data-category="commands">
+    <h2 class="section-title"><span class="icon">:</span> Colon Commands</h2>
+    <div class="cards-grid">
+
+      <!-- Core Resources -->
+      <div class="card" data-category="commands">
+        <div class="card-head">
+          <span class="card-title">Core Resources</span>
+          <span class="card-tag tag-core">Core</span>
+        </div>
+        <div class="cmd-row"><span class="cmd-code"><code>:po</code> / <code>:pods</code></span><span class="cmd-desc">Pods</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:svc</code> / <code>:services</code></span><span class="cmd-desc">Services</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:no</code> / <code>:nodes</code></span><span class="cmd-desc">Nodes</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:ns</code> / <code>:namespaces</code></span><span class="cmd-desc">Namespaces</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:sec</code> / <code>:secrets</code></span><span class="cmd-desc">Secrets</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:cm</code> / <code>:configmaps</code></span><span class="cmd-desc">ConfigMaps</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:pvc</code></span><span class="cmd-desc">PersistentVolumeClaims</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:pv</code></span><span class="cmd-desc">PersistentVolumes</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:ep</code> / <code>:endpoints</code></span><span class="cmd-desc">Endpoints</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:sa</code> / <code>:serviceaccounts</code></span><span class="cmd-desc">ServiceAccounts</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:ev</code> / <code>:events</code></span><span class="cmd-desc">Events</span></div>
+      </div>
+
+      <!-- Apps Resources -->
+      <div class="card" data-category="commands">
+        <div class="card-head">
+          <span class="card-title">Apps Resources</span>
+          <span class="card-tag tag-apps">Apps</span>
+        </div>
+        <div class="cmd-row"><span class="cmd-code"><code>:deploy</code> / <code>:dp</code></span><span class="cmd-desc">Deployments</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:sts</code> / <code>:statefulsets</code></span><span class="cmd-desc">StatefulSets</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:ds</code> / <code>:daemonsets</code></span><span class="cmd-desc">DaemonSets</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:rs</code> / <code>:replicasets</code></span><span class="cmd-desc">ReplicaSets</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:rc</code> / <code>:replicationcontrollers</code></span><span class="cmd-desc">ReplicationControllers</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:hpa</code></span><span class="cmd-desc">HorizontalPodAutoscaler</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:pdb</code></span><span class="cmd-desc">PodDisruptionBudget</span></div>
+      </div>
+
+      <!-- Batch & Scheduling -->
+      <div class="card" data-category="commands">
+        <div class="card-head">
+          <span class="card-title">Batch & Scheduling</span>
+          <span class="card-tag tag-batch">Batch</span>
+        </div>
+        <div class="cmd-row"><span class="cmd-code"><code>:job</code> / <code>:jobs</code></span><span class="cmd-desc">Jobs</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:cj</code> / <code>:cronjob</code></span><span class="cmd-desc">CronJobs</span></div>
+      </div>
+
+      <!-- Networking -->
+      <div class="card" data-category="commands">
+        <div class="card-head">
+          <span class="card-title">Networking</span>
+          <span class="card-tag tag-network">Network</span>
+        </div>
+        <div class="cmd-row"><span class="cmd-code"><code>:ing</code> / <code>:ingress</code></span><span class="cmd-desc">Ingress</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:np</code> / <code>:networkpolicies</code></span><span class="cmd-desc">NetworkPolicies</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:eps</code> / <code>:endpointslices</code></span><span class="cmd-desc">EndpointSlices</span></div>
+      </div>
+
+      <!-- RBAC -->
+      <div class="card" data-category="commands">
+        <div class="card-head">
+          <span class="card-title">RBAC</span>
+          <span class="card-tag tag-rbac">RBAC</span>
+        </div>
+        <div class="cmd-row"><span class="cmd-code"><code>:cr</code></span><span class="cmd-desc">ClusterRole</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:crb</code></span><span class="cmd-desc">ClusterRoleBinding</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:ro</code></span><span class="cmd-desc">Role</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:rob</code></span><span class="cmd-desc">RoleBinding</span></div>
+      </div>
+
+      <!-- Storage -->
+      <div class="card" data-category="commands">
+        <div class="card-head">
+          <span class="card-title">Storage</span>
+          <span class="card-tag tag-storage">Storage</span>
+        </div>
+        <div class="cmd-row"><span class="cmd-code"><code>:sc</code> / <code>:storageclasses</code></span><span class="cmd-desc">StorageClasses</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:pvc</code></span><span class="cmd-desc">PersistentVolumeClaims</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:pv</code></span><span class="cmd-desc">PersistentVolumes</span></div>
+      </div>
+
+      <!-- Metrics -->
+      <div class="card" data-category="commands">
+        <div class="card-head">
+          <span class="card-title">Metrics</span>
+          <span class="card-tag tag-metrics">Metrics</span>
+        </div>
+        <div class="cmd-row"><span class="cmd-code"><code>:nmx</code> / <code>:nodesmetrics</code></span><span class="cmd-desc">Nodes Metrics</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:pmx</code> / <code>:podsmetrics</code></span><span class="cmd-desc">Pods Metrics</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:cpu</code></span><span class="cmd-desc">CPU 사용량</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>:memory</code></span><span class="cmd-desc">메모리 사용량</span></div>
+      </div>
+
+      <!-- Special Commands -->
+      <div class="card" data-category="commands">
+        <div class="card-head">
+          <span class="card-title">Special Commands</span>
+          <span class="card-tag tag-special">Special</span>
+        </div>
+        <table class="cmd-table">
+          <thead><tr><th>Command</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td>:q / :quit / :exit / :q! / :Q</td><td>종료</td></tr>
+            <tr><td>:h / :? / :help</td><td>도움말</td></tr>
+            <tr><td>:ctx / :context / :contexts</td><td>컨텍스트 전환</td></tr>
+            <tr><td>:x / :xr / :xray</td><td>XRay 교차 참조 분석</td></tr>
+            <tr><td>:a / :alias / :aliases</td><td>Alias 목록</td></tr>
+            <tr><td>:can [u|g|s]:name</td><td>RBAC 권한 검사</td></tr>
+            <tr><td>:pulse / :pu / :hz</td><td>클러스터 헬스 메트릭</td></tr>
+            <tr><td>:chart / :charts / :hm</td><td>Helm 차트</td></tr>
+            <tr><td>:pf / :portforward</td><td>포트 포워딩 목록</td></tr>
+            <tr><td>:bench / :benchmark</td><td>벤치마크</td></tr>
+            <tr><td>:sd / :screendump</td><td>스크린 덤프</td></tr>
+            <tr><td>:wk / :workload</td><td>워크로드 통합 뷰</td></tr>
+            <tr><td>:co / :containers</td><td>컨테이너 뷰</td></tr>
+            <tr><td>:dir /path</td><td>로컬 디스크 경로 탐색</td></tr>
+            <tr><td>:crd</td><td>CRD 목록</td></tr>
+            <tr><td>:cow</td><td>이스터 에그</td></tr>
+            <tr><td>:helm-history</td><td>Helm History 뷰</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Filtering & Search Syntax -->
+      <div class="card" data-category="commands">
+        <div class="card-head">
+          <span class="card-title">Filtering & Search Syntax</span>
+          <span class="card-tag tag-filter">Filter</span>
+        </div>
+        <div class="cmd-row"><span class="cmd-code"><code>/term</code></span><span class="cmd-desc">정규식 필터링</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>/!term</code></span><span class="cmd-desc">제외 필터링</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>-f term</code></span><span class="cmd-desc">퍼지 검색</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>-n namespace</code></span><span class="cmd-desc">네임스페이스 지정</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>@context</code></span><span class="cmd-desc">컨텍스트 지정</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>key=value</code></span><span class="cmd-desc">레이블 셀렉터 (일치)</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>key!=value</code></span><span class="cmd-desc">레이블 셀렉터 (불일치)</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>key in (v1,v2)</code></span><span class="cmd-desc">Set 기반 셀렉터</span></div>
+        <div class="cmd-row"><span class="cmd-code"><code>-l app=web</code></span><span class="cmd-desc">레이블 필터</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== CONFIGURATION ==================== -->
+  <div class="section-group" data-category="configuration">
+    <h2 class="section-title"><span class="icon">&#9881;</span> Configuration</h2>
+    <div class="cards-grid">
+
+      <!-- ========== 1. config.yaml ========== -->
+      <div class="card card-full" data-category="configuration">
+        <div class="card-head">
+          <span class="card-title">config.yaml (k9s.yaml) — 메인 설정</span>
+          <span class="card-tag tag-config">Config</span>
+        </div>
+        <div class="config-path">$XDG_CONFIG_HOME/k9s/config.yaml</div>
+        <div class="config-desc">k9s의 핵심 설정 파일. UI, 로거, 리소스 임계값, 셸 파드, 이미지 스캔 등 전체 동작을 제어합니다.</div>
+
+        <div class="cfg-table-wrap">
+        <table class="cfg-table">
+          <thead><tr><th>필드</th><th>타입</th><th>기본값</th><th>설명</th></tr></thead>
+          <tbody>
+            <tr><td>refreshRate</td><td>float32</td><td>2.0</td><td>UI 갱신 주기(초)</td></tr>
+            <tr><td>apiServerTimeout</td><td>string</td><td>2m0s</td><td>K8s API 요청 타임아웃</td></tr>
+            <tr><td>maxConnRetry</td><td>int32</td><td>5</td><td>최대 연결 재시도 횟수</td></tr>
+            <tr><td>readOnly</td><td>bool</td><td>false</td><td>읽기 전용 모드</td></tr>
+            <tr><td>noExitOnCtrlC</td><td>bool</td><td>false</td><td>Ctrl+C로 종료 방지</td></tr>
+            <tr><td>liveViewAutoRefresh</td><td>bool</td><td>false</td><td>라이브뷰 자동 갱신</td></tr>
+            <tr><td>portForwardAddress</td><td>string</td><td>localhost</td><td>포트 포워딩 바인딩 주소 (<span class="env-var">K9S_DEFAULT_PF_ADDRESS</span>)</td></tr>
+            <tr><td>screenDumpDir</td><td>string</td><td>-</td><td>화면 캡처 저장 경로</td></tr>
+            <tr><td>skipLatestRevCheck</td><td>bool</td><td>false</td><td>최신 버전 확인 건너뜀</td></tr>
+            <tr><td>disablePodCounting</td><td>bool</td><td>false</td><td>파드 수 집계 비활성화</td></tr>
+            <tr><td>defaultView</td><td>string</td><td>-</td><td>시작 시 기본 뷰 <span class="badge-new">v0.50.x</span></td></tr>
+            <tr><td>gpuVendors</td><td>map[string]string</td><td>-</td><td>GPU 벤더 매핑 (nvidia/amd/intel)</td></tr>
+          </tbody>
+        </table>
+        </div>
+
+        <!-- ui subsection -->
+        <div class="collapsible">
+          <button class="collapsible-toggle" onclick="toggleCollapse(this)">
+            <span class="arrow">&#9654;</span> ui 섹션 — UI 표시 설정
+          </button>
+          <div class="collapsible-content">
+            <div class="subsection">
+              <div class="config-note"><strong>참고:</strong> <code>ui.skin</code>은 <code>$XDG_CONFIG_HOME/k9s/skins/</code>의 스킨 파일명을 참조합니다.</div>
+              <div class="cfg-table-wrap">
+              <table class="cfg-table">
+                <thead><tr><th>필드</th><th>타입</th><th>기본값</th><th>설명</th></tr></thead>
+                <tbody>
+                  <tr><td>enableMouse</td><td>bool</td><td>false</td><td>마우스 지원</td></tr>
+                  <tr><td>headless</td><td>bool</td><td>false</td><td>상단 헤더 숨김</td></tr>
+                  <tr><td>logoless</td><td>bool</td><td>false</td><td>k9s 로고 숨김</td></tr>
+                  <tr><td>crumbsless</td><td>bool</td><td>false</td><td>브레드크럼 숨김</td></tr>
+                  <tr><td>splashless</td><td>bool</td><td>false</td><td>시작 스플래시 숨김</td></tr>
+                  <tr><td>reactive</td><td>bool</td><td>false</td><td>반응형 UI 업데이트</td></tr>
+                  <tr><td>noIcons</td><td>bool</td><td>false</td><td>리소스 아이콘 숨김</td></tr>
+                  <tr><td>skin</td><td>string</td><td>-</td><td>스킨 테마 이름 <span class="ref-link">&rarr; skin.yaml 참조</span></td></tr>
+                  <tr><td>defaultsToFullScreen</td><td>bool</td><td>false</td><td>로그/YAML/상세뷰 기본 전체화면</td></tr>
+                  <tr><td>useFullGVRTitle</td><td>bool</td><td>false</td><td>GVR 전체 표시</td></tr>
+                  <tr><td>invert</td><td>bool</td><td>false</td><td>Oklch 명도 반전 다크/라이트 <span class="badge-new">v0.50.17</span></td></tr>
+                </tbody>
+              </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- logger subsection -->
+        <div class="collapsible">
+          <button class="collapsible-toggle" onclick="toggleCollapse(this)">
+            <span class="arrow">&#9654;</span> logger 섹션 — 로그 뷰어 설정
+          </button>
+          <div class="collapsible-content">
+            <div class="subsection">
+              <div class="cfg-table-wrap">
+              <table class="cfg-table">
+                <thead><tr><th>필드</th><th>타입</th><th>기본값</th><th>설명</th></tr></thead>
+                <tbody>
+                  <tr><td>tail</td><td>int64</td><td>100</td><td>표시 라인 수 (1~5000)</td></tr>
+                  <tr><td>buffer</td><td>int</td><td>5000</td><td>버퍼 크기</td></tr>
+                  <tr><td>sinceSeconds</td><td>int64</td><td>-1</td><td>로그 나이 필터 (-1=전체)</td></tr>
+                  <tr><td>textWrap</td><td>bool</td><td>false</td><td>텍스트 줄바꿈</td></tr>
+                  <tr><td>disableAutoscroll</td><td>bool</td><td>false</td><td>자동 스크롤 비활성화</td></tr>
+                  <tr><td>columnLock</td><td>bool</td><td>false</td><td>수평 스크롤 시 첫 컬럼 고정</td></tr>
+                  <tr><td>showTime</td><td>bool</td><td>false</td><td>타임스탬프 표시</td></tr>
+                </tbody>
+              </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- thresholds subsection -->
+        <div class="collapsible">
+          <button class="collapsible-toggle" onclick="toggleCollapse(this)">
+            <span class="arrow">&#9654;</span> thresholds 섹션 — 리소스 경보 임계값
+          </button>
+          <div class="collapsible-content">
+            <div class="subsection">
+              <div class="cfg-table-wrap">
+              <table class="cfg-table">
+                <thead><tr><th>필드</th><th>타입</th><th>기본값</th><th>설명</th></tr></thead>
+                <tbody>
+                  <tr><td>cpu.critical</td><td>int</td><td>90</td><td>CPU 크리티컬 임계값 (1-100)</td></tr>
+                  <tr><td>cpu.warn</td><td>int</td><td>70</td><td>CPU 경고 임계값</td></tr>
+                  <tr><td>memory.critical</td><td>int</td><td>90</td><td>메모리 크리티컬 임계값</td></tr>
+                  <tr><td>memory.warn</td><td>int</td><td>70</td><td>메모리 경고 임계값</td></tr>
+                </tbody>
+              </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- shellPod subsection -->
+        <div class="collapsible">
+          <button class="collapsible-toggle" onclick="toggleCollapse(this)">
+            <span class="arrow">&#9654;</span> shellPod 섹션 — 셸 파드 템플릿
+          </button>
+          <div class="collapsible-content">
+            <div class="subsection">
+              <div class="cfg-table-wrap">
+              <table class="cfg-table">
+                <thead><tr><th>필드</th><th>타입</th><th>기본값</th><th>설명</th></tr></thead>
+                <tbody>
+                  <tr><td>image</td><td>string</td><td>busybox:1.37.0</td><td>셸 파드 이미지</td></tr>
+                  <tr><td>command</td><td>[]string</td><td>-</td><td>실행 커맨드</td></tr>
+                  <tr><td>args</td><td>[]string</td><td>-</td><td>커맨드 인수</td></tr>
+                  <tr><td>namespace</td><td>string</td><td>(필수)</td><td>파드 생성 네임스페이스</td></tr>
+                  <tr><td>limits.cpu</td><td>string</td><td>100m</td><td>CPU 리밋</td></tr>
+                  <tr><td>limits.memory</td><td>string</td><td>100Mi</td><td>메모리 리밋</td></tr>
+                  <tr><td>labels</td><td>map</td><td>-</td><td>파드 레이블</td></tr>
+                  <tr><td>imagePullSecrets</td><td>[]ref</td><td>-</td><td>이미지 풀 시크릿</td></tr>
+                  <tr><td>imagePullPolicy</td><td>string</td><td>-</td><td>풀 정책</td></tr>
+                  <tr><td>tty</td><td>bool</td><td>false</td><td>TTY 할당</td></tr>
+                  <tr><td>hostPathVolume</td><td>[]obj</td><td>-</td><td>호스트 경로 볼륨 (readOnly 포함)</td></tr>
+                </tbody>
+              </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- imageScans subsection -->
+        <div class="collapsible">
+          <button class="collapsible-toggle" onclick="toggleCollapse(this)">
+            <span class="arrow">&#9654;</span> imageScans 섹션 — 이미지 취약점 스캔
+          </button>
+          <div class="collapsible-content">
+            <div class="subsection">
+              <div class="cfg-table-wrap">
+              <table class="cfg-table">
+                <thead><tr><th>필드</th><th>타입</th><th>기본값</th><th>설명</th></tr></thead>
+                <tbody>
+                  <tr><td>enable</td><td>bool</td><td>false</td><td>취약점 스캔 활성화</td></tr>
+                  <tr><td>exclusions.namespaces</td><td>[]string</td><td>-</td><td>제외 네임스페이스</td></tr>
+                  <tr><td>exclusions.labels</td><td>map</td><td>-</td><td>제외 레이블</td></tr>
+                </tbody>
+              </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="config-note"><strong>v0.50.x 변경사항:</strong> <code>ui.invert</code> (v0.50.17), <code>defaultView</code> (v0.50.x), refreshRate 검증 강화 (v0.50.10+)</div>
+
+        <!-- Full YAML example -->
+        <div class="collapsible">
+          <button class="collapsible-toggle" onclick="toggleCollapse(this)">
+            <span class="arrow">&#9654;</span> 전체 예시 (YAML)
+          </button>
+          <div class="collapsible-content"><pre>k9s:
+  refreshRate: 2
+  maxConnRetry: 5
+  readOnly: false
+  noExitOnCtrlC: false
+  defaultView: pods
+  portForwardAddress: localhost
+  ui:
+    enableMouse: false
+    headless: false
+    logoless: false
+    crumbsless: false
+    splashless: false
+    reactive: true
+    noIcons: false
+    skin: dracula
+    defaultsToFullScreen: false
+    invert: false
+  logger:
+    tail: 200
+    buffer: 5000
+    sinceSeconds: -1
+    textWrap: false
+    showTime: true
+  thresholds:
+    cpu:
+      critical: 90
+      warn: 70
+    memory:
+      critical: 90
+      warn: 70
+  shellPod:
+    image: busybox:1.37.0
+    namespace: default
+    limits:
+      cpu: 100m
+      memory: 100Mi
+  imageScans:
+    enable: false
+    exclusions:
+      namespaces: [kube-system]</pre></div>
+        </div>
+      </div>
+
+      <!-- ========== 2. skin.yaml ========== -->
+      <div class="card card-full" data-category="configuration">
+        <div class="card-head">
+          <span class="card-title">skin.yaml — 테마/스킨 설정</span>
+          <span class="card-tag tag-theme">Theme</span>
+        </div>
+        <div class="config-path">$XDG_CONFIG_HOME/k9s/skins/&lt;name&gt;.yaml</div>
+        <div class="config-desc">
+          색상값: CSS 색상명, <code>"#HEX"</code> 7자리, <code>default</code> (터미널 기본색), <code>-</code> (투명 배경).<br>
+          내부적으로 tcell <code>GetColor()</code> 사용, 256색 팔레트 자동 변환. <code>invert</code> 시 Oklch 색공간 명도만 반전.<br>
+          <span class="env-var">K9S_SKIN</span> 환경변수 또는 <code>config.yaml</code>의 <code>ui.skin</code>으로 지정.
+        </div>
+
+        <div class="subsection-title">섹션별 전체 필드</div>
+        <div class="skin-sections">
+          <div class="skin-section-card">
+            <div class="skin-section-name">body</div>
+            <div class="skin-section-fields"><code>fgColor</code>(cadetblue), <code>bgColor</code>(black), <code>logoColor</code>(orange), <code>logoColorMsg</code>(white), <code>logoColorInfo</code>(green), <code>logoColorWarn</code>(mediumvioletred), <code>logoColorError</code>(red)</div>
+          </div>
+          <div class="skin-section-card">
+            <div class="skin-section-name">prompt</div>
+            <div class="skin-section-fields"><code>fgColor</code>(cadetblue), <code>bgColor</code>(black), <code>suggestColor</code>(dodgerblue), <code>border.command</code>(aqua), <code>border.default</code>(seagreen)</div>
+          </div>
+          <div class="skin-section-card">
+            <div class="skin-section-name">help</div>
+            <div class="skin-section-fields"><code>fgColor</code>(cadetblue), <code>bgColor</code>(black), <code>sectionColor</code>(green), <code>keyColor</code>(dodgerblue), <code>numKeyColor</code>(fuchsia)</div>
+          </div>
+          <div class="skin-section-card">
+            <div class="skin-section-name">info</div>
+            <div class="skin-section-fields"><code>sectionColor</code>(white), <code>fgColor</code>(orange), <code>cpuColor</code>(lawngreen), <code>memColor</code>(darkturquoise), <code>k9sRevColor</code>(aqua)</div>
+          </div>
+          <div class="skin-section-card">
+            <div class="skin-section-name">dialog</div>
+            <div class="skin-section-fields"><code>fgColor</code>(cadetblue), <code>bgColor</code>(black), <code>buttonFgColor</code>(black), <code>buttonBgColor</code>(darkslateblue), <code>buttonFocusFgColor</code>(black), <code>buttonFocusBgColor</code>(dodgerblue), <code>labelFgColor</code>(white), <code>fieldFgColor</code>(white)</div>
+          </div>
+          <div class="skin-section-card">
+            <div class="skin-section-name">frame.title</div>
+            <div class="skin-section-fields"><code>fgColor</code>(aqua), <code>bgColor</code>(black), <code>highlightColor</code>(fuchsia), <code>counterColor</code>(papayawhip), <code>filterColor</code>(seagreen)</div>
+          </div>
+          <div class="skin-section-card">
+            <div class="skin-section-name">frame.border</div>
+            <div class="skin-section-fields"><code>fgColor</code>(dodgerblue), <code>focusColor</code>(lightskyblue)</div>
+          </div>
+          <div class="skin-section-card">
+            <div class="skin-section-name">frame.menu</div>
+            <div class="skin-section-fields"><code>fgColor</code>(white), <code>fgStyle</code>(normal|bold|dim), <code>keyColor</code>(dodgerblue), <code>numKeyColor</code>(fuchsia)</div>
+          </div>
+          <div class="skin-section-card">
+            <div class="skin-section-name">frame.crumbs</div>
+            <div class="skin-section-fields"><code>fgColor</code>(black), <code>bgColor</code>(aqua), <code>activeColor</code>(orange)</div>
+          </div>
+          <div class="skin-section-card">
+            <div class="skin-section-name">frame.status</div>
+            <div class="skin-section-fields"><code>newColor</code>(lightskyblue), <code>modifyColor</code>(greenyellow), <code>addColor</code>(dodgerblue), <code>pendingColor</code>(darkorange), <code>errorColor</code>(orangered), <code>highlightColor</code>(aqua), <code>killColor</code>(mediumpurple), <code>completedColor</code>(lightslategray)</div>
+          </div>
+          <div class="skin-section-card">
+            <div class="skin-section-name">views.table</div>
+            <div class="skin-section-fields"><code>fgColor</code>(aqua), <code>bgColor</code>(black), <code>cursorFgColor</code>(black), <code>cursorBgColor</code>(aqua), <code>markColor</code>(palegreen), <code>header.fgColor</code>(white), <code>header.bgColor</code>(black), <code>header.sorterColor</code>(aqua)</div>
+          </div>
+          <div class="skin-section-card">
+            <div class="skin-section-name">views.xray</div>
+            <div class="skin-section-fields"><code>fgColor</code>(aqua), <code>bgColor</code>(black), <code>cursorColor</code>(dodgerblue), <code>cursorTextColor</code>(black), <code>graphicColor</code>(cadetblue)</div>
+          </div>
+          <div class="skin-section-card">
+            <div class="skin-section-name">views.charts</div>
+            <div class="skin-section-fields"><code>bgColor</code>(black), <code>dialBgColor</code>(black), <code>chartBgColor</code>(black), <code>focusFgColor</code>(white), <code>focusBgColor</code>(orange), <code>defaultDialColors</code>([palegreen,orangered]), <code>defaultChartColors</code>([palegreen,orangered]), <code>resourceColors</code>(map)</div>
+          </div>
+          <div class="skin-section-card">
+            <div class="skin-section-name">views.yaml</div>
+            <div class="skin-section-fields"><code>keyColor</code>(steelblue), <code>valueColor</code>(papayawhip), <code>colonColor</code>(white)</div>
+          </div>
+          <div class="skin-section-card">
+            <div class="skin-section-name">views.logs</div>
+            <div class="skin-section-fields"><code>fgColor</code>(lightskyblue), <code>bgColor</code>(black), <code>indicator.fgColor</code>(dodgerblue), <code>indicator.bgColor</code>(black), <code>indicator.toggleOnColor</code>(limegreen), <code>indicator.toggleOffColor</code>(gray)</div>
+          </div>
+          <div class="skin-section-card">
+            <div class="skin-section-name">views.picker</div>
+            <div class="skin-section-fields"><code>mainColor</code>(white), <code>focusColor</code>(aqua), <code>shortcutColor</code>(aqua)</div>
+          </div>
+        </div>
+
+        <div class="subsection-title">32개 내장 스킨</div>
+        <div class="builtin-skins">
+          <span class="builtin-skin">stock</span><span class="builtin-skin">dracula</span><span class="builtin-skin">nord</span>
+          <span class="builtin-skin">gruvbox-dark</span><span class="builtin-skin">gruvbox-light</span>
+          <span class="builtin-skin">gruvbox-material-dark</span><span class="builtin-skin">gruvbox-material-light</span>
+          <span class="builtin-skin">gruvbox-material-mix-dark</span><span class="builtin-skin">gruvbox-material-mix-light</span>
+          <span class="builtin-skin">gruvbox-material-soft-dark</span><span class="builtin-skin">gruvbox-material-soft-light</span>
+          <span class="builtin-skin">rose-pine</span><span class="builtin-skin">rose-pine-moon</span><span class="builtin-skin">rose-pine-dawn</span>
+          <span class="builtin-skin">solarized-dark</span><span class="builtin-skin">solarized-light</span><span class="builtin-skin">solarized-16</span>
+          <span class="builtin-skin">everforest-dark</span><span class="builtin-skin">everforest-light</span>
+          <span class="builtin-skin">monokai</span><span class="builtin-skin">one-dark</span><span class="builtin-skin">kanagawa</span>
+          <span class="builtin-skin">nightfox</span><span class="builtin-skin">narsingh</span><span class="builtin-skin">snazzy</span>
+          <span class="builtin-skin">vercel</span><span class="builtin-skin">in-the-navy</span><span class="builtin-skin">transparent</span>
+          <span class="builtin-skin">red</span><span class="builtin-skin">kiss</span><span class="builtin-skin">black-and-wtf</span>
+          <span class="builtin-skin">axual</span>
+        </div>
+
+        <!-- Dracula example -->
+        <div class="collapsible">
+          <button class="collapsible-toggle" onclick="toggleCollapse(this)">
+            <span class="arrow">&#9654;</span> Dracula 테마 전체 예시
+          </button>
+          <div class="collapsible-content"><pre>k9s:
+  body:
+    fgColor: "#f8f8f2"
+    bgColor: "#282a36"
+    logoColor: "#bd93f9"
+  prompt:
+    fgColor: "#f8f8f2"
+    bgColor: "#282a36"
+    suggestColor: "#6272a4"
+  info:
+    fgColor: "#8be9fd"
+    sectionColor: "#bd93f9"
+  frame:
+    border:
+      fgColor: "#6272a4"
+      focusColor: "#ff79c6"
+    menu:
+      fgColor: "#f8f8f2"
+      keyColor: "#ff79c6"
+    title:
+      fgColor: "#bd93f9"
+      highlightColor: "#f8f8f2"
+      counterColor: "#8be9fd"
+    crumbs:
+      fgColor: "#282a36"
+      bgColor: "#bd93f9"
+      activeColor: "#ff79c6"
+    status:
+      newColor: "#8be9fd"
+      modifyColor: "#50fa7b"
+      addColor: "#bd93f9"
+      errorColor: "#ff5555"
+      pendingColor: "#ffb86c"
+      highlightColor: "#f1fa8c"
+      killColor: "#ff79c6"
+      completedColor: "#6272a4"
+  views:
+    table:
+      fgColor: "#f8f8f2"
+      bgColor: "#282a36"
+      cursorFgColor: "#282a36"
+      cursorBgColor: "#bd93f9"
+      markColor: "#50fa7b"
+      header:
+        fgColor: "#6272a4"
+        bgColor: "#282a36"
+        sorterColor: "#bd93f9"
+    yaml:
+      keyColor: "#ff79c6"
+      colonColor: "#f8f8f2"
+      valueColor: "#8be9fd"
+    logs:
+      fgColor: "#f8f8f2"
+      bgColor: "#282a36"
+      indicator:
+        fgColor: "#bd93f9"
+        toggleOnColor: "#50fa7b"
+        toggleOffColor: "#6272a4"</pre></div>
+        </div>
+      </div>
+
+      <!-- ========== 3. aliases.yaml ========== -->
+      <div class="card" data-category="configuration">
+        <div class="card-head">
+          <span class="card-title">aliases.yaml — 커스텀 별칭</span>
+          <span class="card-tag tag-alias">Alias</span>
+        </div>
+        <div class="config-path">$XDG_CONFIG_HOME/k9s/aliases.yaml</div>
+        <div class="config-desc">GVR (Group/Version/Resource) 형식으로 커스텀 리소스 별칭을 정의합니다.</div>
+
+        <div class="subsection-title">GVR 형식 규칙</div>
+        <div class="cfg-table-wrap">
+        <table class="cfg-table">
+          <thead><tr><th>형식</th><th colspan="3">예시</th></tr></thead>
+          <tbody>
+            <tr><td>group/version/resource</td><td colspan="3" style="color:var(--text-dim)">apps/v1/deployments</td></tr>
+            <tr><td>version/resource</td><td colspan="3" style="color:var(--text-dim)">v1/secrets</td></tr>
+            <tr><td>resource-only</td><td colspan="3" style="color:var(--text-dim)">deployments</td></tr>
+            <tr><td>subresource (:)</td><td colspan="3" style="color:var(--text-dim)">v1/pods:log</td></tr>
+          </tbody>
+        </table>
+        </div>
+
+        <div class="subsection-title">로드 우선순위 (낮 &rarr; 높)</div>
+        <div class="config-desc" style="margin-bottom:4px">
+          1. k9s 내부 하드코딩 (h, q, a, ctx, pf, sd, x)<br>
+          2. K8s API 동적 short name (po, svc 등)<br>
+          3. 전역 <code>aliases.yaml</code><br>
+          4. 컨텍스트별 <code>clusters/&lt;cluster&gt;/&lt;ctx&gt;/aliases.yaml</code>
+        </div>
+        <div class="config-note"><strong>제약:</strong> <code>Define()</code> 가드로 먼저 등록된 alias는 오버라이드 불가. 컨텍스트 파일은 신규 alias 추가 전용.</div>
+
+        <div class="collapsible">
+          <button class="collapsible-toggle" onclick="toggleCollapse(this)">
+            <span class="arrow">&#9654;</span> 예시 보기
+          </button>
+          <div class="collapsible-content"><pre>aliases:
+  dp: deployments
+  sec: v1/secrets
+  jo: jobs
+  cr: clusterroles
+  np: networkpolicies</pre></div>
+        </div>
+      </div>
+
+      <!-- ========== 4. hotkeys.yaml ========== -->
+      <div class="card" data-category="configuration">
+        <div class="card-head">
+          <span class="card-title">hotkeys.yaml — 커스텀 단축키</span>
+          <span class="card-tag tag-hotkey">Hotkey</span>
+        </div>
+        <div class="config-path">$XDG_CONFIG_HOME/k9s/hotkeys.yaml</div>
+        <div class="config-desc">컨텍스트별: <code>$XDG_DATA_HOME/k9s/clusters/&lt;cluster&gt;/&lt;context&gt;/hotkeys.yaml</code></div>
+
+        <div class="cfg-table-wrap">
+        <table class="cfg-table">
+          <thead><tr><th>필드</th><th>타입</th><th>기본값</th><th>설명</th></tr></thead>
+          <tbody>
+            <tr><td>shortCut</td><td>string</td><td>(필수)</td><td>tcell 키 이름</td></tr>
+            <tr><td>description</td><td>string</td><td>""</td><td>헬프 화면 표시 텍스트</td></tr>
+            <tr><td>command</td><td>string</td><td>""</td><td>실행 커맨드, 환경변수 치환 지원</td></tr>
+            <tr><td>override</td><td>bool</td><td>false</td><td>true면 내장 단축키 강제 대체</td></tr>
+            <tr><td>keepHistory</td><td>bool</td><td>false</td><td>true면 네비게이션 히스토리 유지</td></tr>
+          </tbody>
+        </table>
+        </div>
+
+        <div class="collapsible">
+          <button class="collapsible-toggle" onclick="toggleCollapse(this)">
+            <span class="arrow">&#9654;</span> 지원 키 형식
+          </button>
+          <div class="collapsible-content">
+            <div class="subsection">
+              <div class="config-desc" style="margin-bottom:0">
+                <strong>단독:</strong> <kbd>a</kbd>~<kbd>z</kbd>, <kbd>0</kbd>~<kbd>9</kbd>, <kbd>?</kbd>, <kbd>/</kbd>, <kbd>space</kbd>, <kbd>:</kbd>, <kbd>-</kbd>, <kbd>[</kbd>, <kbd>]</kbd><br>
+                <strong>Ctrl:</strong> <kbd>Ctrl-A</kbd>~<kbd>Ctrl-Z</kbd><br>
+                <strong>Shift:</strong> <kbd>Shift-A</kbd>~<kbd>Shift-Z</kbd>, <kbd>Shift-0</kbd>~<kbd>Shift-9</kbd><br>
+                <strong>특수:</strong> <kbd>Backspace</kbd>, <kbd>Delete</kbd>, <kbd>Enter</kbd>, <kbd>Tab</kbd>, <kbd>Up</kbd>, <kbd>Down</kbd>, <kbd>Left</kbd>, <kbd>Right</kbd>, <kbd>PgUp</kbd>, <kbd>PgDn</kbd>, <kbd>Home</kbd>, <kbd>End</kbd>, <kbd>F1</kbd>~<kbd>F12</kbd>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="collapsible">
+          <button class="collapsible-toggle" onclick="toggleCollapse(this)">
+            <span class="arrow">&#9654;</span> command 변수 목록
+          </button>
+          <div class="collapsible-content">
+            <div class="subsection">
+              <div class="config-desc" style="margin-bottom:0">
+                <span class="env-var">$NAMESPACE</span> <span class="env-var">$NAME</span> <span class="env-var">$RESOURCE_NAME</span> <span class="env-var">$RESOURCE_GROUP</span> <span class="env-var">$RESOURCE_VERSION</span> <span class="env-var">$CONTEXT</span> <span class="env-var">$CLUSTER</span> <span class="env-var">$FILTER</span> <span class="env-var">$POD</span> <span class="env-var">$CONTAINER</span> <span class="env-var">$COL-&lt;컬럼명&gt;</span><br>
+                치환 형식: <code>$VAR</code>, <code>${VAR}</code>, <code>$!VAR</code> (불리언 반전)
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="config-note"><strong>override 동작:</strong> <code>false</code> &rarr; 충돌 시 핫키 무시 + 에러 로그. <code>true</code> &rarr; 기존 내장 단축키 강제 대체.</div>
+
+        <div class="collapsible">
+          <button class="collapsible-toggle" onclick="toggleCollapse(this)">
+            <span class="arrow">&#9654;</span> 예시 보기
+          </button>
+          <div class="collapsible-content"><pre>hotKeys:
+  go-pods:
+    shortCut: Shift-1
+    description: "View Pods"
+    command: pods
+  go-deploy:
+    shortCut: Shift-2
+    description: "View Deployments"
+    command: deploy
+  xray-svc:
+    shortCut: Shift-3
+    description: "Xray Services"
+    command: xray svc
+    keepHistory: true
+  ns-resources:
+    shortCut: Shift-S
+    override: true
+    description: "Current NS Resources"
+    command: "$RESOURCE_NAME $NAMESPACE"</pre></div>
+        </div>
+      </div>
+
+      <!-- ========== 5. plugins.yaml ========== -->
+      <div class="card card-full" data-category="configuration">
+        <div class="card-head">
+          <span class="card-title">plugins.yaml — 플러그인 설정</span>
+          <span class="card-tag tag-plugin">Plugin</span>
+        </div>
+        <div class="config-path">$XDG_CONFIG_HOME/k9s/plugins.yaml</div>
+        <div class="config-desc">외부 명령어를 k9s에 통합하는 플러그인 시스템. JSON 스키마 3종 제공: <code>plugin.json</code>, <code>plugins.json</code>, <code>plugin-multi.json</code></div>
+
+        <div class="cfg-table-wrap">
+        <table class="cfg-table">
+          <thead><tr><th>필드</th><th>타입</th><th>기본값</th><th>설명</th></tr></thead>
+          <tbody>
+            <tr><td>shortCut</td><td>string</td><td>(필수)</td><td>키 바인딩</td></tr>
+            <tr><td>description</td><td>string</td><td>(필수)</td><td>UI 힌트바 설명</td></tr>
+            <tr><td>scopes</td><td>[]string</td><td>(필수)</td><td>활성화될 리소스 뷰 ("all" 또는 리소스명)</td></tr>
+            <tr><td>command</td><td>string</td><td>(필수)</td><td>실행 바이너리</td></tr>
+            <tr><td>args</td><td>[]string</td><td>[]</td><td>커맨드 인수, 환경변수 치환 지원</td></tr>
+            <tr><td>background</td><td>bool</td><td>false</td><td>true면 UI 벗어나지 않고 백그라운드 실행</td></tr>
+            <tr><td>confirm</td><td>bool</td><td>false</td><td>실행 전 확인 다이얼로그</td></tr>
+            <tr><td>dangerous</td><td>bool</td><td>false</td><td>true면 readOnly 모드에서 비활성화</td></tr>
+            <tr><td>pipes</td><td>[]string</td><td>[]</td><td>stdout 파이프 체인</td></tr>
+            <tr><td>override</td><td>bool</td><td>false</td><td>동일 단축키 기존 액션 덮어씀</td></tr>
+            <tr><td>overwriteOutput</td><td>bool</td><td>false</td><td>background 실행 결과를 Flash 메시지 표시</td></tr>
+          </tbody>
+        </table>
+        </div>
+
+        <div class="collapsible">
+          <button class="collapsible-toggle" onclick="toggleCollapse(this)">
+            <span class="arrow">&#9654;</span> 환경변수 상세
+          </button>
+          <div class="collapsible-content">
+            <div class="subsection">
+              <div class="config-desc" style="margin-bottom:6px"><strong>공통 (k8sEnv):</strong> <span class="env-var">$CONTEXT</span> <span class="env-var">$CLUSTER</span> <span class="env-var">$USER</span> <span class="env-var">$GROUPS</span> <span class="env-var">$KUBECONFIG</span></div>
+              <div class="config-desc" style="margin-bottom:6px"><strong>리소스뷰 (defaultEnv):</strong> <span class="env-var">$NAMESPACE</span> <span class="env-var">$NAME</span> <span class="env-var">$COL-&lt;컬럼명&gt;</span></div>
+              <div class="config-desc" style="margin-bottom:6px"><strong>테이블뷰:</strong> <span class="env-var">$FILTER</span> <span class="env-var">$RESOURCE_GROUP</span> <span class="env-var">$RESOURCE_VERSION</span> <span class="env-var">$RESOURCE_NAME</span></div>
+              <div class="config-desc" style="margin-bottom:6px"><strong>컨테이너/xray:</strong> <span class="env-var">$POD</span> <span class="env-var">$CONTAINER</span></div>
+              <div class="config-desc" style="margin-bottom:0"><strong>고급 치환:</strong> <code>$!VAR</code> (불리언 반전), <code>${COL-%CPU/L}</code> (특수문자 컬럼명), <code>${READINESS GATES}</code> (공백 포함)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="config-note"><strong>참고:</strong> <code>inputs</code> 필드는 v0.50.18에 존재하지 않습니다.</div>
+
+        <div class="collapsible">
+          <button class="collapsible-toggle" onclick="toggleCollapse(this)">
+            <span class="arrow">&#9654;</span> 예시 보기
+          </button>
+          <div class="collapsible-content"><pre>plugins:
+  stern-logs:
+    shortCut: Ctrl-Y
+    description: "Logs &lt;Stern&gt;"
+    scopes: [pods]
+    command: stern
+    background: false
+    args:
+      - $FILTER
+      - -n
+      - $NAMESPACE
+      - --context
+      - $CONTEXT
+  debug-pod:
+    shortCut: Shift-D
+    description: "Debug with ephemeral container"
+    scopes: [pods]
+    command: kubectl
+    confirm: true
+    dangerous: true
+    args:
+      - debug
+      - -it
+      - --image=busybox
+      - -n
+      - $NAMESPACE
+      - $NAME
+  remove-finalizers:
+    shortCut: Ctrl-F
+    description: "Remove Finalizers"
+    scopes: [all]
+    command: kubectl
+    confirm: true
+    dangerous: true
+    background: true
+    overwriteOutput: true
+    args:
+      - patch
+      - $RESOURCE_NAME.$RESOURCE_GROUP
+      - $NAME
+      - -p
+      - '{"metadata":{"finalizers":null}}'</pre></div>
+        </div>
+      </div>
+
+      <!-- ========== 6. views.yaml ========== -->
+      <div class="card card-full" data-category="configuration">
+        <div class="card-head">
+          <span class="card-title">views.yaml — 커스텀 뷰/컬럼</span>
+          <span class="card-tag tag-views">Views</span>
+        </div>
+        <div class="config-path">$XDG_CONFIG_HOME/k9s/views.yaml</div>
+        <div class="config-desc">리소스 뷰의 커스텀 컬럼 및 정렬 순서를 GVR 기반으로 정의합니다.</div>
+
+        <div class="subsection-title">GVR 뷰 이름 형식</div>
+        <div class="cfg-table-wrap">
+        <table class="cfg-table">
+          <thead><tr><th>형식</th><th>예시</th><th colspan="2">비고</th></tr></thead>
+          <tbody>
+            <tr><td>version/resource</td><td style="color:var(--text-dim)">v1/pods</td><td colspan="2" style="color:var(--text-dim)">코어 리소스</td></tr>
+            <tr><td>group/version/resource</td><td style="color:var(--text-dim)">apps/v1/deployments</td><td colspan="2" style="color:var(--text-dim)">확장 리소스</td></tr>
+            <tr><td>...@namespace</td><td style="color:var(--text-dim)">v1/pods@default</td><td colspan="2" style="color:var(--text-dim)">네임스페이스 지정</td></tr>
+            <tr><td>...@pattern</td><td style="color:var(--text-dim)">v1/pods@ns*</td><td colspan="2" style="color:var(--text-dim)">정규식 (우선순위 높음)</td></tr>
+          </tbody>
+        </table>
+        </div>
+
+        <div class="subsection-title">컬럼 정의 문법</div>
+        <div class="config-desc">형식: <code>COLUMN_NAME:JSONPATH|FLAGS</code> &mdash; 파싱 정규식: <code>^([\w\s%/-]+):?([\w\W]*?)\|?([NTWSLRH]{0,3})$</code></div>
+        <div class="cfg-table-wrap">
+        <table class="cfg-table">
+          <thead><tr><th>Flag</th><th colspan="3">의미</th></tr></thead>
+          <tbody>
+            <tr><td>W</td><td colspan="3" style="color:var(--text-dim)">Wide-only (좁은 뷰에서 숨김)</td></tr>
+            <tr><td>S</td><td colspan="3" style="color:var(--text-dim)">Always-show (좁은 뷰에서도 표시)</td></tr>
+            <tr><td>H</td><td colspan="3" style="color:var(--text-dim)">Hide (항상 숨김)</td></tr>
+            <tr><td>T</td><td colspan="3" style="color:var(--text-dim)">Time (RFC3339&rarr;상대시간 변환)</td></tr>
+            <tr><td>N</td><td colspan="3" style="color:var(--text-dim)">Number (우측 정렬, 용량 포맷)</td></tr>
+            <tr><td>L</td><td colspan="3" style="color:var(--text-dim)">AlignLeft</td></tr>
+            <tr><td>R</td><td colspan="3" style="color:var(--text-dim)">AlignRight</td></tr>
+          </tbody>
+        </table>
+        </div>
+
+        <div class="config-desc"><strong>정렬 문법:</strong> <code>sortColumn: "AGE:asc"</code> 또는 <code>"NAME:desc"</code></div>
+
+        <div class="collapsible">
+          <button class="collapsible-toggle" onclick="toggleCollapse(this)">
+            <span class="arrow">&#9654;</span> 예시 보기
+          </button>
+          <div class="collapsible-content"><pre>views:
+  v1/pods:
+    columns:
+      - NAME
+      - READY
+      - STATUS
+      - AGE|TR
+      - IMG:.spec.containers[0].image|split(":")|.[0]
+      - VERSION:.spec.containers[0].image|split(":")|.[-1]|W
+    sortColumn: "AGE:desc"
+  v1/pods@default:
+    columns:
+      - NAME
+      - STATUS
+      - AGE
+  apps/v1/deployments:
+    columns:
+      - NAME
+      - READY
+      - UP-TO-DATE
+      - AVAILABLE
+      - AGE|T
+    sortColumn: "NAME:asc"
+  v1/services:
+    columns:
+      - NAME
+      - TYPE
+      - CLUSTER-IP
+      - PORT(S)|S
+      - AGE</pre></div>
+        </div>
+      </div>
+
+      <!-- ========== 7. Context-level config.yaml ========== -->
+      <div class="card" data-category="configuration">
+        <div class="card-head">
+          <span class="card-title">Context-level config.yaml</span>
+          <span class="card-tag tag-ctxcfg">Context Config</span>
+        </div>
+        <div class="config-path">$K9S_CONFIG_DIR/clusters/{cluster}/{context}/config.yaml</div>
+        <div class="config-desc">컨텍스트별 독립 설정. 네임스페이스 즐겨찾기, 활성 뷰 등을 클러스터/컨텍스트 조합마다 개별 저장합니다.</div>
+
+        <div class="cfg-table-wrap">
+        <table class="cfg-table">
+          <thead><tr><th>필드</th><th>타입</th><th>기본값</th><th>설명</th></tr></thead>
+          <tbody>
+            <tr><td>namespace.active</td><td>string</td><td>"default"</td><td>현재 활성 네임스페이스</td></tr>
+            <tr><td>namespace.lockFavorites</td><td>bool</td><td>false</td><td>true면 favorites 자동 업데이트 잠김</td></tr>
+            <tr><td>namespace.favorites</td><td>[]string</td><td>[]</td><td>즐겨찾기 네임스페이스 (최대 9개, LRU)</td></tr>
+            <tr><td>view.active</td><td>string</td><td>"po"</td><td>마지막 활성 뷰</td></tr>
+          </tbody>
+        </table>
+        </div>
+
+        <div class="config-note"><strong>참고:</strong> 네임스페이스 전환 시 자동 LRU 추가. <code>lockFavorites: true</code> 설정 시 수동 설정만 사용. 숫자키 <kbd>0</kbd>~<kbd>9</kbd>는 리소스 브라우저 뷰에서만 동작 (Log 뷰 시간 필터와 별도).</div>
+
+        <div class="collapsible">
+          <button class="collapsible-toggle" onclick="toggleCollapse(this)">
+            <span class="arrow">&#9654;</span> 예시 보기
+          </button>
+          <div class="collapsible-content"><pre>k9s:
+  namespace:
+    active: monitoring
+    lockFavorites: false
+    favorites:
+      - default
+      - kube-system
+      - monitoring
+      - ingress-nginx
+      - cert-manager
+  view:
+    active: deploy</pre></div>
+        </div>
+      </div>
+
+      <!-- ========== File Locations Summary ========== -->
+      <div class="card" data-category="configuration">
+        <div class="card-head">
+          <span class="card-title">File Locations Summary</span>
+          <span class="card-tag tag-file">File</span>
+        </div>
+        <div class="file-loc-row"><span class="file-loc-path">$XDG_CONFIG_HOME/k9s/</span><span class="file-loc-desc">모든 전역 설정</span></div>
+        <div class="file-loc-row"><span class="file-loc-path">$XDG_CONFIG_HOME/k9s/skins/</span><span class="file-loc-desc">스킨 파일</span></div>
+        <div class="file-loc-row"><span class="file-loc-path">$XDG_DATA_HOME/k9s/clusters/&lt;cluster&gt;/&lt;ctx&gt;/</span><span class="file-loc-desc">컨텍스트별 오버라이드 (hotkeys, aliases)</span></div>
+        <div class="file-loc-row"><span class="file-loc-path"><span class="env-var">K9S_CONFIG_DIR</span></span><span class="file-loc-desc">모든 설정 파일 위치 통합 (환경변수)</span></div>
+        <div class="file-loc-row"><span class="file-loc-path"><span class="env-var">K9S_SKIN</span></span><span class="file-loc-desc">스킨 지정 (환경변수)</span></div>
+        <div class="file-loc-row"><span class="file-loc-path"><span class="env-var">K9S_DEFAULT_PF_ADDRESS</span></span><span class="file-loc-desc">포트포워딩 주소 (환경변수)</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="no-results" id="noResults">검색 결과가 없습니다.</div>
+
+</div>
+
+<script>
+(function() {
+  const searchInput = document.getElementById('searchInput');
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  const cards = document.querySelectorAll('.card');
+  const sectionGroups = document.querySelectorAll('.section-group');
+  const noResults = document.getElementById('noResults');
+
+  let currentFilter = 'all';
+  let searchTerm = '';
+  let debounceTimer;
+
+  function applyFilters() {
+    let visibleCount = 0;
+
+    sectionGroups.forEach(group => {
+      const cat = group.dataset.category;
+      const showSection = currentFilter === 'all' || currentFilter === cat;
+      group.style.display = showSection ? '' : 'none';
+    });
+
+    cards.forEach(card => {
+      const cat = card.dataset.category;
+      const matchesFilter = currentFilter === 'all' || currentFilter === cat;
+      const text = card.textContent.toLowerCase();
+      const matchesSearch = !searchTerm || text.includes(searchTerm.toLowerCase());
+      const visible = matchesFilter && matchesSearch;
+      card.classList.toggle('hidden', !visible);
+      if (visible) visibleCount++;
+    });
+
+    sectionGroups.forEach(group => {
+      if (group.style.display === 'none') return;
+      const visibleCards = group.querySelectorAll('.card:not(.hidden)');
+      group.style.display = visibleCards.length > 0 ? '' : 'none';
+    });
+
+    noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+  }
+
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      applyFilters();
+    });
+  });
+
+  searchInput.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      searchTerm = searchInput.value.trim();
+      applyFilters();
+    }, 200);
+  });
+})();
+
+function toggleCollapse(btn) {
+  btn.classList.toggle('open');
+  const content = btn.nextElementSibling;
+  content.classList.toggle('open');
+}
+</script>
+</body>
+</html>

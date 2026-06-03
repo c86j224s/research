@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lazygit 치트시트</title>
+<style>
+:root {
+  --bg: #0a0e17;
+  --bg-card: #111827;
+  --bg-card-hover: #1a2332;
+  --bg-code: #0d1117;
+  --border: #1e293b;
+  --border-active: #3b82f6;
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --text-bright: #f8fafc;
+  --accent: #3b82f6;
+  --accent-dim: #1d4ed8;
+  --red: #ef4444;
+  --green: #22c55e;
+  --yellow: #eab308;
+  --cyan: #06b6d4;
+  --orange: #f97316;
+  --purple: #8b5cf6;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* ===== HERO ===== */
+.hero {
+  position: relative;
+  padding: 50px 40px 30px;
+  text-align: center;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: radial-gradient(ellipse at center, rgba(59,130,246,0.08) 0%, transparent 50%);
+  animation: pulse 8s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+.hero h1 {
+  font-size: 2.6em;
+  font-weight: 800;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+  position: relative;
+}
+.hero .subtitle {
+  font-size: 1.1em;
+  color: var(--text-dim);
+  position: relative;
+}
+
+/* ===== TOOLBAR ===== */
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10, 14, 23, 0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+}
+.toolbar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.search-box {
+  flex: 1;
+  min-width: 200px;
+  position: relative;
+}
+.search-box input {
+  width: 100%;
+  padding: 8px 14px 8px 36px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 0.9em;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.search-box input:focus { border-color: var(--accent); }
+.search-box input::placeholder { color: var(--text-dim); }
+.search-box .search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-dim);
+  font-size: 14px;
+  pointer-events: none;
+}
+.search-count {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-dim);
+  font-size: 0.75em;
+  pointer-events: none;
+}
+
+.difficulty-filters {
+  display: flex;
+  gap: 6px;
+}
+.diff-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.8em;
+  font-weight: 600;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-sans);
+  background: transparent;
+}
+.diff-btn[data-level="basic"] { border-color: var(--green); color: var(--green); }
+.diff-btn[data-level="intermediate"] { border-color: var(--yellow); color: var(--yellow); }
+.diff-btn[data-level="advanced"] { border-color: var(--red); color: var(--red); }
+.diff-btn.active[data-level="basic"] { background: rgba(34,197,94,0.15); }
+.diff-btn.active[data-level="intermediate"] { background: rgba(234,179,8,0.15); }
+.diff-btn.active[data-level="advanced"] { background: rgba(239,68,68,0.15); }
+.diff-btn:not(.active) { opacity: 0.4; }
+
+/* ===== TABS ===== */
+.tab-bar {
+  background: rgba(10, 14, 23, 0.92);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tab-bar::-webkit-scrollbar { display: none; }
+.tab-inner {
+  display: flex;
+  gap: 0;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.tab-btn {
+  padding: 10px 16px;
+  font-size: 0.83em;
+  font-weight: 500;
+  color: var(--text-dim);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  font-family: var(--font-sans);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tab-btn:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-btn .tab-count {
+  font-size: 0.8em;
+  background: var(--bg-card);
+  padding: 1px 7px;
+  border-radius: 10px;
+  color: var(--text-dim);
+}
+
+/* ===== CONTAINER ===== */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* ===== UI DIAGRAM ===== */
+.ui-diagram {
+  margin-bottom: 28px;
+}
+.ui-diagram h2 {
+  font-size: 1.4em;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--border);
+}
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  overflow-x: auto;
+}
+.diagram-grid {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  grid-template-rows: repeat(5, 52px) 28px;
+  gap: 4px;
+  min-width: 600px;
+  font-size: 0.85em;
+}
+.diagram-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+  border: 1px solid transparent;
+  user-select: none;
+}
+.diagram-panel:hover {
+  border-color: var(--accent);
+  background: rgba(59,130,246,0.12) !important;
+  transform: scale(1.02);
+}
+.dp-status { background: rgba(59,130,246,0.08); color: var(--accent); grid-column: 1; grid-row: 1; }
+.dp-files { background: rgba(34,197,94,0.08); color: var(--green); grid-column: 1; grid-row: 2; }
+.dp-branches { background: rgba(139,92,246,0.08); color: var(--purple); grid-column: 1; grid-row: 3; }
+.dp-commits { background: rgba(234,179,8,0.08); color: var(--yellow); grid-column: 1; grid-row: 4; }
+.dp-stash { background: rgba(6,182,212,0.08); color: var(--cyan); grid-column: 1; grid-row: 5; }
+.dp-main {
+  background: rgba(255,255,255,0.03);
+  color: var(--text-dim);
+  grid-column: 2;
+  grid-row: 1 / 6;
+  border: 1px dashed var(--border);
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9em;
+}
+.dp-main small { font-size: 0.8em; opacity: 0.6; }
+.dp-statusbar {
+  grid-column: 1 / 3;
+  grid-row: 6;
+  background: rgba(255,255,255,0.02);
+  color: var(--text-dim);
+  font-size: 0.8em;
+  border-radius: 4px;
+}
+.diagram-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+  font-size: 0.78em;
+  color: var(--text-dim);
+  flex-wrap: wrap;
+}
+.diagram-legend span { display: flex; align-items: center; gap: 4px; }
+.legend-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* ===== PANEL SECTION ===== */
+.panel-section { display: none; }
+.panel-section.active { display: block; animation: fadeIn 0.25s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ===== KEYBINDING TABLE ===== */
+.kb-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.kb-table th {
+  background: rgba(59,130,246,0.06);
+  color: var(--accent);
+  font-weight: 600;
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+.kb-table td {
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(30,41,59,0.4);
+  font-size: 0.9em;
+  vertical-align: middle;
+}
+.kb-table tr:hover { background: rgba(255,255,255,0.02); }
+.kb-table tr.hidden { display: none; }
+.kb-table .key-cell { white-space: nowrap; width: 140px; }
+.kb-table .desc-cell { color: var(--text); }
+.kb-table .level-cell { width: 70px; text-align: center; }
+
+kbd {
+  display: inline-block;
+  padding: 2px 8px;
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-bottom: 2px solid #475569;
+  border-radius: 4px;
+  box-shadow: 0 1px 0 #475569;
+  color: var(--text-bright);
+  line-height: 1.6;
+  margin: 1px 2px;
+}
+
+.level-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 0.72em;
+  font-weight: 600;
+}
+.level-badge.basic { background: rgba(34,197,94,0.15); color: var(--green); }
+.level-badge.intermediate { background: rgba(234,179,8,0.15); color: var(--yellow); }
+.level-badge.advanced { background: rgba(239,68,68,0.15); color: var(--red); }
+
+/* ===== WORKFLOW ACCORDION ===== */
+.workflow-section {
+  margin-top: 32px;
+}
+.workflow-section h2 {
+  font-size: 1.4em;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--border);
+}
+.accordion {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.acc-item { border-bottom: 1px solid var(--border); }
+.acc-item:last-child { border-bottom: none; }
+.acc-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  background: var(--bg-card);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+  font-weight: 500;
+  font-size: 0.95em;
+}
+.acc-header:hover { background: var(--bg-card-hover); }
+.acc-arrow {
+  transition: transform 0.2s;
+  color: var(--text-dim);
+  font-size: 0.8em;
+  flex-shrink: 0;
+}
+.acc-item.open .acc-arrow { transform: rotate(90deg); }
+.acc-header .acc-icon { font-size: 1.1em; }
+.acc-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  background: var(--bg-code);
+}
+.acc-item.open .acc-body { max-height: 2000px; }
+.acc-content {
+  padding: 16px 18px;
+  font-size: 0.88em;
+  line-height: 1.8;
+  color: var(--text-dim);
+}
+.acc-content strong { color: var(--text); }
+.acc-content ul {
+  list-style: none;
+  padding: 0;
+}
+.acc-content li {
+  padding: 3px 0;
+  padding-left: 16px;
+  position: relative;
+}
+.acc-content li::before {
+  content: '›';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-weight: bold;
+}
+
+/* ===== NO RESULTS ===== */
+.no-results {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--text-dim);
+  font-size: 0.95em;
+  display: none;
+}
+.no-results.visible { display: block; }
+
+/* ===== FOOTER ===== */
+.footer {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-dim);
+  font-size: 0.78em;
+  border-top: 1px solid var(--border);
+  margin-top: 40px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .hero { padding: 30px 20px 20px; }
+  .hero h1 { font-size: 1.8em; }
+  .toolbar-inner { flex-direction: column; }
+  .search-box { min-width: 100%; }
+  .container { padding: 16px; }
+  .diagram-grid { min-width: 500px; font-size: 0.75em; }
+  .kb-table .level-cell { display: none; }
+  .kb-table .key-cell { width: auto; }
+}
+@media (max-width: 480px) {
+  .hero h1 { font-size: 1.5em; }
+  .difficulty-filters { flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Lazygit 치트시트</h1>
+  <p class="subtitle">터미널 Git UI의 모든 키바인딩과 워크플로우</p>
+</div>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <div class="toolbar-inner">
+    <div class="search-box">
+      <span class="search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+      <input type="text" id="searchInput" placeholder="키 또는 동작 검색... (예: rebase, space, cherry)" autocomplete="off" aria-label="키바인딩 검색">
+      <span class="search-count" id="searchCount"></span>
+    </div>
+    <div class="difficulty-filters">
+      <button class="diff-btn active" data-level="basic" onclick="toggleDifficulty('basic')">기본</button>
+      <button class="diff-btn active" data-level="intermediate" onclick="toggleDifficulty('intermediate')">중급</button>
+      <button class="diff-btn active" data-level="advanced" onclick="toggleDifficulty('advanced')">고급</button>
+    </div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tab-bar">
+  <div class="tab-inner" id="tabBar" role="tablist"></div>
+</div>
+
+<!-- MAIN -->
+<div class="container">
+
+  <!-- UI DIAGRAM -->
+  <div class="ui-diagram" id="diagramSection">
+    <h2>UI 구조</h2>
+    <div class="diagram-wrap">
+      <div class="diagram-grid">
+        <div class="diagram-panel dp-status" data-panel="status" onclick="goToPanel('status')">1 Status</div>
+        <div class="diagram-panel dp-files" data-panel="files" onclick="goToPanel('files')">2 Files</div>
+        <div class="diagram-panel dp-branches" data-panel="branches" onclick="goToPanel('branches')">3 Branches</div>
+        <div class="diagram-panel dp-commits" data-panel="commits" onclick="goToPanel('commits')">4 Commits</div>
+        <div class="diagram-panel dp-stash" data-panel="stash" onclick="goToPanel('stash')">5 Stash</div>
+        <div class="diagram-panel dp-main">Main View<small>diff / staging / patch / merge</small></div>
+        <div class="diagram-panel dp-statusbar">Status Bar — 키바인딩 힌트 | 상태 | 버전 정보</div>
+      </div>
+      <div class="diagram-legend">
+        <span><span class="legend-dot" style="background:var(--accent)"></span> 패널 클릭 시 해당 섹션으로 이동</span>
+        <span><kbd>[</kbd><kbd>]</kbd> 패널 전환</span>
+        <span><kbd>1</kbd>~<kbd>5</kbd> 직접 점프</span>
+        <span><kbd>+</kbd><kbd>_</kbd> 화면 모드</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL SECTIONS (generated by JS) -->
+  <div id="panelContainer"></div>
+
+  <!-- NO RESULTS -->
+  <div class="no-results" id="noResults">검색 결과가 없습니다.</div>
+
+  <!-- WORKFLOWS -->
+  <div class="workflow-section" id="workflowSection">
+    <h2>워크플로우 가이드</h2>
+    <div class="accordion" id="workflowAccordion"></div>
+  </div>
+</div>
+
+<div class="footer">Lazygit Cheatsheet &mdash; 키바인딩 기준: Lazygit v0.40+</div>
+
+<script>
+// ===== DATA =====
+const panels = [
+  {
+    id: 'global', label: 'Global', icon: '🌐',
+    keys: [
+      ['q', '종료', 'basic'],
+      ['Q', '확인 없이 종료', 'intermediate'],
+      ['P', 'Push', 'basic'],
+      ['p', 'Pull', 'basic'],
+      ['z', 'Undo (reflog 기반)', 'intermediate'],
+      ['ctrl+z / Z', 'Redo', 'intermediate'],
+      ['?', '키바인딩 메뉴 열기', 'basic'],
+      ['R', '새로고침', 'basic'],
+      [':', '셸 명령 실행', 'intermediate'],
+      ['ctrl+r', '최근 저장소 전환', 'intermediate'],
+      ['+  / _', '화면 모드 전환 (normal / half / full)', 'intermediate'],
+      ['[ / ]', '이전 / 다음 사이드 윈도우', 'basic'],
+      ['{ / }', '이전 / 다음 탭', 'basic'],
+      ['1 ~ 5', '사이드 윈도우 직접 점프', 'basic'],
+      [', / .', '이전 / 다음 페이지', 'basic'],
+      ['< / >', '맨 위 / 맨 아래로 스크롤', 'basic'],
+      ['/', '검색', 'basic'],
+      ['n / N', '다음 / 이전 검색 결과', 'basic'],
+      ['v', '범위 선택 모드', 'intermediate'],
+      ['H / L', '좌 / 우 스크롤 (diff)', 'basic'],
+      ['ctrl+e / ctrl+y', '메인 패널 위 / 아래 스크롤', 'intermediate'],
+    ]
+  },
+  {
+    id: 'status', label: 'Status', icon: '📊',
+    keys: [
+      ['e', '설정 파일 편집', 'intermediate'],
+      ['o', '설정 파일 열기', 'basic'],
+      ['u', '업데이트 확인', 'basic'],
+      ['Enter', '최근 저장소로 전환', 'basic'],
+      ['a', '모든 브랜치 로그 표시 토글', 'intermediate'],
+    ]
+  },
+  {
+    id: 'files', label: 'Files', icon: '📁',
+    keys: [
+      ['space', '스테이지 / 언스테이지 토글', 'basic'],
+      ['a', '전체 스테이지 / 언스테이지', 'basic'],
+      ['c', '커밋 (메시지 입력)', 'basic'],
+      ['w', '커밋 옵션 메뉴 (pre-commit hook 등)', 'intermediate'],
+      ['A', '마지막 커밋에 amend', 'intermediate'],
+      ['C', 'git commit (에디터 실행)', 'intermediate'],
+      ['d', 'Discard changes', 'basic'],
+      ['D', '고급 discard 메뉴 (clean 등)', 'intermediate'],
+      ['e', '파일 편집', 'basic'],
+      ['o', '파일 열기 (기본 프로그램)', 'basic'],
+      ['i', '.gitignore에 추가', 'intermediate'],
+      ['r', '파일 새로고침', 'basic'],
+      ['s', 'Stash', 'intermediate'],
+      ['S', 'Stash 옵션 메뉴', 'intermediate'],
+      ['M', '외부 머지 툴 열기', 'advanced'],
+      ['Enter', '파일 내 개별 라인 스테이징', 'basic'],
+      ['`', '트리 뷰 토글', 'intermediate'],
+      ['f', 'git fetch', 'basic'],
+      ['ctrl+o', '파일명 클립보드 복사', 'intermediate'],
+    ]
+  },
+  {
+    id: 'branches', label: 'Branches', icon: '🔀',
+    keys: [
+      ['space', '체크아웃', 'basic'],
+      ['n', '새 브랜치 생성', 'basic'],
+      ['d', '브랜치 삭제', 'basic'],
+      ['r', '현재 브랜치를 선택한 브랜치로 리베이스', 'intermediate'],
+      ['R', '브랜치 이름 변경', 'basic'],
+      ['M', '선택한 브랜치를 현재 브랜치에 머지', 'intermediate'],
+      ['f', '선택한 브랜치에서 fast-forward', 'intermediate'],
+      ['T', '태그 생성', 'intermediate'],
+      ['s', '정렬 순서 변경', 'basic'],
+      ['u', 'Upstream 설정 / 해제', 'intermediate'],
+      ['Enter', '커밋 목록 보기', 'basic'],
+      ['o', '브라우저에서 PR 열기', 'intermediate'],
+      ['w', 'Worktree 옵션', 'advanced'],
+    ]
+  },
+  {
+    id: 'remotes', label: 'Remotes', icon: '🌍',
+    keys: [
+      ['f', 'Fetch', 'basic'],
+      ['n', '새 리모트 추가', 'intermediate'],
+      ['d', '리모트 삭제', 'intermediate'],
+      ['e', '리모트 편집', 'intermediate'],
+    ]
+  },
+  {
+    id: 'tags', label: 'Tags', icon: '🏷️',
+    keys: [
+      ['space', '태그 체크아웃', 'basic'],
+      ['d', '태그 삭제', 'basic'],
+      ['P', '태그 push', 'intermediate'],
+      ['n', '태그 생성', 'basic'],
+      ['Enter', '커밋 보기', 'basic'],
+    ]
+  },
+  {
+    id: 'commits', label: 'Commits', icon: '📝',
+    keys: [
+      ['s', 'Squash (아래 커밋과 합치기)', 'intermediate'],
+      ['f', 'Fixup (메시지 없이 합치기)', 'intermediate'],
+      ['r', 'Reword (커밋 메시지 수정)', 'intermediate'],
+      ['R', '에디터로 reword', 'intermediate'],
+      ['e', 'Edit (interactive rebase에서 멈춤)', 'intermediate'],
+      ['i', 'Interactive rebase 시작', 'intermediate'],
+      ['d', 'Drop (커밋 삭제)', 'intermediate'],
+      ['p', 'Pick (drop 취소)', 'intermediate'],
+      ['t', 'Revert (되돌리기 커밋 생성)', 'intermediate'],
+      ['T', '태그 생성', 'intermediate'],
+      ['S', 'Squash 옵션 메뉴', 'advanced'],
+      ['ctrl+j / ctrl+k', '커밋 위 / 아래 이동', 'intermediate'],
+      ['C', 'Cherry-pick용 커밋 복사', 'intermediate'],
+      ['V', 'Cherry-pick 붙여넣기', 'intermediate'],
+      ['A', 'Amend (스테이지된 변경사항을 이 커밋에 추가)', 'advanced'],
+      ['a', '공동 작성자 설정', 'advanced'],
+      ['shift+a', 'Amend attribute 메뉴', 'advanced'],
+      ['g', '커밋으로 reset', 'intermediate'],
+      ['o', '브라우저에서 열기', 'basic'],
+      ['Enter', '커밋 파일 목록 보기', 'basic'],
+      ['space', '체크아웃', 'basic'],
+      ['y', 'SHA 복사', 'basic'],
+      ['b', 'Bisect 메뉴', 'advanced'],
+      ['ctrl+p', 'Custom patch 옵션', 'advanced'],
+      ['shift+f', 'Fixup 커밋 생성', 'advanced'],
+    ]
+  },
+  {
+    id: 'reflog', label: 'Reflog', icon: '🕐',
+    keys: [
+      ['space', '체크아웃', 'basic'],
+      ['g', 'Reset 옵션', 'intermediate'],
+      ['y', 'SHA 복사', 'basic'],
+      ['Enter', '커밋 보기', 'basic'],
+    ]
+  },
+  {
+    id: 'stash', label: 'Stash', icon: '📦',
+    keys: [
+      ['space', 'Apply', 'basic'],
+      ['g / d', 'Drop', 'basic'],
+      ['shift+p', 'Pop (apply + drop)', 'basic'],
+      ['n', '새 브랜치로 생성', 'intermediate'],
+      ['R', '이름 변경', 'intermediate'],
+      ['Enter', '파일 보기', 'basic'],
+      ['w', 'Diff 비교 마킹', 'advanced'],
+    ]
+  },
+  {
+    id: 'staging', label: 'Staging', icon: '📐',
+    keys: [
+      ['space', '선택 라인 스테이지 / 언스테이지', 'basic'],
+      ['a', 'Hunk 전체 토글', 'basic'],
+      ['d', '변경 삭제 (discard)', 'intermediate'],
+      ['tab', 'Staged / Unstaged 뷰 전환', 'basic'],
+      ['E', '파일 편집', 'basic'],
+      ['e', 'Hunk 편집', 'intermediate'],
+      ['o', '파일 열기', 'basic'],
+      ['v', '범위 선택 모드', 'intermediate'],
+      ['esc', 'Files 패널로 복귀', 'basic'],
+    ]
+  },
+  {
+    id: 'merge', label: 'Merge Conflicts', icon: '⚔️',
+    keys: [
+      ['space', '현재 hunk 선택', 'basic'],
+      ['b', '양쪽 모두 선택', 'intermediate'],
+      ['j / k', '이전 / 다음 충돌로 이동', 'basic'],
+      ['z', 'Undo', 'intermediate'],
+      ['e', '파일 편집', 'basic'],
+      ['M', '외부 머지 툴', 'advanced'],
+      ['esc', 'Files 패널로 복귀', 'basic'],
+    ]
+  },
+];
+
+const workflows = [
+  {
+    icon: '🔄', title: 'Interactive Rebase',
+    level: 'intermediate',
+    content: `
+      <ul>
+        <li><kbd>i</kbd>로 interactive rebase 시작</li>
+        <li><kbd>s</kbd> squash, <kbd>f</kbd> fixup, <kbd>d</kbd> drop, <kbd>e</kbd> edit, <kbd>r</kbd> reword</li>
+        <li><kbd>shift+a</kbd> 오래된 커밋을 HEAD로 rebase하여 amend</li>
+        <li><kbd>shift+f</kbd> fixup/amend 커밋 생성</li>
+        <li><kbd>shift+s</kbd> autosquash 적용</li>
+        <li>범위 선택(<kbd>v</kbd> 또는 shift+화살표)으로 여러 커밋 동시 수정</li>
+      </ul>
+    `
+  },
+  {
+    icon: '🍒', title: 'Cherry-Pick',
+    level: 'intermediate',
+    content: `
+      <ul>
+        <li><kbd>C</kbd> 커밋 복사 → 대상 브랜치로 이동 → <kbd>V</kbd> 붙여넣기</li>
+        <li><kbd>shift+r</kbd> 선택 초기화</li>
+        <li>여러 커밋을 범위 선택(<kbd>v</kbd>)하여 한번에 cherry-pick 가능</li>
+      </ul>
+    `
+  },
+  {
+    icon: '🔍', title: 'Bisect (이진 탐색)',
+    level: 'advanced',
+    content: `
+      <ul>
+        <li>Commits 패널에서 <kbd>b</kbd>로 bisect 메뉴 열기</li>
+        <li>good/bad 마킹으로 자동 이진 탐색</li>
+        <li>버그 원인 커밋을 빠르게 찾을 수 있음</li>
+      </ul>
+    `
+  },
+  {
+    icon: '🌳', title: 'Worktree',
+    level: 'advanced',
+    content: `
+      <ul>
+        <li>Branches 패널에서 <kbd>w</kbd>로 worktree 옵션</li>
+        <li>stash 없이 다른 브랜치에서 동시 작업 가능</li>
+        <li>각 worktree는 독립된 작업 디렉토리를 가짐</li>
+      </ul>
+    `
+  },
+  {
+    icon: '🩹', title: 'Custom Patch',
+    level: 'advanced',
+    content: `
+      <ul>
+        <li>Commits 패널에서 <kbd>Enter</kbd> → 파일 선택 → <kbd>Enter</kbd> → 라인 선택(<kbd>space</kbd>)</li>
+        <li><kbd>ctrl+p</kbd>로 커밋에서 제거 / 분리 / 역적용</li>
+        <li>커밋의 일부 변경만 추출하거나 이동할 때 유용</li>
+      </ul>
+    `
+  },
+  {
+    icon: '📊', title: 'Diff 비교',
+    level: 'advanced',
+    content: `
+      <ul>
+        <li><kbd>w</kbd>로 커밋 마킹 → 다른 커밋 선택 시 diff 비교</li>
+        <li>두 커밋 간 차이를 시각적으로 확인</li>
+      </ul>
+    `
+  },
+  {
+    icon: '⏪', title: 'Undo / Redo',
+    level: 'intermediate',
+    content: `
+      <ul>
+        <li><kbd>z</kbd> undo — reflog 기반으로 이전 상태 복원</li>
+        <li><kbd>ctrl+z</kbd> 또는 <kbd>Z</kbd> redo</li>
+        <li>대부분의 git 작업을 되돌릴 수 있음</li>
+      </ul>
+    `
+  },
+  {
+    icon: '📚', title: 'Stacked Branches',
+    level: 'advanced',
+    content: `
+      <ul>
+        <li><code>git config rebase.updateRefs true</code> 설정 필요</li>
+        <li>rebase 시 스택 브랜치가 자동으로 함께 갱신</li>
+        <li>연속된 feature 브랜치를 효율적으로 관리</li>
+      </ul>
+    `
+  },
+  {
+    icon: '⚙️', title: 'Custom Commands',
+    level: 'advanced',
+    content: `
+      <ul>
+        <li>config.yml에 <code>customCommands</code> 정의</li>
+        <li>플레이스홀더: <code>{{.SelectedCommit.Hash}}</code>, <code>{{.SelectedFile.Name | quote}}</code></li>
+        <li>반복 작업을 단축키로 등록 가능</li>
+      </ul>
+    `
+  },
+];
+
+// ===== RENDER =====
+const tabBar = document.getElementById('tabBar');
+const panelContainer = document.getElementById('panelContainer');
+const searchInput = document.getElementById('searchInput');
+const searchCount = document.getElementById('searchCount');
+const noResults = document.getElementById('noResults');
+
+let activeTab = 'global';
+let activeLevels = { basic: true, intermediate: true, advanced: true };
+
+function renderTabs() {
+  tabBar.innerHTML = panels.map((p, i) => {
+    const count = p.keys.length;
+    return `<button class="tab-btn${p.id === activeTab ? ' active' : ''}" data-panel="${p.id}" role="tab" aria-selected="${p.id === activeTab}" aria-controls="panel-${p.id}" onclick="switchTab('${p.id}')">
+      <span>${p.icon}</span> ${p.label} <span class="tab-count">${count}</span>
+    </button>`;
+  }).join('');
+}
+
+function renderPanels() {
+  panelContainer.innerHTML = panels.map(p => {
+    const rows = p.keys.map(([key, desc, level]) => {
+      const keys = key.split(/\s*\/\s*/).map(k => `<kbd>${escHtml(k.trim())}</kbd>`).join(' ');
+      return `<tr class="kb-row" data-level="${level}" data-key="${escHtml(key.toLowerCase())}" data-desc="${escHtml(desc.toLowerCase())}">
+        <td class="key-cell">${keys}</td>
+        <td class="desc-cell">${escHtml(desc)}</td>
+        <td class="level-cell"><span class="level-badge ${level}">${levelLabel(level)}</span></td>
+      </tr>`;
+    }).join('');
+    return `<div class="panel-section${p.id === activeTab ? ' active' : ''}" id="panel-${p.id}" role="tabpanel">
+      <table class="kb-table">
+        <thead><tr><th>키</th><th>동작</th><th>난이도</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+}
+
+function renderWorkflows() {
+  const acc = document.getElementById('workflowAccordion');
+  acc.innerHTML = workflows.map((w, i) => `
+    <div class="acc-item" data-level="${w.level}">
+      <div class="acc-header" onclick="toggleAccordion(this)">
+        <span class="acc-arrow">&#9654;</span>
+        <span class="acc-icon">${w.icon}</span>
+        <span>${w.title}</span>
+        <span class="level-badge ${w.level}" style="margin-left:auto">${levelLabel(w.level)}</span>
+      </div>
+      <div class="acc-body"><div class="acc-content">${w.content}</div></div>
+    </div>
+  `).join('');
+}
+
+function levelLabel(l) {
+  return l === 'basic' ? '기본' : l === 'intermediate' ? '중급' : '고급';
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ===== INTERACTIONS =====
+function switchTab(id) {
+  activeTab = id;
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    const isActive = b.dataset.panel === id;
+    b.classList.toggle('active', isActive);
+    b.setAttribute('aria-selected', isActive);
+  });
+  document.querySelectorAll('.panel-section').forEach(s => s.classList.toggle('active', s.id === 'panel-' + id));
+  applyFilters();
+}
+
+function goToPanel(id) {
+  const map = { status: 'status', files: 'files', branches: 'branches', commits: 'commits', stash: 'stash' };
+  if (map[id]) switchTab(map[id]);
+  document.querySelector('.tab-bar').scrollIntoView({ behavior: 'smooth' });
+}
+
+function toggleDifficulty(level) {
+  activeLevels[level] = !activeLevels[level];
+  document.querySelectorAll(`.diff-btn[data-level="${level}"]`).forEach(b => b.classList.toggle('active'));
+  applyFilters();
+}
+
+function toggleAccordion(header) {
+  header.parentElement.classList.toggle('open');
+}
+
+function applyFilters() {
+  const query = searchInput.value.toLowerCase().trim();
+  let totalVisible = 0;
+  let totalRows = 0;
+
+  if (query) {
+    // Search mode: show ALL panels, highlight matches
+    document.querySelectorAll('.panel-section').forEach(s => s.classList.add('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  } else {
+    // Normal tab mode
+    document.querySelectorAll('.panel-section').forEach(s => s.classList.toggle('active', s.id === 'panel-' + activeTab));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.panel === activeTab));
+  }
+
+  document.querySelectorAll('.kb-row').forEach(row => {
+    const level = row.dataset.level;
+    const key = row.dataset.key;
+    const desc = row.dataset.desc;
+    const levelOk = activeLevels[level];
+    const searchOk = !query || key.includes(query) || desc.includes(query);
+    const visible = levelOk && searchOk;
+    row.classList.toggle('hidden', !visible);
+    totalRows++;
+    if (visible) totalVisible++;
+  });
+
+  // Workflow filter
+  document.querySelectorAll('.acc-item').forEach(item => {
+    const level = item.dataset.level;
+    const levelOk = activeLevels[level];
+    const text = item.textContent.toLowerCase();
+    const searchOk = !query || text.includes(query);
+    item.style.display = (levelOk && searchOk) ? '' : 'none';
+  });
+
+  // Update tab counts
+  panels.forEach(p => {
+    const section = document.getElementById('panel-' + p.id);
+    if (!section) return;
+    const visibleCount = section.querySelectorAll('.kb-row:not(.hidden)').length;
+    const btn = document.querySelector(`.tab-btn[data-panel="${p.id}"] .tab-count`);
+    if (btn) btn.textContent = visibleCount;
+  });
+
+  // Search count
+  if (query) {
+    searchCount.textContent = `${totalVisible}건`;
+  } else {
+    searchCount.textContent = '';
+  }
+
+  // No results
+  noResults.classList.toggle('visible', totalVisible === 0 && query);
+
+  // Hide empty panels in search mode
+  if (query) {
+    document.querySelectorAll('.panel-section').forEach(s => {
+      const hasVisible = s.querySelectorAll('.kb-row:not(.hidden)').length > 0;
+      s.classList.toggle('active', hasVisible);
+    });
+  }
+}
+
+// Search with debounce
+let searchTimer;
+searchInput.addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(applyFilters, 120);
+});
+
+// Keyboard shortcut: / to focus search
+document.addEventListener('keydown', e => {
+  if (e.key === '/' && document.activeElement !== searchInput) {
+    e.preventDefault();
+    searchInput.focus();
+  }
+  if (e.key === 'Escape' && document.activeElement === searchInput) {
+    searchInput.value = '';
+    searchInput.blur();
+    applyFilters();
+  }
+  // Number keys for tab switching (only when not in input)
+  if (document.activeElement === searchInput) return;
+  const num = parseInt(e.key);
+  if (num >= 1 && num <= panels.length) {
+    switchTab(panels[num - 1].id);
+  }
+});
+
+// ===== INIT =====
+renderTabs();
+renderPanels();
+renderWorkflows();
+applyFilters();
+</script>
+</body>
+</html>
