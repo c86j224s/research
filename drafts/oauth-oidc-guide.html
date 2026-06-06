@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OAuth 2.0 & OIDC 완전 가이드 — Golang 구현 사전조사</title>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg2: #1a1d27;
+  --bg3: #232637;
+  --border: #2e3248;
+  --accent: #7c6af7;
+  --accent2: #56cfb2;
+  --accent3: #f7a356;
+  --danger: #f76f6f;
+  --text: #e2e4f0;
+  --text2: #9499b8;
+  --text3: #636882;
+  --green: #56cfb2;
+  --yellow: #f7c356;
+  --red: #f76f6f;
+  --blue: #6ab0f7;
+  --purple: #b56af7;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 1.6; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Header */
+.header { background: linear-gradient(135deg, #1a1d27 0%, #0f1117 100%); border-bottom: 1px solid var(--border); padding: 28px 40px 24px; }
+.header h1 { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+.header p { color: var(--text2); margin-top: 6px; font-size: 13px; }
+.badge-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.badge { font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 600; letter-spacing: 0.3px; }
+.badge-rfc { background: #1e2a4a; color: var(--blue); border: 1px solid #2a3d6a; }
+.badge-req { background: #2a1e1e; color: var(--red); border: 1px solid #4a2a2a; }
+.badge-flex { background: #1e2a20; color: var(--green); border: 1px solid #2a4a30; }
+.badge-custom { background: #2a2a1e; color: var(--yellow); border: 1px solid #4a4a2a; }
+
+/* Tabs */
+.tab-bar { background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; overflow-x: auto; padding: 0 40px; gap: 0; }
+.tab-bar::-webkit-scrollbar { height: 3px; }
+.tab-bar::-webkit-scrollbar-track { background: transparent; }
+.tab-bar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.tab { padding: 13px 18px; cursor: pointer; color: var(--text2); font-size: 13px; font-weight: 500; border-bottom: 2px solid transparent; white-space: nowrap; transition: color .15s, border-color .15s; }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* Content */
+.content { max-width: 1100px; margin: 0 auto; padding: 32px 40px; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Section */
+.section { margin-bottom: 36px; }
+.section-title { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+.section-title .icon { font-size: 18px; }
+.section-sub { font-size: 13px; font-weight: 600; color: var(--text); margin: 16px 0 10px; border-left: 3px solid var(--accent); padding-left: 10px; }
+
+/* Cards */
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 12px; }
+.card-title { font-weight: 700; color: #fff; margin-bottom: 6px; font-size: 14px; }
+.card p, .card li { color: var(--text2); font-size: 13px; }
+.card ul { padding-left: 16px; }
+.card li { margin-bottom: 4px; }
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media(max-width: 700px) { .card-grid { grid-template-columns: 1fr; } }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: var(--bg3); color: var(--text2); font-weight: 600; text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,.02); }
+.tbl-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 16px; }
+.tbl-title { padding: 12px 14px; font-size: 12px; font-weight: 700; color: var(--text2); background: var(--bg3); border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* Tags */
+.tag { display: inline-block; font-size: 11px; padding: 2px 7px; border-radius: 4px; font-weight: 600; }
+.tag-must { background: #2a1e1e; color: var(--red); }
+.tag-should { background: #2a241e; color: var(--yellow); }
+.tag-may { background: #1e2a20; color: var(--green); }
+.tag-new { background: #1e1e2a; color: var(--blue); }
+.tag-dep { background: #2a2a2a; color: var(--text3); text-decoration: line-through; }
+
+/* Code */
+code { background: var(--bg3); color: var(--accent2); padding: 2px 6px; border-radius: 4px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; }
+pre { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; margin: 10px 0; }
+pre code { background: none; padding: 0; color: var(--accent2); font-size: 12px; line-height: 1.7; }
+
+/* Flow diagram */
+.flow { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 20px; font-family: 'SF Mono', monospace; font-size: 12px; color: var(--text2); line-height: 1.8; overflow-x: auto; margin: 10px 0; }
+.flow .actor { color: var(--accent); font-weight: 700; }
+.flow .arrow { color: var(--accent3); }
+.flow .label { color: var(--green); }
+.flow .note { color: var(--text3); font-style: italic; }
+
+/* Alert boxes */
+.alert { border-radius: 8px; padding: 12px 16px; margin: 12px 0; font-size: 13px; display: flex; gap: 10px; }
+.alert-icon { flex-shrink: 0; font-size: 16px; }
+.alert-body { flex: 1; }
+.alert-title { font-weight: 700; margin-bottom: 4px; }
+.alert-must { background: #1e1010; border: 1px solid #3d1a1a; }
+.alert-must .alert-title { color: var(--red); }
+.alert-info { background: #101826; border: 1px solid #1a3040; }
+.alert-info .alert-title { color: var(--blue); }
+.alert-tip { background: #101e12; border: 1px solid #1a3d20; }
+.alert-tip .alert-title { color: var(--green); }
+.alert-warn { background: #1e1a10; border: 1px solid #3d341a; }
+.alert-warn .alert-title { color: var(--yellow); }
+
+/* Accordion */
+.accordion { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
+.acc-header { padding: 14px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: var(--bg2); font-weight: 600; font-size: 13px; user-select: none; transition: background .15s; }
+.acc-header:hover { background: var(--bg3); }
+.acc-arrow { color: var(--text3); transition: transform .2s; }
+.acc-header.open .acc-arrow { transform: rotate(90deg); }
+.acc-body { display: none; padding: 16px; background: var(--bg); border-top: 1px solid var(--border); }
+.acc-body.open { display: block; }
+
+/* Progress / level indicator */
+.level-bar { display: flex; gap: 3px; align-items: center; }
+.level-dot { width: 8px; height: 8px; border-radius: 50%; }
+.level-dot.on { background: var(--accent); }
+.level-dot.off { background: var(--bg3); }
+
+/* Comparison grid */
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.compare-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.compare-box h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.compare-box.oauth h3 { color: var(--blue); }
+.compare-box.oidc h3 { color: var(--purple); }
+
+/* TOC */
+.toc { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; }
+.toc-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text3); margin-bottom: 10px; }
+.toc-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.toc-item { font-size: 12px; color: var(--text2); cursor: pointer; padding: 4px 10px; border-radius: 20px; background: var(--bg3); transition: background .15s, color .15s; }
+.toc-item:hover { background: var(--accent); color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>OAuth 2.0 &amp; OIDC 완전 가이드</h1>
+  <p>Golang 기반 Authorization Server + Admin 구현을 위한 사전조사 — HTTP 전용, 앞단 LB/Proxy가 TLS 처리</p>
+  <div class="badge-row">
+    <span class="badge badge-rfc">RFC 6749 OAuth 2.0</span>
+    <span class="badge badge-rfc">RFC 7636 PKCE</span>
+    <span class="badge badge-rfc">RFC 7519 JWT</span>
+    <span class="badge badge-rfc">OpenID Connect Core 1.0</span>
+    <span class="badge badge-rfc">RFC 7662 Introspection</span>
+    <span class="badge badge-rfc">RFC 7009 Revocation</span>
+    <span class="badge badge-req">필수(MUST)</span>
+    <span class="badge badge-flex">자율(MAY)</span>
+    <span class="badge badge-custom">표준 외</span>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <div class="tab active" onclick="switchTab('overview')">개요</div>
+  <div class="tab" onclick="switchTab('roles')">역할 &amp; 용어</div>
+  <div class="tab" onclick="switchTab('flows')">플로우</div>
+  <div class="tab" onclick="switchTab('tokens')">토큰</div>
+  <div class="tab" onclick="switchTab('oidc')">OIDC / ID Token</div>
+  <div class="tab" onclick="switchTab('endpoints')">엔드포인트 &amp; 파라미터</div>
+  <div class="tab" onclick="switchTab('security')">보안 필수사항</div>
+  <div class="tab" onclick="switchTab('flex')">구현 자율성</div>
+  <div class="tab" onclick="switchTab('custom')">표준 외 고려사항</div>
+  <div class="tab" onclick="switchTab('golang')">Golang 구현</div>
+</div>
+
+<div class="content">
+
+<!-- ======= TAB: 개요 ======= -->
+<div id="tab-overview" class="tab-content active">
+  <div class="section">
+    <div class="section-title"><span class="icon">🗺️</span> OAuth 2.0과 OIDC의 관계</div>
+
+    <div class="compare">
+      <div class="compare-box oauth">
+        <h3>OAuth 2.0 — 위임 권한 부여</h3>
+        <p style="color:var(--text2);font-size:13px;margin-bottom:8px">"이 앱이 내 구글 드라이브에 접근해도 됩니다"</p>
+        <ul style="color:var(--text2);font-size:13px;padding-left:16px;">
+          <li>리소스 접근 <strong style="color:var(--text)">권한(Authorization)</strong> 위임 프레임워크</li>
+          <li>Access Token 발급이 핵심</li>
+          <li>"누구인가"를 직접 정의하지 않음</li>
+          <li>RFC 6749, 6750, 7636 등</li>
+        </ul>
+      </div>
+      <div class="compare-box oidc">
+        <h3>OIDC — 신원 확인 (인증 레이어)</h3>
+        <p style="color:var(--text2);font-size:13px;margin-bottom:8px">"이 사람이 kim@example.com입니다"</p>
+        <ul style="color:var(--text2);font-size:13px;padding-left:16px;">
+          <li>OAuth 2.0 위에 <strong style="color:var(--text)">신원(Authentication)</strong> 레이어 추가</li>
+          <li>ID Token (JWT) 발급이 핵심</li>
+          <li>사용자 정보를 표준화된 Claims로 전달</li>
+          <li>OpenID Connect Core 1.0 스펙</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="alert alert-info" style="margin-top:16px">
+      <span class="alert-icon">💡</span>
+      <div class="alert-body">
+        <div class="alert-title">핵심 관계</div>
+        OIDC는 OAuth 2.0을 <strong>대체하지 않고 확장</strong>합니다. OIDC를 구현하면 OAuth 2.0도 자동으로 구현됩니다.
+        Authorization Server가 OIDC를 지원하면 <strong>OpenID Provider (OP)</strong>라고 부릅니다.
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="icon">📚</span> 주요 RFC / 스펙 목록</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>스펙</th><th>이름</th><th>핵심 내용</th><th>중요도</th></tr>
+        <tr><td><code>RFC 6749</code></td><td>OAuth 2.0 Core</td><td>Authorization Framework 기본 — Grant Type, 엔드포인트, 파라미터</td><td><span class="tag tag-must">MUST</span></td></tr>
+        <tr><td><code>RFC 6750</code></td><td>Bearer Token Usage</td><td>Access Token을 HTTP 요청에 싣는 방법 (Authorization: Bearer ...)</td><td><span class="tag tag-must">MUST</span></td></tr>
+        <tr><td><code>RFC 7636</code></td><td>PKCE</td><td>Public Client의 Authorization Code 인터셉트 공격 방지 — code_verifier/challenge</td><td><span class="tag tag-must">MUST</span></td></tr>
+        <tr><td><code>RFC 7519</code></td><td>JWT</td><td>JSON Web Token 구조 및 Claims 정의</td><td><span class="tag tag-must">MUST</span></td></tr>
+        <tr><td><code>RFC 7517</code></td><td>JWK</td><td>JSON Web Key — 공개키를 JSON으로 표현하는 방법</td><td><span class="tag tag-must">MUST</span></td></tr>
+        <tr><td><code>RFC 7518</code></td><td>JWA</td><td>JSON Web Algorithms — RS256, ES256, HS256 등</td><td><span class="tag tag-must">MUST</span></td></tr>
+        <tr><td><code>OIDC Core 1.0</code></td><td>OpenID Connect Core</td><td>ID Token, UserInfo, Claims, nonce, Discovery</td><td><span class="tag tag-must">MUST</span></td></tr>
+        <tr><td><code>OIDC Discovery</code></td><td>OpenID Connect Discovery</td><td><code>/.well-known/openid-configuration</code> 메타데이터 문서</td><td><span class="tag tag-should">SHOULD</span></td></tr>
+        <tr><td><code>RFC 7662</code></td><td>Token Introspection</td><td>RS가 AS에 토큰 유효성/메타데이터 질의하는 엔드포인트</td><td><span class="tag tag-should">SHOULD</span></td></tr>
+        <tr><td><code>RFC 7009</code></td><td>Token Revocation</td><td>Access/Refresh Token 폐기 엔드포인트</td><td><span class="tag tag-should">SHOULD</span></td></tr>
+        <tr><td><code>RFC 8628</code></td><td>Device Authorization Grant</td><td>TV 등 입력장치 없는 기기용 OAuth 플로우</td><td><span class="tag tag-may">MAY</span></td></tr>
+        <tr><td><code>RFC 9068</code></td><td>JWT Access Tokens</td><td>Access Token을 JWT로 만들 때의 표준 Claims</td><td><span class="tag tag-may">MAY</span></td></tr>
+        <tr><td><code>RFC 8693</code></td><td>Token Exchange</td><td>토큰을 다른 토큰으로 교환 (on-behalf-of, impersonation)</td><td><span class="tag tag-may">MAY</span></td></tr>
+        <tr><td><code>RFC 8414</code></td><td>AS Metadata</td><td><code>/.well-known/oauth-authorization-server</code> 순수 OAuth용 Discovery</td><td><span class="tag tag-may">MAY</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="icon">🏗️</span> 우리가 만들 것 — 구성 요소</div>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">Authorization Server (AS) / OpenID Provider (OP)</div>
+        <ul>
+          <li>사용자 로그인 (이메일+비밀번호+TOTP)</li>
+          <li>Consent 화면</li>
+          <li>Authorization Code 발급</li>
+          <li>Access Token / Refresh Token / ID Token 발급</li>
+          <li>JWKS 엔드포인트, Discovery 문서</li>
+          <li>Introspection, Revocation</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">Admin UI / API</div>
+        <ul>
+          <li>Client 등록 및 관리</li>
+          <li>사용자 계정 관리</li>
+          <li>스코프 및 권한 정의</li>
+          <li>발급된 토큰/세션 관리</li>
+          <li>감사 로그</li>
+          <li>TOTP 관리</li>
+        </ul>
+      </div>
+    </div>
+    <div class="alert alert-warn" style="margin-top:4px">
+      <span class="alert-icon">⚠️</span>
+      <div class="alert-body">
+        <div class="alert-title">HTTP + 앞단 프록시 구성 시 주의</div>
+        AS 자체는 HTTP로 동작하지만, OAuth 스펙은 HTTPS를 <strong>강제</strong>합니다. 앞단 LB/Proxy가 TLS를 처리하므로
+        AS는 <code>X-Forwarded-Proto: https</code> 헤더를 신뢰하고, Redirect URI 검증 시 scheme을 https로 강제해야 합니다.
+        또한 <code>Secure</code> 쿠키 플래그는 앞단이 처리하거나, 내부적으로 플래그를 설정해도 됩니다 (프록시가 전달).
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======= TAB: 역할 & 용어 ======= -->
+<div id="tab-roles" class="tab-content">
+  <div class="section">
+    <div class="section-title"><span class="icon">👥</span> OAuth 2.0의 4가지 역할 (Roles)</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>역할</th><th>약어/별칭</th><th>설명</th><th>우리 구현에서</th></tr>
+        <tr>
+          <td><strong>Resource Owner</strong></td>
+          <td><code>RO</code></td>
+          <td>리소스를 소유하고, 접근을 허용/거부할 수 있는 주체. 일반적으로 <strong>사용자(End-User)</strong>.</td>
+          <td>이메일+비밀번호+TOTP로 로그인하는 사람</td>
+        </tr>
+        <tr>
+          <td><strong>Client</strong></td>
+          <td>—</td>
+          <td>RO 대신 보호된 리소스에 접근하려는 애플리케이션. <em>사람이 아님</em>에 주의.</td>
+          <td>Admin에서 등록하는 앱들 (웹앱, 모바일 앱, CLI 등)</td>
+        </tr>
+        <tr>
+          <td><strong>Authorization Server</strong></td>
+          <td><code>AS</code>, <code>OP</code>(OIDC)</td>
+          <td>RO 인증 후 Client에게 Access Token 발급. OIDC에선 OpenID Provider(OP)라 부름.</td>
+          <td><strong>우리가 만드는 서버</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Resource Server</strong></td>
+          <td><code>RS</code></td>
+          <td>보호된 API. Access Token을 검증하고 요청을 처리.</td>
+          <td>AS가 발급한 토큰을 신뢰하는 외부 API들</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="icon">🔑</span> Client 종류</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>종류</th><th>정의</th><th>예시</th><th>비밀 유지</th><th>PKCE</th></tr>
+        <tr>
+          <td><strong>Confidential Client</strong></td>
+          <td>client_secret을 안전하게 보관할 수 있는 클라이언트</td>
+          <td>서버사이드 웹앱, 백엔드 서비스</td>
+          <td>가능</td>
+          <td>권장</td>
+        </tr>
+        <tr>
+          <td><strong>Public Client</strong></td>
+          <td>client_secret을 안전하게 보관할 수 없는 클라이언트</td>
+          <td>SPA, 네이티브 앱, 모바일 앱</td>
+          <td>불가</td>
+          <td><span class="tag tag-must">MUST</span></td>
+        </tr>
+        <tr>
+          <td><strong>Credentialed Client</strong></td>
+          <td>(OAuth 2.1 용어) 동적 클라이언트 인증 메커니즘 사용</td>
+          <td>DPoP 사용 클라이언트</td>
+          <td>조건부</td>
+          <td>권장</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="icon">📖</span> 핵심 용어 사전</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>용어</th><th>Full Name</th><th>설명</th></tr>
+        <tr><td><code>PKCE</code></td><td>Proof Key for Code Exchange</td><td>code_verifier(랜덤값)와 code_challenge(해시값)로 Authorization Code 가로채기 방지. RFC 7636.</td></tr>
+        <tr><td><code>JWT</code></td><td>JSON Web Token</td><td>Header.Payload.Signature 구조의 자가포함(self-contained) 토큰. RFC 7519.</td></tr>
+        <tr><td><code>JWS</code></td><td>JSON Web Signature</td><td>JWT의 서명된 버전 (대부분의 JWT는 JWS). RFC 7515.</td></tr>
+        <tr><td><code>JWE</code></td><td>JSON Web Encryption</td><td>JWT의 암호화된 버전. 내용이 보호됨. RFC 7516.</td></tr>
+        <tr><td><code>JWK</code></td><td>JSON Web Key</td><td>공개키(또는 대칭키)를 JSON으로 표현한 형식. RFC 7517.</td></tr>
+        <tr><td><code>JWKS</code></td><td>JSON Web Key Set</td><td>여러 JWK를 담은 집합. AS가 <code>/jwks.json</code>으로 노출.</td></tr>
+        <tr><td><code>JWA</code></td><td>JSON Web Algorithms</td><td>JWT/JWS/JWE에 쓰이는 알고리즘 명세 (RS256, ES256, HS256 등). RFC 7518.</td></tr>
+        <tr><td><code>alg</code></td><td>Algorithm</td><td>JWT 서명/암호화에 사용한 알고리즘 식별자. (e.g. RS256 = RSA + SHA-256)</td></tr>
+        <tr><td><code>kid</code></td><td>Key ID</td><td>어떤 키로 서명했는지 식별하는 문자열. 키 순환(rotation) 시 필수.</td></tr>
+        <tr><td><code>iss</code></td><td>Issuer</td><td>토큰 발급자 URL. (e.g. <code>https://auth.example.com</code>)</td></tr>
+        <tr><td><code>sub</code></td><td>Subject</td><td>토큰의 주체 식별자. 사용자의 고유 ID.</td></tr>
+        <tr><td><code>aud</code></td><td>Audience</td><td>토큰의 수신자. Client ID 또는 Resource Server URL.</td></tr>
+        <tr><td><code>exp</code></td><td>Expiration Time</td><td>토큰 만료 시각 (Unix timestamp).</td></tr>
+        <tr><td><code>iat</code></td><td>Issued At</td><td>토큰 발급 시각 (Unix timestamp).</td></tr>
+        <tr><td><code>nbf</code></td><td>Not Before</td><td>이 시각 이전엔 토큰 유효하지 않음.</td></tr>
+        <tr><td><code>jti</code></td><td>JWT ID</td><td>JWT 고유 식별자. 재사용(replay) 방지에 활용.</td></tr>
+        <tr><td><code>nonce</code></td><td>Number Used Once</td><td>OIDC에서 ID Token에 포함 — 리플레이 공격 방지. Client가 생성해 보냄.</td></tr>
+        <tr><td><code>acr</code></td><td>Authentication Context Class Reference</td><td>어떤 수준의 인증이 이뤄졌는지. (e.g. "mfa", "pwd")</td></tr>
+        <tr><td><code>amr</code></td><td>Authentication Methods References</td><td>사용된 인증 방법 목록. (e.g. ["pwd","otp"])</td></tr>
+        <tr><td><code>auth_time</code></td><td>Authentication Time</td><td>사용자가 실제 인증한 시각 (Unix timestamp).</td></tr>
+        <tr><td><code>TOTP</code></td><td>Time-based One-Time Password</td><td>시간 기반 일회용 비밀번호. RFC 6238. Google Authenticator 등.</td></tr>
+        <tr><td><code>HOTP</code></td><td>HMAC-based One-Time Password</td><td>카운터 기반 일회용 비밀번호. RFC 4226. TOTP의 기반.</td></tr>
+        <tr><td><code>state</code></td><td>—</td><td>CSRF 방지용 불투명 문자열. Client가 생성, AS가 그대로 돌려줌.</td></tr>
+        <tr><td><code>scope</code></td><td>—</td><td>요청하는 접근 범위. 공백 구분 문자열. (e.g. "openid profile email")</td></tr>
+        <tr><td><code>grant_type</code></td><td>—</td><td>토큰 요청 방식 식별자. (authorization_code, client_credentials 등)</td></tr>
+        <tr><td><code>response_type</code></td><td>—</td><td>Authorization Endpoint에서 무엇을 돌려받을지. (code, token, id_token 등)</td></tr>
+        <tr><td><code>PKCE code_verifier</code></td><td>—</td><td>Client가 생성하는 43~128자 랜덤 문자열.</td></tr>
+        <tr><td><code>PKCE code_challenge</code></td><td>—</td><td>code_verifier를 SHA-256 해시 후 Base64URL 인코딩한 값.</td></tr>
+        <tr><td><code>DPoP</code></td><td>Demonstrating Proof-of-Possession</td><td>토큰이 특정 키와 바인딩됨을 증명. Bearer 토큰 탈취 방지. RFC 9449.</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ======= TAB: 플로우 ======= -->
+<div id="tab-flows" class="tab-content">
+  <div class="section">
+    <div class="section-title"><span class="icon">🔄</span> Grant Type 비교</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Grant Type</th><th>사용 케이스</th><th>User Interaction</th><th>상태</th></tr>
+        <tr><td><strong>Authorization Code + PKCE</strong></td><td>웹앱, 모바일, SPA — 사용자 로그인 필요한 경우</td><td>필요</td><td><span class="tag tag-must">권장</span></td></tr>
+        <tr><td><strong>Client Credentials</strong></td><td>M2M, 백엔드 서비스간 통신 — 사용자 없음</td><td>불필요</td><td><span class="tag tag-must">권장</span></td></tr>
+        <tr><td><strong>Device Authorization</strong></td><td>TV, CLI 도구 — 브라우저 없음</td><td>별도 기기</td><td><span class="tag tag-should">RFC 8628</span></td></tr>
+        <tr><td><strong>Refresh Token</strong></td><td>Access Token 갱신</td><td>불필요</td><td><span class="tag tag-must">권장</span></td></tr>
+        <tr><td><del>Implicit</del></td><td>SPA (구형)</td><td>필요</td><td><span class="tag tag-dep">Deprecated</span></td></tr>
+        <tr><td><del>Resource Owner Password</del></td><td>직접 ID/PW 전달 (구형)</td><td>필요</td><td><span class="tag tag-dep">Deprecated</span></td></tr>
+      </table>
+    </div>
+    <div class="alert alert-must">
+      <span class="alert-icon">🚫</span>
+      <div class="alert-body">
+        <div class="alert-title">Implicit Grant &amp; ROPC — 사용 금지</div>
+        OAuth 2.1 (draft)에서 공식 제거. Implicit은 Access Token이 URL fragment에 노출되고, ROPC는 비밀번호를 Client에 직접 전달하여 보안상 심각한 문제가 있습니다.
+        새 구현에서는 <strong>절대 구현하지 마세요.</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="icon">1️⃣</span> Authorization Code Flow + PKCE (가장 중요)</div>
+
+    <div class="section-sub">단계별 흐름</div>
+    <div class="flow">
+<span class="actor">Client</span>              <span class="actor">Browser/User</span>         <span class="actor">Authorization Server</span>      <span class="actor">Resource Server</span>
+   │                      │                        │                             │
+   │  [1] code_verifier 생성 (43-128자 랜덤)       │                             │
+   │      code_challenge = BASE64URL(SHA256(verifier))                           │
+   │                      │                        │                             │
+   │  [2] Redirect to Authorization Endpoint       │                             │
+   │ ─────────────────────────────────────────────►│                             │
+   │  GET /authorize?response_type=code            │                             │
+   │    &client_id=xxx&redirect_uri=xxx            │                             │
+   │    &scope=openid+profile                      │                             │
+   │    &state=RANDOM                              │                             │
+   │    &code_challenge=xxx                        │                             │
+   │    &code_challenge_method=S256                │                             │
+   │                      │                        │                             │
+   │                      │  [3] 로그인 화면 표시   │                             │
+   │                      │◄───────────────────────│                             │
+   │                      │  [4] 이메일+PW+TOTP 입력│                             │
+   │                      │───────────────────────►│                             │
+   │                      │  [5] Consent 화면       │                             │
+   │                      │◄───────────────────────│                             │
+   │                      │  [6] 허용 클릭          │                             │
+   │                      │───────────────────────►│                             │
+   │                      │                        │                             │
+   │  [7] Redirect back with Authorization Code    │                             │
+   │◄─────────────────────────────────────────────────────────────────           │
+   │  redirect_uri?code=AUTH_CODE&state=RANDOM     │                             │
+   │                      │                        │                             │
+   │  [8] state 검증 (CSRF 방지)                   │                             │
+   │                      │                        │                             │
+   │  [9] POST /token (code + code_verifier)        │                             │
+   │ ─────────────────────────────────────────────►│                             │
+   │  grant_type=authorization_code                │                             │
+   │  code=AUTH_CODE                               │                             │
+   │  redirect_uri=xxx                             │                             │
+   │  code_verifier=ORIGINAL_RANDOM               │                             │
+   │  client_id=xxx (+ client_secret if confidential)                           │
+   │                      │                        │                             │
+   │                      │   [10] code_verifier 검증                            │
+   │                      │   SHA256(verifier) == code_challenge?                │
+   │                      │                        │                             │
+   │  [11] Token Response  │                        │                             │
+   │◄──────────────────────────────────────────────│                             │
+   │  {access_token, token_type, expires_in,       │                             │
+   │   refresh_token, id_token (OIDC)}             │                             │
+   │                      │                        │                             │
+   │  [12] API Call with Access Token              │                             │
+   │ ──────────────────────────────────────────────────────────────────────────►│
+   │  Authorization: Bearer ACCESS_TOKEN           │                             │
+   │                      │                        │                             │
+   │                      │           [13] Token 검증 (JWKS or Introspection)   │
+   │                      │                        │◄────────────────────────────│
+    </div>
+
+    <div class="section-sub">PKCE 핵심 검증 로직</div>
+    <pre><code>// Client 측: code_verifier 생성
+code_verifier = base64url(random_bytes(32))  // 43 chars after encoding
+
+// Client 측: code_challenge 생성
+code_challenge = base64url(sha256(code_verifier))
+
+// AS 측: Token Endpoint에서 검증
+expected_challenge = base64url(sha256(received_code_verifier))
+if expected_challenge != stored_code_challenge {
+    return error("invalid_grant")
+}</code></pre>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="icon">2️⃣</span> Client Credentials Flow</div>
+    <div class="flow">
+<span class="actor">Client (Server)</span>                    <span class="actor">Authorization Server</span>
+   │                                        │
+   │  POST /token                           │
+   │───────────────────────────────────────►│
+   │  grant_type=client_credentials         │
+   │  client_id=xxx                         │
+   │  client_secret=xxx                     │
+   │  scope=read:data                       │
+   │                                        │
+   │  Token Response                        │
+   │◄───────────────────────────────────────│
+   │  {access_token, expires_in, scope}     │
+   │  (refresh_token 없음 — 표준에 미정의)  │
+    </div>
+    <div class="alert alert-info">
+      <span class="alert-icon">ℹ️</span>
+      <div class="alert-body">
+        <div class="alert-title">Client Credentials에는 refresh_token이 없습니다</div>
+        만료되면 Client가 직접 새 Access Token을 요청합니다. Client Secret이 곧 자격증명이므로 Refresh Token이 불필요합니다.
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="icon">3️⃣</span> Refresh Token Flow</div>
+    <div class="flow">
+<span class="actor">Client</span>                              <span class="actor">Authorization Server</span>
+   │                                        │
+   │  (Access Token 만료 감지)              │
+   │                                        │
+   │  POST /token                           │
+   │───────────────────────────────────────►│
+   │  grant_type=refresh_token              │
+   │  refresh_token=REFRESH_TOKEN           │
+   │  client_id=xxx                         │
+   │  (scope=... 선택적, 원래보다 좁아야 함)│
+   │                                        │
+   │  Token Response                        │
+   │◄───────────────────────────────────────│
+   │  {새 access_token, 새 refresh_token?,  │
+   │   expires_in}                          │
+    </div>
+    <div class="alert alert-warn">
+      <span class="alert-icon">⚠️</span>
+      <div class="alert-body">
+        <div class="alert-title">Refresh Token Rotation 권장</div>
+        Refresh Token을 사용할 때마다 새 Refresh Token을 발급하고, 이전 것은 폐기하는 Rotation 전략을 사용하면
+        탈취된 토큰을 감지할 수 있습니다 (이전 토큰으로 재사용 시 알람).
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======= TAB: 토큰 ======= -->
+<div id="tab-tokens" class="tab-content">
+  <div class="section">
+    <div class="section-title"><span class="icon">🎫</span> 토큰 종류 비교</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>토큰</th><th>포맷</th><th>용도</th><th>수신자</th><th>수명</th></tr>
+        <tr><td><strong>Access Token</strong></td><td>JWT 또는 Opaque</td><td>RS API 호출에 사용. 권한 증명.</td><td>Resource Server</td><td>짧음 (5분~1시간)</td></tr>
+        <tr><td><strong>Refresh Token</strong></td><td>보통 Opaque</td><td>Access Token 갱신용. AS에만 전달.</td><td>Authorization Server</td><td>길거나 슬라이딩 (일~주~월)</td></tr>
+        <tr><td><strong>ID Token</strong></td><td>JWT (필수)</td><td>사용자 신원 정보. 인증 증명.</td><td>Client (RP)</td><td>짧음 (1시간 이하)</td></tr>
+        <tr><td><strong>Authorization Code</strong></td><td>Opaque</td><td>Access Token 교환용 임시 코드.</td><td>Authorization Server</td><td>매우 짧음 (&lt;10분, 보통 &lt;1분)</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="icon">🏗️</span> JWT 구조</div>
+    <div class="flow" style="font-size:13px">
+Header (Base64URL) . Payload (Base64URL) . Signature (Base64URL)
+
+<span class="label">Header 예시:</span>
+{
+  "alg": "RS256",   <span class="note">// 서명 알고리즘</span>
+  "typ": "JWT",     <span class="note">// 타입</span>
+  "kid": "key-001"  <span class="note">// Key ID — 어떤 공개키로 검증할지</span>
+}
+
+<span class="label">Payload 예시 (Access Token, RFC 9068):</span>
+{
+  "iss": "https://auth.example.com",   <span class="note">// Issuer</span>
+  "sub": "user-uuid-123",              <span class="note">// Subject (사용자 ID)</span>
+  "aud": "https://api.example.com",    <span class="note">// Audience (RS URL)</span>
+  "exp": 1751234567,                   <span class="note">// 만료시각 (Unix timestamp)</span>
+  "iat": 1751230967,                   <span class="note">// 발급시각</span>
+  "jti": "unique-token-id",            <span class="note">// JWT ID (재사용 방지)</span>
+  "client_id": "my-app",              <span class="note">// 발급받은 Client</span>
+  "scope": "read:profile write:data"  <span class="note">// 허용된 스코프</span>
+}
+
+<span class="label">Signature:</span>
+RSA_Sign(SHA256, base64url(header) + "." + base64url(payload), private_key)
+    </div>
+
+    <div class="section-sub">서명 알고리즘 선택</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>알고리즘</th><th>Full Name</th><th>키 종류</th><th>권장도</th><th>특징</th></tr>
+        <tr><td><code>RS256</code></td><td>RSASSA-PKCS1-v1_5 + SHA-256</td><td>RSA 2048+</td><td><span class="tag tag-must">표준 기본값</span></td><td>가장 널리 지원. 공개키로 검증 가능.</td></tr>
+        <tr><td><code>ES256</code></td><td>ECDSA + P-256 + SHA-256</td><td>EC P-256</td><td><span class="tag tag-should">권장</span></td><td>RS256보다 키 작고 빠름. 모던 선택.</td></tr>
+        <tr><td><code>RS384/RS512</code></td><td>RSA + SHA-384/512</td><td>RSA</td><td><span class="tag tag-may">선택</span></td><td>더 강한 해시. 실질적 차이 미미.</td></tr>
+        <tr><td><code>HS256</code></td><td>HMAC + SHA-256</td><td>대칭키</td><td><span class="tag tag-dep">비권장</span></td><td>비밀키를 검증자와 공유해야 함 — RS나 ES 대비 취약.</td></tr>
+        <tr><td><code>none</code></td><td>—</td><td>없음</td><td><span class="tag tag-dep">절대 금지</span></td><td>서명 없음. 서버에서 반드시 거부해야 함.</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="icon">🔄</span> Access Token 형식: JWT vs Opaque</div>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title" style="color:var(--blue)">JWT Access Token (자가포함)</div>
+        <ul>
+          <li><strong>장점:</strong> RS가 AS에 질의 없이 검증 가능 (오프라인 검증)</li>
+          <li><strong>장점:</strong> 확장성 좋음, 분산 시스템에 적합</li>
+          <li><strong>단점:</strong> 즉시 폐기 불가 (exp까지 유효)</li>
+          <li><strong>단점:</strong> Payload에 민감 정보 노출 주의</li>
+          <li><strong>대안:</strong> 짧은 exp + Refresh Token 조합</li>
+          <li>RFC 9068에서 표준 Claims 정의</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--green)">Opaque Access Token (불투명)</div>
+        <ul>
+          <li><strong>장점:</strong> 즉시 폐기 가능 (DB에서 삭제)</li>
+          <li><strong>장점:</strong> 토큰 자체에 정보 없음 — 탈취 시 단독으로 의미 없음</li>
+          <li><strong>단점:</strong> RS가 매 요청마다 AS에 Introspection 필요</li>
+          <li><strong>단점:</strong> AS가 단일 장애점 될 수 있음</li>
+          <li>Redis 같은 빠른 저장소에 저장</li>
+        </ul>
+      </div>
+    </div>
+    <div class="alert alert-tip">
+      <span class="alert-icon">✅</span>
+      <div class="alert-body">
+        <div class="alert-title">우리 구현 권장: JWT + 짧은 만료 + Introspection 선택 지원</div>
+        JWT Access Token으로 RS 부하 줄이고, 긴급 폐기가 필요하면 jti 블랙리스트 또는 Introspection 엔드포인트로 처리.
+        Refresh Token은 Opaque(DB 저장)로 구현.
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="icon">📦</span> Token Response 형식</div>
+    <pre><code>HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: no-store      ← 필수
+Pragma: no-cache             ← 권장
+
+{
+  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImtleS0wMDEifQ...",
+  "token_type": "Bearer",          ← 항상 "Bearer" (대소문자 중요)
+  "expires_in": 3600,              ← 초 단위
+  "refresh_token": "8xLOxBtZp8",  ← 있을 수도 없을 수도
+  "scope": "openid profile email", ← 실제 허용된 스코프 (요청과 다를 수 있음)
+  "id_token": "eyJhbGci..."        ← OIDC scope=openid 요청 시
+}</code></pre>
+  </div>
+</div>
+
+<!-- ======= TAB: OIDC ======= -->
+<div id="tab-oidc" class="tab-content">
+  <div class="section">
+    <div class="section-title"><span class="icon">🪪</span> ID Token — OIDC의 핵심</div>
+    <div class="alert alert-info">
+      <span class="alert-icon">ℹ️</span>
+      <div class="alert-body">
+        <div class="alert-title">ID Token은 Access Token이 아닙니다</div>
+        ID Token은 사용자가 <strong>누구인지</strong> Client에게 알려주는 용도입니다.
+        API 호출에 ID Token을 쓰면 안 됩니다 (Access Token을 써야 합니다).
+        ID Token은 Client가 검증 후 내부적으로 세션을 만드는 데 사용합니다.
+      </div>
+    </div>
+
+    <div class="section-sub">ID Token 필수 Claims</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Claim</th><th>필수여부</th><th>설명</th></tr>
+        <tr><td><code>iss</code></td><td><span class="tag tag-must">MUST</span></td><td>Issuer Identifier. OpenID Provider의 URL. <code>https://</code>로 시작해야 함.</td></tr>
+        <tr><td><code>sub</code></td><td><span class="tag tag-must">MUST</span></td><td>사용자 고유 식별자. iss 내에서 유일해야 함. 255자 이하.</td></tr>
+        <tr><td><code>aud</code></td><td><span class="tag tag-must">MUST</span></td><td>이 토큰을 받을 Client ID. 여러 개면 배열. azp 사용 시 자기 ID 포함 확인.</td></tr>
+        <tr><td><code>exp</code></td><td><span class="tag tag-must">MUST</span></td><td>만료 시각. 검증자는 반드시 현재 시간과 비교해야 함.</td></tr>
+        <tr><td><code>iat</code></td><td><span class="tag tag-must">MUST</span></td><td>발급 시각.</td></tr>
+        <tr><td><code>nonce</code></td><td>조건부 MUST</td><td>Client가 nonce 파라미터 보냈으면 ID Token에 반드시 포함.</td></tr>
+        <tr><td><code>auth_time</code></td><td>조건부 MUST</td><td>max_age 파라미터 요청 시 필수.</td></tr>
+        <tr><td><code>acr</code></td><td>SHOULD</td><td>인증 수준. (e.g. "urn:mace:incommon:iap:silver")</td></tr>
+        <tr><td><code>amr</code></td><td>SHOULD</td><td>인증 방법. (e.g. ["pwd", "otp"])</td></tr>
+        <tr><td><code>azp</code></td><td>조건부</td><td>Authorized Party. aud가 여러 개면 반드시 포함.</td></tr>
+        <tr><td><code>at_hash</code></td><td>조건부</td><td>Access Token의 해시. Hybrid/Implicit 플로우에서 필수.</td></tr>
+        <tr><td><code>c_hash</code></td><td>조건부</td><td>Authorization Code의 해시. Hybrid 플로우에서 필수.</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="icon">👤</span> Standard Claims (UserInfo)</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Claim</th><th>스코프</th><th>설명</th></tr>
+        <tr><td><code>sub</code></td><td>openid</td><td>사용자 고유 ID (항상 포함)</td></tr>
+        <tr><td><code>name</code></td><td>profile</td><td>전체 이름</td></tr>
+        <tr><td><code>given_name</code></td><td>profile</td><td>이름(First name)</td></tr>
+        <tr><td><code>family_name</code></td><td>profile</td><td>성(Last name)</td></tr>
+        <tr><td><code>middle_name</code></td><td>profile</td><td>가운데 이름</td></tr>
+        <tr><td><code>nickname</code></td><td>profile</td><td>닉네임</td></tr>
+        <tr><td><code>preferred_username</code></td><td>profile</td><td>선호 사용자명</td></tr>
+        <tr><td><code>profile</code></td><td>profile</td><td>프로필 페이지 URL</td></tr>
+        <tr><td><code>picture</code></td><td>profile</td><td>프로필 사진 URL</td></tr>
+        <tr><td><code>website</code></td><td>profile</td><td>웹사이트 URL</td></tr>
+        <tr><td><code>gender</code></td><td>profile</td><td>성별</td></tr>
+        <tr><td><code>birthdate</code></td><td>profile</td><td>생년월일 (YYYY-MM-DD)</td></tr>
+        <tr><td><code>zoneinfo</code></td><td>profile</td><td>타임존 (e.g. "Asia/Seoul")</td></tr>
+        <tr><td><code>locale</code></td><td>profile</td><td>로케일 (e.g. "ko-KR")</td></tr>
+        <tr><td><code>updated_at</code></td><td>profile</td><td>정보 마지막 업데이트 시각</td></tr>
+        <tr><td><code>email</code></td><td>email</td><td>이메일 주소</td></tr>
+        <tr><td><code>email_verified</code></td><td>email</td><td>이메일 인증 여부 (boolean)</td></tr>
+        <tr><td><code>address</code></td><td>address</td><td>주소 (JSON 객체)</td></tr>
+        <tr><td><code>phone_number</code></td><td>phone</td><td>전화번호 (E.164 형식)</td></tr>
+        <tr><td><code>phone_number_verified</code></td><td>phone</td><td>전화번호 인증 여부</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="icon">🔍</span> Discovery Document</div>
+    <p style="color:var(--text2);margin-bottom:10px;font-size:13px">
+      <code>/.well-known/openid-configuration</code>에 JSON으로 노출. Client/RP가 AS의 엔드포인트와 지원 기능을 자동으로 발견.
+    </p>
+    <pre><code>{
+  "issuer": "https://auth.example.com",
+  "authorization_endpoint": "https://auth.example.com/authorize",
+  "token_endpoint": "https://auth.example.com/token",
+  "userinfo_endpoint": "https://auth.example.com/userinfo",
+  "jwks_uri": "https://auth.example.com/.well-known/jwks.json",
+  "registration_endpoint": "https://auth.example.com/register",
+  "scopes_supported": ["openid", "profile", "email", "offline_access"],
+  "response_types_supported": ["code"],
+  "grant_types_supported": ["authorization_code", "refresh_token", "client_credentials"],
+  "subject_types_supported": ["public"],
+  "id_token_signing_alg_values_supported": ["RS256", "ES256"],
+  "token_endpoint_auth_methods_supported": ["client_secret_basic", "client_secret_post", "none"],
+  "code_challenge_methods_supported": ["S256"],  // plain 미지원 권장
+  "claims_supported": ["sub", "iss", "name", "email", "email_verified", ...],
+  "introspection_endpoint": "https://auth.example.com/introspect",
+  "revocation_endpoint": "https://auth.example.com/revoke",
+  "end_session_endpoint": "https://auth.example.com/logout"
+}</code></pre>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="icon">✅</span> ID Token 검증 체크리스트 (Client/RP 측)</div>
+    <div class="card">
+      <ol style="color:var(--text2);font-size:13px;padding-left:18px;line-height:2">
+        <li><code>alg</code> 검증 — <strong>none 절대 거부</strong>. 예상 알고리즘과 일치 확인.</li>
+        <li>서명 검증 — JWKS 엔드포인트에서 kid 기반으로 공개키 조회 후 서명 확인.</li>
+        <li><code>iss</code> 검증 — Discovery 문서의 issuer와 정확히 일치해야 함.</li>
+        <li><code>aud</code> 검증 — 내 client_id가 포함되어 있어야 함.</li>
+        <li><code>exp</code> 검증 — 현재 시간 이후여야 함 (약간의 클럭 스큐 허용 가능, 보통 5분).</li>
+        <li><code>iat</code> 검증 — 너무 오래된 토큰 거부 (선택적).</li>
+        <li><code>nonce</code> 검증 — 보냈다면 받은 값과 일치해야 함 (리플레이 방지).</li>
+        <li><code>at_hash</code> 검증 — Access Token이 함께 왔다면 검증.</li>
+        <li><code>azp</code> 검증 — aud가 여러 개면 azp가 내 client_id인지 확인.</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<!-- ======= TAB: 엔드포인트 ======= -->
+<div id="tab-endpoints" class="tab-content">
+  <div class="section">
+    <div class="section-title"><span class="icon">🔌</span> 필수 엔드포인트</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>엔드포인트</th><th>메서드</th><th>목적</th><th>필수도</th></tr>
+        <tr><td><code>/authorize</code></td><td>GET</td><td>Authorization Code 발급 시작. 사용자 인증 및 Consent.</td><td><span class="tag tag-must">MUST</span></td></tr>
+        <tr><td><code>/token</code></td><td>POST</td><td>Token 발급 (code→token, refresh, client_credentials)</td><td><span class="tag tag-must">MUST</span></td></tr>
+        <tr><td><code>/.well-known/jwks.json</code></td><td>GET</td><td>공개키 집합 노출. JWT 서명 검증용.</td><td><span class="tag tag-must">MUST (OIDC)</span></td></tr>
+        <tr><td><code>/.well-known/openid-configuration</code></td><td>GET</td><td>Discovery 문서. AS 메타데이터.</td><td><span class="tag tag-should">SHOULD</span></td></tr>
+        <tr><td><code>/userinfo</code></td><td>GET/POST</td><td>사용자 Claims 조회 (Bearer Token 필요)</td><td><span class="tag tag-must">MUST (OIDC)</span></td></tr>
+        <tr><td><code>/introspect</code></td><td>POST</td><td>토큰 유효성 및 메타데이터 조회 (RS→AS). RFC 7662.</td><td><span class="tag tag-should">SHOULD</span></td></tr>
+        <tr><td><code>/revoke</code></td><td>POST</td><td>Token 폐기. RFC 7009.</td><td><span class="tag tag-should">SHOULD</span></td></tr>
+        <tr><td><code>/logout</code></td><td>GET/POST</td><td>세션 종료 (RP-Initiated Logout). OIDC Session Management.</td><td><span class="tag tag-may">MAY</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="icon">📋</span> Authorization Endpoint 파라미터</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>파라미터</th><th>필수도</th><th>설명</th></tr>
+        <tr><td><code>response_type</code></td><td><span class="tag tag-must">MUST</span></td><td>항상 <code>code</code>. (Implicit <code>token</code> 사용 금지)</td></tr>
+        <tr><td><code>client_id</code></td><td><span class="tag tag-must">MUST</span></td><td>등록된 Client 식별자</td></tr>
+        <tr><td><code>redirect_uri</code></td><td>조건부 MUST</td><td>Code를 전달할 URI. 등록된 것과 정확히 일치해야 함.</td></tr>
+        <tr><td><code>scope</code></td><td>권장</td><td>요청 스코프. OIDC면 반드시 <code>openid</code> 포함.</td></tr>
+        <tr><td><code>state</code></td><td><span class="tag tag-must">보안상 MUST</span></td><td>CSRF 방지용 불투명 값. Client가 생성, 검증해야 함.</td></tr>
+        <tr><td><code>code_challenge</code></td><td><span class="tag tag-must">MUST</span></td><td>PKCE challenge 값.</td></tr>
+        <tr><td><code>code_challenge_method</code></td><td>MUST (PKCE)</td><td>반드시 <code>S256</code>. <code>plain</code>은 허용하지 말 것.</td></tr>
+        <tr><td><code>nonce</code></td><td>OIDC 권장</td><td>ID Token 재사용 방지. Client가 생성.</td></tr>
+        <tr><td><code>prompt</code></td><td>선택</td><td><code>none</code>|<code>login</code>|<code>consent</code>|<code>select_account</code></td></tr>
+        <tr><td><code>max_age</code></td><td>선택</td><td>인증 후 최대 경과 시간(초). 초과 시 재인증 요구.</td></tr>
+        <tr><td><code>acr_values</code></td><td>선택</td><td>요구 인증 수준 (공백 구분 우선순위)</td></tr>
+        <tr><td><code>login_hint</code></td><td>선택</td><td>사전 입력할 이메일/사용자명</td></tr>
+        <tr><td><code>ui_locales</code></td><td>선택</td><td>UI 언어 힌트</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="icon">📋</span> Token Endpoint 파라미터</div>
+    <div class="tbl-wrap">
+      <div class="tbl-title">grant_type=authorization_code</div>
+      <table>
+        <tr><th>파라미터</th><th>필수도</th><th>설명</th></tr>
+        <tr><td><code>grant_type</code></td><td><span class="tag tag-must">MUST</span></td><td><code>authorization_code</code></td></tr>
+        <tr><td><code>code</code></td><td><span class="tag tag-must">MUST</span></td><td>Authorization Endpoint에서 받은 코드</td></tr>
+        <tr><td><code>redirect_uri</code></td><td>조건부 MUST</td><td>Authorization 요청 시 redirect_uri를 보냈으면 동일값 필수</td></tr>
+        <tr><td><code>code_verifier</code></td><td><span class="tag tag-must">MUST (PKCE)</span></td><td>원본 code_verifier. AS가 code_challenge와 비교.</td></tr>
+        <tr><td><code>client_id</code></td><td>조건부</td><td>Client 인증 방법에 따라 body 또는 Basic Auth</td></tr>
+      </table>
+    </div>
+    <div class="tbl-wrap" style="margin-top:10px">
+      <div class="tbl-title">grant_type=client_credentials</div>
+      <table>
+        <tr><th>파라미터</th><th>필수도</th><th>설명</th></tr>
+        <tr><td><code>grant_type</code></td><td><span class="tag tag-must">MUST</span></td><td><code>client_credentials</code></td></tr>
+        <tr><td><code>scope</code></td><td>선택</td><td>요청 스코프</td></tr>
+        <tr><td>Client 인증</td><td><span class="tag tag-must">MUST</span></td><td>Basic Auth 또는 body client_id+client_secret</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="icon">🔐</span> Client 인증 방법</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>방법</th><th>방식</th><th>권장도</th></tr>
+        <tr><td><code>client_secret_basic</code></td><td><code>Authorization: Basic base64(id:secret)</code></td><td><span class="tag tag-must">기본 권장</span></td></tr>
+        <tr><td><code>client_secret_post</code></td><td>Body에 client_id + client_secret</td><td><span class="tag tag-should">허용</span></td></tr>
+        <tr><td><code>none</code></td><td>인증 없음 (Public Client)</td><td>PKCE 필수 조건으로 허용</td></tr>
+        <tr><td><code>private_key_jwt</code></td><td>Client가 자체 JWT 서명</td><td><span class="tag tag-may">고급</span></td></tr>
+        <tr><td><code>client_secret_jwt</code></td><td>공유 secret으로 JWT 서명</td><td><span class="tag tag-may">선택</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="icon">❌</span> 에러 응답 형식</div>
+    <pre><code>// Authorization Endpoint 에러 (redirect로 전달)
+redirect_uri?error=access_denied&error_description=...&state=...
+
+// Token Endpoint 에러 (JSON 응답)
+HTTP/1.1 400 Bad Request
+{
+  "error": "invalid_grant",
+  "error_description": "Authorization code expired or already used"
+}
+
+// 주요 에러 코드
+// invalid_request     — 파라미터 누락/잘못됨
+// invalid_client      — Client 인증 실패
+// invalid_grant       — code/refresh_token 유효하지 않음
+// unauthorized_client — 이 grant type 허용 안됨
+// unsupported_grant_type
+// invalid_scope       — 요청 스코프 유효하지 않음
+// access_denied       — 사용자가 거부
+// server_error        — 서버 내부 오류</code></pre>
+  </div>
+</div>
+
+<!-- ======= TAB: 보안 필수사항 ======= -->
+<div id="tab-security" class="tab-content">
+  <div class="section">
+    <div class="section-title"><span class="icon">🛡️</span> 절대 지켜야 할 보안 요건</div>
+
+    <div class="accordion">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <span>1. PKCE — 모든 Authorization Code 요청에 필수</span>
+        <span class="acc-arrow">▶</span>
+      </div>
+      <div class="acc-body">
+        <p style="color:var(--text2);font-size:13px;margin-bottom:8px">
+          Public Client는 물론 Confidential Client에도 PKCE를 강제하는 것이 OAuth 2.1의 방향입니다.
+          code_challenge_method는 반드시 <strong>S256</strong>만 허용해야 합니다. <code>plain</code>은 중간자 공격에 무의미합니다.
+        </p>
+        <pre><code>// AS에서 plain 거부
+if req.CodeChallengeMethod == "plain" {
+    return ErrInvalidRequest("only S256 is supported")
+}</code></pre>
+      </div>
+    </div>
+
+    <div class="accordion">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <span>2. Redirect URI — 정확한 일치 검증 (prefix 매칭 금지)</span>
+        <span class="acc-arrow">▶</span>
+      </div>
+      <div class="acc-body">
+        <p style="color:var(--text2);font-size:13px;margin-bottom:8px">
+          등록된 redirect_uri와 요청의 redirect_uri는 <strong>완전 일치(exact match)</strong>해야 합니다.
+          prefix 매칭, 와일드카드, 정규식은 Open Redirect 공격으로 이어집니다.
+        </p>
+        <div class="alert alert-must">
+          <span class="alert-icon">🚫</span>
+          <div class="alert-body">
+            <div class="alert-title">금지 패턴</div>
+            <code>https://app.example.com</code>을 등록했을 때 <code>https://app.example.com.evil.com</code>을 허용하면 안 됩니다.
+            scheme, host, port, path 모두 정확히 일치해야 합니다.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="accordion">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <span>3. state — CSRF 방지 (필수 구현)</span>
+        <span class="acc-arrow">▶</span>
+      </div>
+      <div class="acc-body">
+        <p style="color:var(--text2);font-size:13px">
+          Client가 생성한 충분히 랜덤한 state를 세션에 저장하고, callback에서 반환된 state와 정확히 비교해야 합니다.
+          AS는 state 파라미터를 변경 없이 그대로 redirect_uri에 전달해야 합니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="accordion">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <span>4. Authorization Code — 단 한 번만 사용 가능</span>
+        <span class="acc-arrow">▶</span>
+      </div>
+      <div class="acc-body">
+        <p style="color:var(--text2);font-size:13px;margin-bottom:8px">
+          Authorization Code는 <strong>일회용</strong>입니다. 재사용 시도가 감지되면:
+        </p>
+        <ol style="color:var(--text2);font-size:13px;padding-left:16px;line-height:2">
+          <li>즉시 에러 반환</li>
+          <li>해당 code로 이미 발급된 Access Token/Refresh Token을 <strong>모두 폐기</strong> (공격 감지 대응)</li>
+          <li>보안 이벤트 로그 기록</li>
+        </ol>
+        <p style="color:var(--text2);font-size:13px;margin-top:8px">Authorization Code의 유효 기간: <strong>10분 이하</strong> 권장 (실제로는 1~2분).</p>
+      </div>
+    </div>
+
+    <div class="accordion">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <span>5. JWT alg=none 거부 — 서명 검증 강제</span>
+        <span class="acc-arrow">▶</span>
+      </div>
+      <div class="acc-body">
+        <p style="color:var(--text2);font-size:13px">
+          JWT를 파싱할 때 항상 <strong>예상 알고리즘을 명시적으로 지정</strong>해야 합니다.
+          라이브러리에 자동 알고리즘 감지를 허용하면 alg:none 공격에 취약해집니다.
+        </p>
+        <pre><code>// golang-jwt/jwt 예시
+token, err := jwt.Parse(tokenStr, keyFunc,
+    jwt.WithValidMethods([]string{"RS256", "ES256"}),  // 명시적 지정
+)</code></pre>
+      </div>
+    </div>
+
+    <div class="accordion">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <span>6. Token Endpoint — 응답에 Cache-Control: no-store 필수</span>
+        <span class="acc-arrow">▶</span>
+      </div>
+      <div class="acc-body">
+        <p style="color:var(--text2);font-size:13px">
+          Token 응답은 절대 캐시되면 안 됩니다. RFC 6749 §5.1에서 명시적으로 요구합니다.
+        </p>
+        <pre><code>w.Header().Set("Cache-Control", "no-store")
+w.Header().Set("Pragma", "no-cache")</code></pre>
+      </div>
+    </div>
+
+    <div class="accordion">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <span>7. HTTPS 강제 (앞단 프록시 환경에서)</span>
+        <span class="acc-arrow">▶</span>
+      </div>
+      <div class="acc-body">
+        <p style="color:var(--text2);font-size:13px;margin-bottom:8px">
+          내부 AS는 HTTP지만, 외부로는 반드시 HTTPS여야 합니다. 구현 시 주의사항:
+        </p>
+        <ul style="color:var(--text2);font-size:13px;padding-left:16px;line-height:2">
+          <li>Redirect URI 등록/검증 시 https:// scheme 강제</li>
+          <li>Discovery 문서의 issuer, 엔드포인트 URL은 https://</li>
+          <li>X-Forwarded-Proto 헤더로 실제 scheme 판별 (신뢰할 프록시만)</li>
+          <li>localhost 예외: 개발용으로만, 프로덕션에선 절대 금지</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="accordion">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <span>8. Refresh Token — 안전한 보관 및 Rotation</span>
+        <span class="acc-arrow">▶</span>
+      </div>
+      <div class="acc-body">
+        <ul style="color:var(--text2);font-size:13px;padding-left:16px;line-height:2">
+          <li>Refresh Token은 DB에 저장 (JWT 아님). Hash 형태로 저장 권장.</li>
+          <li>사용 시마다 새 Refresh Token 발급 + 이전 것 즉시 폐기 (Rotation)</li>
+          <li>이전 Refresh Token으로 요청 시 → 해당 세션 전체 폐기 (탈취 감지)</li>
+          <li>Binding: user_id, client_id, scope를 함께 저장. 다른 client로 사용 불가.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="accordion">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <span>9. Rate Limiting — 브루트포스 방지</span>
+        <span class="acc-arrow">▶</span>
+      </div>
+      <div class="acc-body">
+        <ul style="color:var(--text2);font-size:13px;padding-left:16px;line-height:2">
+          <li>로그인 엔드포인트: IP + 계정별 실패 횟수 제한</li>
+          <li>Token Endpoint: client_id별 요청 수 제한</li>
+          <li>TOTP: 연속 실패 시 계정 잠금 (짧은 유예 시간 포함)</li>
+          <li>표준에 규정 없음 — 구현 자율이지만 반드시 필요</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="accordion">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <span>10. scope 검증 — 요청 스코프가 허용 범위 내인지</span>
+        <span class="acc-arrow">▶</span>
+      </div>
+      <div class="acc-body">
+        <ul style="color:var(--text2);font-size:13px;padding-left:16px;line-height:2">
+          <li>Client가 요청한 scope는 그 Client에 허용된 scope 내여야 함</li>
+          <li>Refresh Token으로 갱신 시 원래 scope보다 넓은 scope 요청 불가</li>
+          <li>발급된 scope가 요청과 다르면 응답에 실제 scope 포함 필수</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======= TAB: 구현 자율성 ======= -->
+<div id="tab-flex" class="tab-content">
+  <div class="section">
+    <div class="section-title"><span class="icon">🎨</span> 표준이 자율에 맡기는 부분</div>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:16px">
+      RFC가 결과(무엇을)는 정의하지만, 방법(어떻게)은 구현자에게 맡기는 영역들입니다.
+    </p>
+
+    <div class="card">
+      <div class="card-title">Access Token 포맷</div>
+      <p>JWT(자가포함) 또는 Opaque(불투명 문자열) 모두 허용. RS가 어떻게 검증할지는 AS가 결정.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Token 저장 방식</div>
+      <p>PostgreSQL, Redis, 메모리 어느 것이든 가능. Refresh Token을 DB에, Access Token(JWT)을 stateless로 하는 하이브리드도 일반적.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Authorization Code 생성 방식</div>
+      <p>포맷은 자유. crypto/rand로 생성한 충분한 길이의 랜덤 문자열이면 됨 (최소 128비트 엔트로피).</p>
+    </div>
+    <div class="card">
+      <div class="card-title">세션 관리</div>
+      <p>로그인 세션을 쿠키로 유지할지, 매번 재인증할지, 세션 시간을 얼마나 할지 표준에 없음.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Consent 화면 UX</div>
+      <p>어떻게 보여줄지, 어떤 정보를 표시할지, 기억 여부(rememberConsent) 등은 구현자 재량.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">scope 정의 및 계층 구조</div>
+      <p>표준은 openid, profile, email, address, phone, offline_access 정도만 정의. 나머지는 자유롭게 정의 가능.
+      (e.g. <code>read:users</code>, <code>admin:all</code>, <code>api:write</code>)</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Custom Claims</div>
+      <p>JWT Payload에 표준 Claims 외 커스텀 데이터 추가 가능.
+      충돌 방지를 위해 네임스페이스 URL 형태 권장: <code>"https://api.example.com/roles": ["admin"]</code></p>
+    </div>
+    <div class="card">
+      <div class="card-title">Token 수명 정책</div>
+      <p>Access Token exp, Refresh Token exp, Authorization Code exp를 얼마로 할지 구현자 결정.
+      단, Authorization Code는 최대 10분 이하 권장.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">동적 클라이언트 등록 (RFC 7591)</div>
+      <p>API로 Client를 동적 등록하는 기능. 지원 여부는 선택. 어드민 UI로만 등록하는 것도 완전히 합법.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Introspection 응답 필드</div>
+      <p>RFC 7662의 <code>active</code> 필드는 필수, 나머지(<code>scope</code>, <code>username</code>, <code>exp</code> 등)는 선택적으로 포함.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ======= TAB: 표준 외 ======= -->
+<div id="tab-custom" class="tab-content">
+  <div class="section">
+    <div class="section-title"><span class="icon">🧩</span> 표준에 없어서 우리가 직접 설계해야 하는 것들</div>
+
+    <div class="section-sub">계정 관리 (User Management)</div>
+    <div class="card">
+      <p style="color:var(--text2);font-size:13px">OAuth/OIDC는 "로그인 후 토큰 발급"만 다루고, 계정 생성/수정/삭제는 전혀 다루지 않습니다.</p>
+      <ul style="margin-top:10px">
+        <li>회원가입, 이메일 인증 플로우</li>
+        <li>비밀번호 정책 (길이, 복잡도, 재사용 금지)</li>
+        <li>비밀번호 분실/재설정 (이메일 링크 / 임시 코드)</li>
+        <li>계정 잠금 정책 (실패 횟수, 잠금 해제)</li>
+        <li>이메일 변경 플로우</li>
+        <li>계정 탈퇴 및 데이터 삭제</li>
+      </ul>
+    </div>
+
+    <div class="section-sub">TOTP / MFA 관리</div>
+    <div class="card">
+      <p style="color:var(--text2);font-size:13px">RFC 6238(TOTP), RFC 4226(HOTP)은 알고리즘만 정의. 통합 방법은 표준 없음.</p>
+      <ul style="margin-top:10px">
+        <li>TOTP 등록 (QR코드 생성, otpauth:// URI 형식)</li>
+        <li>복구 코드 (Backup Codes) 생성 및 관리</li>
+        <li>TOTP 해제 및 재설정 플로우</li>
+        <li>Time skew 허용 (±1 step = ±30초)</li>
+        <li>TOTP 코드 재사용 방지 (마지막 성공 코드 기록)</li>
+        <li>amr claim에 otp 포함하여 AS가 MFA 완료 표시</li>
+        <li>acr을 통해 RP가 MFA 요구 가능 (e.g. <code>acr_values=mfa</code>)</li>
+      </ul>
+    </div>
+    <pre><code>// otpauth URI 형식 (QR코드로 인코딩)
+otpauth://totp/{issuer}:{account}?secret={base32_secret}&issuer={issuer}&algorithm=SHA1&digits=6&period=30</code></pre>
+
+    <div class="section-sub">Admin UI / API</div>
+    <div class="card">
+      <ul>
+        <li>Client 등록/수정/삭제/조회</li>
+        <li>Client의 허용 Grant Type, Redirect URI, Scope 관리</li>
+        <li>Client Secret 순환 (rotate)</li>
+        <li>사용자 목록, 상태, 역할 관리</li>
+        <li>발급된 토큰/세션 목록 및 강제 폐기</li>
+        <li>스코프 정의 및 설명 관리</li>
+        <li>감사 로그 조회</li>
+        <li>JWKS 키 순환 관리</li>
+      </ul>
+    </div>
+
+    <div class="section-sub">RBAC / 권한 체계</div>
+    <div class="card">
+      <p style="color:var(--text2);font-size:13px;margin-bottom:8px">OAuth scope는 접근 범위이지 역할(Role) 시스템이 아닙니다. 둘을 구분해 설계해야 합니다.</p>
+      <ul>
+        <li>사용자 역할(Role): <code>admin</code>, <code>user</code>, <code>moderator</code> 등</li>
+        <li>OAuth scope: <code>read:profile</code>, <code>write:posts</code> 등 API 수준 접근 제어</li>
+        <li>Client별 허용 scope 화이트리스트</li>
+        <li>역할 정보를 JWT Custom Claim으로 포함 가능</li>
+        <li>RS는 scope + role 양쪽으로 권한 검증 가능</li>
+      </ul>
+    </div>
+
+    <div class="section-sub">감사 로그 (Audit Log)</div>
+    <div class="card">
+      <p style="color:var(--text2);font-size:13px;margin-bottom:8px">표준에 전혀 없지만, 보안 및 컴플라이언스를 위해 필수입니다.</p>
+      <ul>
+        <li>기록 대상: 로그인 시도(성공/실패), 토큰 발급, 토큰 폐기, Consent, 관리자 작업</li>
+        <li>포함 정보: 타임스탬프, 사용자 ID, Client ID, IP, User-Agent, 결과</li>
+        <li>로그 불변성 보장 (삭제/수정 불가)</li>
+        <li>보존 기간 정책</li>
+      </ul>
+    </div>
+
+    <div class="section-sub">키 순환 (Key Rotation)</div>
+    <div class="card">
+      <p style="color:var(--text2);font-size:13px;margin-bottom:8px">JWT 서명 키를 주기적으로 교체하는 전략. JWKS에서 kid로 관리.</p>
+      <ul>
+        <li>새 키 추가 → 이전 키로 발급된 토큰이 만료될 때까지 이전 키도 JWKS에 유지</li>
+        <li>JWKS는 여러 키를 담을 수 있음 — 전환 기간 동안 병행 운영</li>
+        <li>캐시 무효화: RS의 JWKS 캐시를 언제 갱신할지 전략 필요</li>
+        <li>kid 기반 조회: AS가 kid를 JWT Header에 포함 → RS가 맞는 키로 검증</li>
+      </ul>
+    </div>
+
+    <div class="section-sub">비밀번호 저장</div>
+    <div class="card">
+      <p style="color:var(--text2);font-size:13px;margin-bottom:8px">표준 외 영역이지만 구현 방법은 명확합니다.</p>
+      <ul>
+        <li>반드시 <strong>단방향 해시 + 솔트</strong>: <code>bcrypt</code>(cost≥12), <code>argon2id</code>(권장), <code>scrypt</code></li>
+        <li>MD5, SHA-1, SHA-256 평문 해시 금지</li>
+        <li>Golang: <code>golang.org/x/crypto/bcrypt</code> 또는 <code>golang.org/x/crypto/argon2</code></li>
+      </ul>
+    </div>
+
+    <div class="section-sub">로그인 페이지 — HTML vs API</div>
+    <div class="card">
+      <p style="color:var(--text2);font-size:13px">AS가 직접 HTML 로그인 페이지를 서빙할지, 별도 프론트엔드가 API로 처리할지는 구현 선택사항입니다.</p>
+      <ul style="margin-top:8px">
+        <li><strong>AS 직접 서빙</strong>: 단순하고 쿠키 기반 세션 관리 용이. 많은 AS가 이 방식 (Keycloak, Hydra+Kratos 등)</li>
+        <li><strong>분리형</strong>: AS는 API만, 별도 로그인 프론트엔드가 AS API 호출. UX 커스터마이징 자유도 높음.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ======= TAB: Golang ======= -->
+<div id="tab-golang" class="tab-content">
+  <div class="section">
+    <div class="section-title"><span class="icon">🐹</span> Golang 구현 권장 구조</div>
+
+    <div class="section-sub">핵심 라이브러리</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>용도</th><th>라이브러리</th><th>비고</th></tr>
+        <tr><td>JWT 생성/검증</td><td><code>github.com/golang-jwt/jwt/v5</code></td><td>공식 후계. RSA/ECDSA/HMAC 지원.</td></tr>
+        <tr><td>JWKS 서빙</td><td><code>github.com/lestrrat-go/jwx/v3</code></td><td>JWK, JWKS, JWS 올인원. 완성도 높음.</td></tr>
+        <tr><td>비밀번호 해시</td><td><code>golang.org/x/crypto/bcrypt</code></td><td>cost=12 권장. argon2id도 고려.</td></tr>
+        <tr><td>TOTP</td><td><code>github.com/pquerna/otp</code></td><td>RFC 6238 TOTP, QR코드 생성 포함.</td></tr>
+        <tr><td>HTTP 라우터</td><td><code>net/http</code> + <code>github.com/go-chi/chi/v5</code></td><td>표준 라이브러리 기반, 가볍고 미들웨어 체이닝 쉬움.</td></tr>
+        <tr><td>DB (PostgreSQL)</td><td><code>github.com/jackc/pgx/v5</code></td><td>표준 database/sql보다 성능 좋음.</td></tr>
+        <tr><td>캐시 (Redis)</td><td><code>github.com/redis/go-redis/v9</code></td><td>Authorization Code, 세션 저장.</td></tr>
+        <tr><td>설정</td><td><code>github.com/spf13/viper</code></td><td>환경변수 + 설정 파일 통합.</td></tr>
+        <tr><td>UUID</td><td><code>github.com/google/uuid</code></td><td>사용자/Client ID 생성.</td></tr>
+      </table>
+    </div>
+
+    <div class="section-sub">디렉토리 구조 제안</div>
+    <pre><code>authserver/
+├── cmd/
+│   └── server/main.go
+├── internal/
+│   ├── oauth/
+│   │   ├── authorize.go       // Authorization Endpoint
+│   │   ├── token.go           // Token Endpoint
+│   │   ├── introspect.go      // Introspection
+│   │   └── revoke.go          // Revocation
+│   ├── oidc/
+│   │   ├── userinfo.go        // UserInfo Endpoint
+│   │   ├── discovery.go       // /.well-known/openid-configuration
+│   │   └── jwks.go            // /.well-known/jwks.json
+│   ├── auth/
+│   │   ├── login.go           // 로그인 처리
+│   │   ├── totp.go            // TOTP 검증
+│   │   └── session.go         // 세션 관리
+│   ├── model/
+│   │   ├── client.go          // Client 모델
+│   │   ├── user.go            // User 모델
+│   │   └── token.go           // Token 모델
+│   ├── store/
+│   │   ├── postgres/          // DB 레이어
+│   │   └── redis/             // 캐시 레이어
+│   ├── keys/
+│   │   └── manager.go         // 서명 키 관리, 순환
+│   └── admin/
+│       └── api.go             // Admin API
+├── web/                       // 로그인/Consent HTML 템플릿
+└── config/</code></pre>
+
+    <div class="section-sub">핵심 데이터 모델</div>
+    <pre><code>// Client
+type Client struct {
+    ID                  string
+    Secret              string    // bcrypt hash. Public Client면 빈 값.
+    Type                string    // "confidential" | "public"
+    RedirectURIs        []string  // 허용된 redirect URI 목록 (exact match)
+    AllowedGrantTypes   []string
+    AllowedScopes       []string
+    RequirePKCE         bool
+    RequireConsent      bool
+    CreatedAt           time.Time
+}
+
+// AuthorizationCode (Redis에 저장, TTL 2분)
+type AuthorizationCode struct {
+    Code                string
+    ClientID            string
+    UserID              string
+    RedirectURI         string
+    Scope               string
+    CodeChallenge       string
+    CodeChallengeMethod string
+    Nonce               string
+    ExpiresAt           time.Time
+    Used                bool      // 재사용 방지
+}
+
+// RefreshToken (PostgreSQL에 저장)
+type RefreshToken struct {
+    TokenHash   string    // SHA-256 해시 저장 (평문 저장 금지)
+    ClientID    string
+    UserID      string
+    Scope       string
+    ExpiresAt   time.Time
+    CreatedAt   time.Time
+    RevokedAt   *time.Time
+    FamilyID    string    // Rotation 감지용 (같은 lineage)
+}</code></pre>
+
+    <div class="section-sub">JWT Access Token 발급 예시</div>
+    <pre><code>func (s *TokenService) IssueAccessToken(userID, clientID, scope string) (string, error) {
+    now := time.Now()
+    claims := jwt.MapClaims{
+        "iss":       s.config.Issuer,
+        "sub":       userID,
+        "aud":       s.config.Issuer + "/api",  // 또는 Resource Server URL
+        "exp":       now.Add(s.config.AccessTokenTTL).Unix(),
+        "iat":       now.Unix(),
+        "jti":       uuid.New().String(),
+        "client_id": clientID,
+        "scope":     scope,
+    }
+
+    token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+    token.Header["kid"] = s.keys.CurrentKeyID()
+
+    return token.SignedString(s.keys.CurrentPrivateKey())
+}</code></pre>
+
+    <div class="section-sub">TOTP 검증 예시</div>
+    <pre><code>import "github.com/pquerna/otp/totp"
+
+func (s *AuthService) VerifyTOTP(userSecret, code string) error {
+    valid := totp.Validate(code, userSecret)
+    if !valid {
+        return ErrInvalidTOTP
+    }
+    // 재사용 방지: 마지막 성공 코드를 Redis에 저장 (TTL 30초)
+    if s.cache.IsTOTPCodeUsed(userSecret, code) {
+        return ErrTOTPReplay
+    }
+    s.cache.MarkTOTPCodeUsed(userSecret, code)
+    return nil
+}</code></pre>
+
+    <div class="section-sub">구현 순서 제안</div>
+    <div class="card">
+      <ol style="color:var(--text2);font-size:13px;padding-left:18px;line-height:2.2">
+        <li><strong>기반 인프라</strong>: DB 스키마, Redis, 설정, 미들웨어 (로깅, 에러 핸들링)</li>
+        <li><strong>키 관리</strong>: RSA/EC 키 생성, JWKS 엔드포인트, kid 관리</li>
+        <li><strong>사용자/Client 모델</strong>: DB 스키마, CRUD</li>
+        <li><strong>로그인 플로우</strong>: 이메일+비밀번호 인증, 세션 발급</li>
+        <li><strong>TOTP</strong>: 등록, 검증, 복구 코드</li>
+        <li><strong>Authorization Code + PKCE</strong>: /authorize, Consent, Code 발급</li>
+        <li><strong>Token Endpoint</strong>: code→token 교환, Refresh Token</li>
+        <li><strong>OIDC</strong>: ID Token 발급, /userinfo, Discovery</li>
+        <li><strong>Client Credentials Grant</strong></li>
+        <li><strong>Introspection + Revocation</strong></li>
+        <li><strong>Admin API/UI</strong></li>
+        <li><strong>감사 로그, 모니터링</strong></li>
+      </ol>
+    </div>
+
+    <div class="alert alert-tip" style="margin-top:16px">
+      <span class="alert-icon">✅</span>
+      <div class="alert-body">
+        <div class="alert-title">처음부터 만들기 vs 기존 라이브러리 활용</div>
+        학습/이해 목적이면 처음부터 구현하는 것이 최선입니다.
+        프로덕션에서는 <a href="https://github.com/ory/hydra">Ory Hydra</a>(OAuth/OIDC 핵심) +
+        <a href="https://github.com/ory/kratos">Ory Kratos</a>(사용자 관리)를 고려하세요.
+        단, 이 가이드의 목적은 직접 구현이므로 위 구조를 따르는 것을 권장합니다.
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<script>
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const names = ['overview','roles','flows','tokens','oidc','endpoints','security','flex','custom','golang'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => {
+    c.classList.toggle('active', c.id === 'tab-' + name);
+  });
+}
+
+function toggleAcc(header) {
+  const body = header.nextElementSibling;
+  const isOpen = body.classList.contains('open');
+  header.classList.toggle('open', !isOpen);
+  body.classList.toggle('open', !isOpen);
+}
+
+// Open first accordion in security tab by default
+document.addEventListener('DOMContentLoaded', () => {
+  const firstAcc = document.querySelector('#tab-security .acc-header');
+  if (firstAcc) {
+    firstAcc.classList.add('open');
+    firstAcc.nextElementSibling.classList.add('open');
+  }
+});
+</script>
+</body>
+</html>
