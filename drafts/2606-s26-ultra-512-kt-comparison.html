@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Galaxy S26 Ultra 512GB · KT 구매 전술 계산서</title>
+  <meta name="description" content="KT 공식샵, KT Market, 폰사와, 성지 조건을 24개월 총액으로 비교하는 인터랙티브 계산서" />
+  <style>
+    :root{
+      --ink:#16140f;
+      --paper:#f4eddd;
+      --paper2:#fffaf0;
+      --line:#30291d;
+      --muted:#6d624e;
+      --red:#cf3a25;
+      --blue:#265f88;
+      --green:#277252;
+      --gold:#b88422;
+      --shadow:0 24px 70px rgba(40,27,9,.18);
+      --radius:28px;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      font-family:"Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+      color:var(--ink);
+      background:
+        radial-gradient(circle at 10% 10%, rgba(207,58,37,.16), transparent 28rem),
+        radial-gradient(circle at 86% 0%, rgba(38,95,136,.18), transparent 30rem),
+        linear-gradient(135deg, #f7f0df 0%, #eadfc8 52%, #f7f0df 100%);
+      overflow-x:hidden;
+    }
+    body::before{
+      content:""; position:fixed; inset:0; pointer-events:none; opacity:.34; z-index:0;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.45'/%3E%3C/svg%3E");
+      mix-blend-mode:multiply;
+    }
+    .wrap{position:relative; z-index:1; width:min(1240px, calc(100% - 36px)); margin:0 auto; padding:28px 0 70px}
+    .hero{
+      min-height:430px; display:grid; grid-template-columns:1.05fr .95fr; gap:24px; align-items:stretch;
+      padding:28px 0 18px;
+    }
+    .poster{
+      border:2px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);
+      background:
+        linear-gradient(160deg, rgba(255,250,240,.9), rgba(244,237,221,.74)),
+        repeating-linear-gradient(90deg, rgba(22,20,15,.05) 0 1px, transparent 1px 58px);
+      padding:34px; position:relative; overflow:hidden;
+    }
+    .poster::after{
+      content:"₩"; position:absolute; right:-22px; bottom:-92px; font-family:Impact, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; font-size:250px; line-height:.8;
+      color:rgba(207,58,37,.11); transform:rotate(-8deg);
+    }
+    .kicker{display:flex; gap:10px; flex-wrap:wrap; align-items:center; font-size:13px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted)}
+    .pill{border:1.6px solid var(--line); border-radius:999px; padding:7px 11px; background:rgba(255,250,240,.66)}
+    h1{font-family:Impact, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; font-size:clamp(44px, 7.4vw, 92px); letter-spacing:-.055em; line-height:.92; margin:28px 0 20px; max-width:820px}
+    .lead{font-family:"AppleMyungjo", "Batang", serif; font-weight:700; font-size:clamp(18px, 2.2vw, 28px); line-height:1.42; max-width:760px; margin:0 0 22px}
+    .hero-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:26px; position:relative; z-index:2}
+    .metric{border:1.8px solid var(--line); background:var(--paper2); border-radius:20px; padding:16px 15px; box-shadow:6px 7px 0 rgba(22,20,15,.1)}
+    .metric small{display:block; color:var(--muted); font-weight:700; margin-bottom:8px}
+    .metric b{font-size:24px; letter-spacing:-.03em}
+    .radar{border:2px solid var(--line); border-radius:var(--radius); background:#191713; color:#f6eedc; box-shadow:var(--shadow); padding:28px; position:relative; overflow:hidden}
+    .radar::before{content:""; position:absolute; inset:-20%; background:radial-gradient(circle at center, transparent 0 18%, rgba(255,255,255,.06) 18.4% 18.7%, transparent 19% 38%, rgba(255,255,255,.06) 38.4% 38.7%, transparent 39% 62%, rgba(255,255,255,.05) 62.4% 62.7%, transparent 63%), conic-gradient(from 20deg, transparent, rgba(207,58,37,.18), transparent 28%); animation:sweep 12s linear infinite; opacity:.85}
+    @keyframes sweep{to{transform:rotate(360deg)}}
+    .radar > *{position:relative; z-index:1}
+    .radar h2{font-family:Impact, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; font-size:42px; letter-spacing:-.04em; margin:0 0 18px}
+    .rank-list{display:grid; gap:12px; margin-top:22px}
+    .rank{display:grid; grid-template-columns:auto 1fr auto; gap:13px; align-items:center; background:rgba(255,250,240,.08); border:1px solid rgba(255,250,240,.28); padding:13px; border-radius:18px; backdrop-filter:blur(8px)}
+    .rank .no{width:34px; height:34px; border-radius:50%; display:grid; place-items:center; background:#f6eedc; color:#191713; font-weight:800}
+    .rank b{font-size:17px}.rank span{display:block; color:#c9bea7; font-size:13px}.rank em{font-style:normal; font-weight:800; color:#ffdc7a}
+    nav{position:sticky; top:0; z-index:10; margin:10px 0 22px; border:2px solid var(--line); border-radius:999px; background:rgba(255,250,240,.82); backdrop-filter:blur(14px); box-shadow:0 12px 34px rgba(40,27,9,.11); padding:8px; display:flex; gap:6px; overflow:auto}
+    nav a{white-space:nowrap; color:var(--ink); text-decoration:none; font-weight:800; padding:11px 15px; border-radius:999px}
+    nav a:hover{background:var(--ink); color:var(--paper2)}
+    section{margin:34px 0}
+    .section-title{display:flex; align-items:end; justify-content:space-between; gap:20px; margin-bottom:16px}
+    .section-title h2{font-family:Impact, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; font-size:clamp(34px, 4.4vw, 58px); letter-spacing:-.045em; margin:0}
+    .section-title p{margin:0; color:var(--muted); font-weight:700; max-width:520px; text-align:right}
+    .panel{border:2px solid var(--line); border-radius:var(--radius); background:rgba(255,250,240,.72); box-shadow:var(--shadow); padding:22px; overflow:hidden}
+    .controls{display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:18px}
+    label.control{display:grid; gap:7px; border:1.5px solid rgba(22,20,15,.28); background:rgba(255,255,255,.45); border-radius:18px; padding:13px; font-weight:800; color:var(--muted); font-size:12px}
+    input, select{width:100%; border:2px solid var(--line); border-radius:13px; padding:10px 11px; background:#fffdf6; color:var(--ink); font:700 15px "Apple SD Gothic Neo"}
+    .toggle{display:flex; align-items:center; gap:10px; border:2px solid var(--line); border-radius:18px; padding:13px; background:#fffdf6; font-weight:800}
+    .toggle input{width:22px; height:22px; accent-color:var(--red)}
+    .table-wrap{overflow:auto; border:2px solid var(--line); border-radius:22px; background:#fffdf6}
+    table{width:100%; border-collapse:collapse; min-width:980px}
+    th,td{padding:15px 14px; border-bottom:1px solid rgba(22,20,15,.18); text-align:left; vertical-align:top}
+    th{background:#221f19; color:#fff5dd; font-size:13px; letter-spacing:-.01em; position:sticky; top:0}
+    td strong{font-size:17px}.won{font-weight:900; letter-spacing:-.03em}.good{color:var(--green)}.bad{color:var(--red)}.mid{color:var(--gold)}
+    .tag{display:inline-flex; align-items:center; gap:5px; padding:5px 8px; border:1px solid currentColor; border-radius:999px; font-size:12px; font-weight:900; margin:2px 4px 2px 0}
+    .official{color:var(--blue)}.hotspot{color:var(--red)}.safe{color:var(--green)}.unknown{color:var(--gold)}
+    .formula{font-family:"AppleMyungjo", "Batang", serif; font-weight:700; line-height:1.55; background:rgba(22,20,15,.06); border-left:5px solid var(--line); border-radius:12px; padding:10px 12px; margin-top:8px; color:#2b251b}
+    .cards{display:grid; grid-template-columns:repeat(3, 1fr); gap:16px}
+    .card{border:2px solid var(--line); border-radius:24px; background:rgba(255,250,240,.76); box-shadow:9px 11px 0 rgba(22,20,15,.09); padding:20px; position:relative; overflow:hidden}
+    .card h3{font-size:22px; margin:0 0 8px; letter-spacing:-.03em}.card p{color:var(--muted); font-weight:600; line-height:1.52}.card a{color:var(--blue); font-weight:900}
+    .score{display:flex; gap:6px; margin:12px 0}.dot{height:10px; width:28px; border:1px solid var(--line); background:#ded1b8}.dot.on{background:var(--red)}
+    .hotspot-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:16px}
+    .spot{border:2px solid var(--line); border-radius:26px; background:#fffdf6; padding:19px; box-shadow:8px 8px 0 rgba(22,20,15,.08)}
+    .spot-head{display:flex; justify-content:space-between; gap:12px; align-items:flex-start; margin-bottom:12px}.spot h3{margin:0; font-size:21px}.spot .price{font-size:30px; font-weight:900; letter-spacing:-.05em}.spot dl{display:grid; grid-template-columns:118px 1fr; gap:8px 10px; margin:12px 0}.spot dt{font-weight:900; color:var(--muted)}.spot dd{margin:0; font-weight:700}
+    .callout{display:grid; grid-template-columns:80px 1fr; gap:18px; align-items:center; border:2px solid var(--line); border-radius:24px; background:#221f19; color:#fff5dd; padding:20px; margin:18px 0}.callout .badge{width:70px; height:70px; border-radius:50%; background:var(--red); display:grid; place-items:center; font-family:Impact, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; font-size:30px}.callout p{margin:0; line-height:1.55; color:#eadfc8; font-weight:700}
+    .checklist{display:grid; grid-template-columns:repeat(2,1fr); gap:14px}.check{display:flex; gap:11px; padding:14px; background:#fffdf6; border:1.5px solid rgba(22,20,15,.28); border-radius:18px; font-weight:700}.check b{color:var(--red)}
+    .split-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:14px}.split-box{border:2px solid var(--line); border-radius:20px; background:#fffdf6; padding:15px}.split-box small{display:block;color:var(--muted);font-weight:900;margin-bottom:7px}.split-box b{font-size:22px;letter-spacing:-.03em}.warn{color:var(--red);font-weight:900}
+    .source-list{columns:2; column-gap:28px; padding-left:18px}.source-list li{break-inside:avoid; margin:0 0 10px; line-height:1.45}.source-list a{color:var(--blue); font-weight:800}
+    .foot{font-family:"AppleMyungjo", "Batang", serif; font-weight:700; color:var(--muted); text-align:center; margin-top:38px}
+    .mini{font-size:12px; color:var(--muted); font-weight:700}.nowrap{white-space:nowrap}
+    @media (max-width:980px){.hero{grid-template-columns:1fr}.controls{grid-template-columns:repeat(2,1fr)}.cards{grid-template-columns:1fr}.hotspot-grid{grid-template-columns:1fr}.section-title{display:block}.section-title p{text-align:left; margin-top:8px}.source-list{columns:1}.hero-grid{grid-template-columns:1fr}.checklist{grid-template-columns:1fr}}
+    @media print{body{background:white}.radar::before,body::before{display:none}nav,.controls{display:none}.wrap{width:100%;padding:0}.panel,.poster,.radar,.card,.spot{box-shadow:none;break-inside:avoid}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <div class="poster">
+        <div class="kicker">
+          <span class="pill">2026-06-08 KST</span>
+          <span class="pill">Galaxy S26 Ultra 512GB</span>
+          <span class="pill">KT 기기변경 중심</span>
+        </div>
+        <h1>512GB 구매 전술 계산서</h1>
+        <p class="lead">공식샵의 안정성, 폰사와의 투명성, 그리고 <u>최근 7일 이내·진행형</u> 조건만 같은 계산식으로 비교합니다. 성지는 오래된 단발 후기를 실전가로 보지 않습니다.</p>
+        <div class="hero-grid">
+          <div class="metric"><small>공식샵 실전 후보</small><b id="heroOfficial">-</b></div>
+          <div class="metric"><small>현재성 통과 최저 계산값</small><b id="heroBest">-</b></div>
+          <div class="metric"><small>절약 가능폭</small><b id="heroDelta">-</b></div>
+        </div>
+      </div>
+      <aside class="radar">
+        <h2>제독 판단</h2>
+        <p>성지는 최근 7일 이내 게시 또는 현재 진행형 구매 페이지가 아니면 비교표에서 제외했습니다. 현재 공개 웹 기준으로는 공식샵 라이브 조건과 11번가 직접 옵션가를 먼저 검증해야 합니다. 88.4만원대 가격비교 앵커는 온누리 포함 여부가 명시되지 않았으므로 계약서 할부원금과 온누리 별도 신청 가능 여부를 분리 확인해야 합니다.</p>
+        <div class="rank-list" id="rankList"></div>
+      </aside>
+    </header>
+
+    <nav>
+      <a href="#calculator">총액 계산기</a>
+      <a href="#formulas">상세 계산식</a>
+      <a href="#onnuri">온누리 분리계산</a>
+      <a href="#hotspots">성지 리스트</a>
+      <a href="#where">어디서 찾나</a>
+      <a href="#checklist">방문 체크리스트</a>
+      <a href="#sources">출처</a>
+    </nav>
+
+    <section id="calculator">
+      <div class="section-title">
+        <h2>총액 계산기</h2>
+        <p>기본값은 대원수 조건: 6개월 후 5G 슬림 14GB 55,000원 복귀, 워치 가치 0원, 결합/카드 제외입니다.</p>
+      </div>
+      <div class="panel">
+        <div class="controls">
+          <label class="control">복귀 요금제 월액<input id="lowPlan" type="number" value="55000" step="1000"></label>
+          <label class="control">공식샵/KT마켓 초기 요금제<input id="simplePlan" type="number" value="69000" step="1000"></label>
+          <label class="control">성지 9만원 조건<input id="spot90" type="number" value="90000" step="1000"></label>
+          <label class="control">성지/폰사와 11만원 조건<input id="spot110" type="number" value="110000" step="1000"></label>
+          <label class="control">초이스 프리미엄 13만원<input id="premiumPlan" type="number" value="130000" step="1000"></label>
+          <label class="control">고요금제 유지 개월<input id="highMonths" type="number" value="6" min="0" max="24"></label>
+          <label class="control">총 비교 개월<input id="months" type="number" value="24" min="1" max="60"></label>
+          <label class="control">KT닷컴 요금할인율 %<input id="ktRate" type="number" value="7" step="0.1"></label>
+          <label class="control">성지 미확인 부가 총액<input id="unknownAddon" type="number" value="0" step="10000"></label>
+          <label class="control">할부이자 연율 %<input id="interestRate" type="number" value="5.9" step="0.1"></label>
+          <label class="toggle"><input id="includeInterest" type="checkbox"> 할부이자 추정 포함</label>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>순위</th><th>채널/조건</th><th>기기 할부원금</th><th>24개월 총액</th><th>공식샵 대비</th><th>판정</th><th>계산식</th>
+              </tr>
+            </thead>
+            <tbody id="offerRows"></tbody>
+          </table>
+        </div>
+        <p class="mini">※ 24개월 총액 = 기기 할부원금 + 요금제 비용 + 부가서비스 + 선택한 경우 할부이자 추정. 가족결합, 카드실적, 중고폰 반납, 사은품 중고판매가는 제외했습니다.</p>
+      </div>
+    </section>
+
+    <section id="formulas">
+      <div class="section-title">
+        <h2>상세 계산식</h2>
+        <p>숫자가 바뀌어도 계산 논리는 동일합니다. 모든 후보의 계산식을 표시하며, 주문서에서는 반드시 ‘할부원금’과 ‘월 요금 할인’을 분리해서 봐야 합니다.</p>
+      </div>
+      <div class="cards" id="formulaCards"></div>
+    </section>
+
+    <section id="hotspots">
+      <div class="section-title">
+        <h2>현재성 통과 후보와 성지 탐색처</h2>
+        <p>7일 초과 단발 후기/시세표는 실전 비교에서 제외했습니다. 아래는 현재 진행형 또는 2026-06-08 갱신 앵커와, 당일 성지를 다시 찾을 탐색처입니다.</p>
+      </div>
+      <div class="hotspot-grid" id="spotGrid"></div>
+      <div class="callout">
+        <div class="badge">!</div>
+        <p><b>핵심 해석:</b> 성지 숫자는 보통 만원 단위의 현완/할부원금이지만, 7일 이상 지난 단발 정보는 제외했습니다. 11번가/에누리의 77.9~88.4만원대는 성지라기보다 오늘 확인 가능한 마켓플레이스 앵커입니다. 실제 성지는 당일 좌표에서 요금제·부가·카드·반납 조건을 다시 받아야 합니다.</p>
+      </div>
+    </section>
+
+    <section id="where">
+      <div class="section-title">
+        <h2>성지는 어디서 찾나</h2>
+        <p>처음이면 커뮤니티→최근 7일 필터→당일 후기→상담 순으로 좁히는 것이 안전합니다.</p>
+      </div>
+      <div class="cards" id="communityCards"></div>
+    </section>
+
+
+    <section id="onnuri">
+      <div class="section-title">
+        <h2>온누리 분리계산</h2>
+        <p>삼성 감사 페스티벌 20%는 원칙상 판매점 보조금이 아니라 삼성전자 사후 혜택입니다. 다만 판매자가 “실구매가”에 섞어 말할 수 있으므로 반드시 분리 확인해야 합니다.</p>
+      </div>
+      <div class="panel">
+        <div class="controls">
+          <label class="control">광고에 보이는 금액<input id="adPrice" type="number" value="883810" step="10000"></label>
+          <label class="control">S26 Ultra 512 출고가<input id="msrp" type="number" value="2050400" step="1000"></label>
+          <label class="control">온누리율 %<input id="onnuriRate" type="number" value="20" step="1"></label>
+          <label class="control">512GB 온누리 프리셋<input id="onnuriFixed" type="number" value="374000" step="1000"></label>
+          <label class="control">내 체감 사용가치 %<input id="onnuriUseValue" type="number" value="100" step="5"></label>
+          <label class="control">광고 방식<select id="adMode"><option value="separate">온누리 별도: 온누리=계약서 할부원금의 20%</option><option value="separateFixed" selected>온누리 별도: 512GB 프리셋 374,000원</option><option value="netFixed">온누리 포함 의심: 광고가=할부원금-374,000원</option><option value="netPrincipal">온누리 포함 의심: 광고가=할부원금-20%</option><option value="netMsrp">온누리 포함: 광고가=할부원금-출고가20%</option><option value="unknown">불명확: 판매자 확인 필요</option></select></label>
+        </div>
+        <div class="split-grid">
+          <div class="split-box"><small>계약서 할부원금 추정</small><b id="onnuriContract">-</b></div>
+          <div class="split-box"><small>온누리 권면액</small><b id="onnuriFace">-</b></div>
+          <div class="split-box"><small>내 체감 반영액</small><b id="onnuriValue">-</b></div>
+          <div class="split-box"><small>체감 기기비</small><b id="onnuriNet">-</b></div>
+        </div>
+        <div class="formula" id="onnuriFormula">-</div>
+        <div class="callout">
+          <div class="badge">분</div>
+          <p><b>원칙:</b> 판매점 비교는 ① 계약서 단말대금/할부원금, ② 판매점 지원금, ③ 삼성 온누리상품권 권면액, ④ 내가 실제로 쓸 수 있는 체감가치를 분리해야 합니다. S26 Ultra 512GB는 현재 374,000원 프리셋을 기본값으로 둡니다. “온누리 포함 실구매가”만 말하는 곳은 계약서 할부원금과 온누리 산정 기준을 먼저 받아야 합니다.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="checklist">
+      <div class="section-title">
+        <h2>방문/상담 체크리스트</h2>
+        <p>대원수 조건은 “KT 유지 + 512GB + 슬림14 복귀”이므로 이 질문들이 방어선입니다.</p>
+      </div>
+      <div class="panel">
+        <div class="checklist">
+          <div class="check"><b>01</b> “S26 Ultra 512GB KT 기변, 할부원금/현완이 정확히 얼마인가요?”</div>
+          <div class="check"><b>02</b> “요금제는 몇 원짜리 몇 개월 유지인가요? 184/185일 이후 5G 슬림 14GB로 낮춰도 되나요?”</div>
+          <div class="check"><b>03</b> “보험, 필수팩, 컬러링, 디즈니/OTT, 폰케어 등 부가서비스 이름과 월액, 유지개월을 문자로 적어주세요.”</div>
+          <div class="check"><b>04</b> “제휴카드, 중고폰 반납, 인터넷/TV, 워치 개통, 구독클럽 조건이 전혀 없나요?”</div>
+          <div class="check"><b>05</b> “재고 색상, 당일개통 가능 여부, 개통 지연 시 취소 가능 여부는 어떻게 되나요?”</div>
+          <div class="check"><b>06</b> “계약서의 단말대금/할부원금이 제가 들은 금액과 같은지 개통 전 확인하고 진행하겠습니다.”</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sources">
+      <div class="section-title">
+        <h2>출처와 신뢰도</h2>
+        <p>공식 채널은 숫자 신뢰도가 높고, 커뮤니티는 실제 사례성은 높지만 재현성이 낮습니다.</p>
+      </div>
+      <div class="panel">
+        <ol class="source-list">
+          <li>삼성 감사 페스티벌 공식 보도(20% 원칙): <a href="https://news.samsung.com/kr/%EC%82%BC%EC%84%B1%EC%A0%84%EC%9E%90-%EA%B5%AD%EB%AF%BC%EA%B3%BC-%ED%95%A8%EA%BB%98-%EA%B0%90%EC%82%AC-%ED%8E%98%EC%8A%A4%ED%8B%B0%EB%B2%8C-%EC%8B%9C%EC%9E%91" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">구매 금액 20% 디지털 온누리상품권</a></li>
+          <li>KT S26 이벤트/쿠폰/워치/7% 유의사항: <a href="https://shop.kt.com/display/olhsPlan.do?plnDispNo=2742" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">KT 공식 온라인샵 S26 이벤트</a></li>
+          <li>KT닷컴 7% 요금할인: <a href="https://shop.kt.com/display/olhsPlan.do?plnDispNo=2465" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">KT 7% 추가요금 할인</a></li>
+          <li>KT 공식샵 S26 Ultra 512 상품/계산기 기준: <a href="https://shop.kt.com/mobile/view.do?prodNo=WL00076865&sntyNo=WL000768650005" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">KT S26 Ultra 512GB</a></li>
+          <li>KT Market Global 256GB 기준과 512 선택 노출: <a href="https://global.ktmarket.co.kr/en/phone?model=sm-s948nk" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">KT Market Global</a></li>
+          <li>폰사와 가격비교 및 조건 설명: <a href="https://www.phonesawa.co.kr/price-compare" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">폰사와 가격비교</a>, <a href="https://www.phonesawa.co.kr/board/ps_info/22563" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">폰사와 KT 기변 설명</a></li>
+          <li>뽐뿌 휴대폰업체 공개 시세표·진행형 글: <a href="https://m.ppomppu.co.kr/new/bbs_view.php?id=pmarket2&no=1508947" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">S26 Ultra 512G KT 기변 109 표기</a></li>
+          <li>온누리 512GB 금액 참고: 공개 커뮤니티/판매점 표에서는 S26 Ultra 512GB 374,000원 사례가 반복 확인되나, 공식 접근 페이지는 모델별 표가 아니라 20% 원칙만 확인됨</li>
+          <li>성지 현재성 기준: 2026-06-08 현재, 7일 초과 단발 후기/시세표는 실전 비교에서 제외하고 커뮤니티 탐색처로만 사용</li>
+          <li>에누리 가격비교 앵커(온누리 혼입 의심): <a href="https://www.enuri.com/detail.jsp?modelno=142941589" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">S26 Ultra 512GB KT 기기변경 완납</a></li>
+          <li>11번가 마켓 앵커: <a href="https://www.11st.co.kr/products/9145173530" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">S26 Ultra KT 기기변경 공통지원/선약 옵션</a></li>
+          <li>아셀폰 유지기간/부가서비스 참고: <a href="https://ahcellphone.com/phone/GALAXY_S26_ULTRA" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">S26 Ultra 상담형 가격표</a></li>
+          <li>싸당 성지 메뉴/가이드: <a href="https://thessadang.com/tips/detail/%EC%9A%B8%EC%82%B0-%ED%9C%B4%EB%8C%80%ED%8F%B0-%EC%84%B1%EC%A7%80-%EC%8B%9C%EC%84%B8%ED%91%9C-%EC%97%85%EB%8D%B0%EC%9D%B4%ED%8A%B8-%EA%B0%A4%EB%9F%AD%EC%8B%9C-S26-%EC%8B%9C%EB%A6%AC%EC%A6%88-%EC%82%AC%EC%A0%84%EC%98%88%EC%95%BD-%EB%8C%80%EA%B8%B0-%EC%A0%84%EB%9E%B5-1633" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">싸당 휴대폰 성지</a></li>
+          <li>시세표 입문/해석 참고: <a href="https://modusj.com/service/3" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">모두의성지 시세표 읽는 법</a>, <a href="https://nosearch.com/contents/encyclopedia/digitalit/smartphone/868" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">노써치 성지 계산법</a></li>
+        </ol>
+      </div>
+    </section>
+
+    <p class="foot">이 문서는 대원수의 KT 5G 슬림 14GB 복귀 선호와 “성지 정보 7일 유효” 원칙을 기준으로 만든 전술 계산서입니다. 최종 결재 전 주문서의 단말대금과 월정액 할인란을 직접 확인하십시오.</p>
+  </div>
+
+  <script>
+    const krw = n => Math.round(n).toLocaleString('ko-KR') + '원';
+    const man = n => (n/10000).toLocaleString('ko-KR', {maximumFractionDigits:1}) + '만';
+    const esc = value => String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[ch]));
+    const allowedHosts = new Set([
+      'shop.kt.com', 'global.ktmarket.co.kr', 'ktmarket.co.kr',
+      'www.phonesawa.co.kr', 'phonesawa.co.kr', 'gall.dcinside.com',
+      'm.ppomppu.co.kr', 'sellnara.com', 'm.sellnara.com', 'nofee.team',
+      'thessadang.com', 'modusj.com', 'nosearch.com', 'www.enuri.com',
+      'www.11st.co.kr', 'ahcellphone.com', 'play.google.com', 'news.samsung.com',
+      'www.samsung.com'
+    ]);
+    const safeUrl = value => {
+      try {
+        const url = new URL(String(value ?? ''), window.location.href);
+        return url.protocol === 'https:' && allowedHosts.has(url.hostname) ? url.href : '#';
+      } catch {
+        return '#';
+      }
+    };
+    const bounds = {
+      lowPlan:[0,500000], simplePlan:[0,500000], spot90:[0,500000], spot110:[0,500000], premiumPlan:[0,500000],
+      highMonths:[0,24], months:[1,60], ktRate:[0,100], unknownAddon:[0,2000000], interestRate:[0,30], adPrice:[0,5000000], msrp:[0,5000000], onnuriRate:[0,100], onnuriFixed:[0,2000000], onnuriUseValue:[0,100]
+    };
+    const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+    const sourceNames = {
+      kt:'KT 공식샵', ktmarket:'KT Market', phonesawa:'폰사와', dc:'DCInside', ppomppu:'뽐뿌', sellnara:'셀나라', nofee:'노피', enuri:'에누리', st11:'11번가', ahcell:'아셀폰'
+    };
+
+    const offers = [
+      {id:'officialLive', current:true, name:'KT 공식샵 라이브 · 더블스토리지+10만원 쿠폰+7%', type:'공식', principal:1352400, highPlan:'simple', discount7:true, addon:0, unknown:false, verdict:'공식/안전 추천', source:'kt', risk:1, note:'주문서에서 512GB 실수령, 10만원 쿠폰, 7% 요금할인, 워치 미선택 확인 필요'},
+      {id:'officialNo7', current:true, name:'KT 공식샵 라이브 · 7% 미적용 가정', type:'공식', principal:1352400, highPlan:'simple', discount7:false, addon:0, unknown:false, verdict:'차선', source:'kt', risk:1, note:'7%가 빠져도 폰사와 슬림14 512보다 낮음. 단, 더블스토리지 실패 시 매력 급락'},
+      {id:'phonesawaHigh', current:true, name:'폰사와 512 · 110요금제 공시 극딜', type:'온라인', principal:1000400, highPlan:'110', discount7:false, addon:0, unknown:false, verdict:'공식샵과 박빙', source:'phonesawa', risk:2, note:'제휴카드/부가/반납 없음으로 게시. 110요금제 6개월 부담이 큼'},
+      {id:'phonesawaSlim', current:true, name:'폰사와 512 · 5G 슬림14 유지', type:'온라인', principal:1510400, highPlan:'low', discount7:false, addon:0, unknown:false, verdict:'요금제 유지형', source:'phonesawa', risk:2, note:'대원수의 현 요금제를 처음부터 유지하는 대신 기기값이 높음'},
+      {id:'ktMarketInferred', current:true, name:'KT Market 512 · 256 공개가 기반 추정', type:'온라인', principal:1573400, highPlan:'simple', discount7:false, addon:0, unknown:true, verdict:'탈락권', source:'ktmarket', risk:2, note:'512GB 공개 할부원금 미검증. 256GB 1,320,400원과 할인 477,000원에서 추정'},
+      {id:'st11PremiumDirect', current:true, name:'11번가 직접옵션 · 초이스 프리미엄', type:'마켓', principal:1105900, highPlan:'130', discount7:false, addon:0, unknown:false, verdict:'온누리 혼입 검사 필요', source:'st11', risk:4, note:'직접 페이지 1,105,900원~. 88.4만 앵커는 이 금액의 80%와 거의 같아 온누리 포함 표기 가능성이 있음'},
+      {id:'st11Simple110Direct', current:true, name:'11번가 직접옵션 · 심플 110GB', type:'마켓', principal:1555900, highPlan:'simple', discount7:false, addon:0, unknown:false, verdict:'공식샵보다 약함', source:'st11', risk:3, note:'직접 페이지 심플 110GB 옵션가 1,555,900원 기준. 제휴카드X/부가X 표기는 있으나 최종 주문서 확인 필요'},
+      {id:'st11Slim14Direct', current:true, name:'11번가 직접옵션 · 슬림 14GB', type:'마켓', principal:1725900, highPlan:'low', discount7:false, addon:0, unknown:false, verdict:'탈락권', source:'st11', risk:3, note:'직접 페이지 슬림 14GB 옵션가 1,725,900원. 저요금제 유지형이지만 가격 경쟁력 낮음'}
+    ];
+
+    const hotspots = [
+      {title:'11번가 완납 앵커', price:'77.9만원~', meta:'2026-06-08 확인 · KT 기변 공통지원', terms:'초이스 스페셜요금, 제휴카드 가입권유 없음 표기', trust:'온누리/카드 혼입 확인 필요 앵커', caveat:'성지가 아니라 현재 구매형 앵커. 256/512 묶음·~가격이며 온누리 포함 실구매가인지, 아니면 별도 제조사 혜택인지 확인 전까지 계약서 할부원금으로 확정하면 안 됨', url:'https://www.11st.co.kr/products/9145173530'},
+      {title:'에누리 가격비교 앵커', price:'88.4만원대', meta:'2026-06-08 가격갱신 · KT 기변 512 완납', terms:'단말할인(공통지원) 가격비교. 883,810원 ÷ 0.8 ≈ 1,104,763원', trust:'온누리 별도/포함 확인 필요 앵커', caveat:'가격비교 표에는 온누리 문구가 보이지 않음. 계약서 할부원금인지, 카드/쿠폰/온누리 반영 실구매가인지 판매자 페이지에서 확인할 것', url:'https://www.enuri.com/detail.jsp?modelno=142941589'},
+      {title:'현재 공개 성지 확정가', price:'미확보', meta:'최근 7일 이내·진행형 공개글 기준', terms:'단발 후기/시세표 중 2026-06-01 이전 자료는 제외', trust:'보수적 판정', caveat:'뽐뿌/디시/셀나라의 3~4월 54~71만원대 자료는 현재 진행형이 아니므로 실전 비교에서 제거', url:'https://m.ppomppu.co.kr/new/bbs_list.php?id=phone'},
+      {title:'당일 성지 탐색 루트', price:'상담 필요', meta:'뽐뿌 휴대폰업체·휴대폰포럼·DC·셀나라·노피', terms:'최근 7일 검색 후, 좌표/방문/문자 상담에서 할부원금·요금제·부가·카드·반납 확인', trust:'탐색처', caveat:'성지 가격은 당일 정책이므로 HTML 표의 과거 숫자보다 상담서/계약서가 우선', url:'https://m.ppomppu.co.kr/new/bbs_list.php?id=pmarket2'}
+    ];
+
+    const communities = [
+      {name:'뽐뿌 휴대폰포럼', url:'https://m.ppomppu.co.kr/new/bbs_list.php?id=phone', use:'최근 7일 후기·질문·시세 감지', pros:'사용자 댓글로 조건 검증 가능. 단, 7일 초과 가격은 시세 감각용으로만 사용.', cons:'좌표는 숨겨지는 경우가 많고 은어가 많음.', score:5},
+      {name:'뽐뿌 휴대폰업체', url:'https://m.ppomppu.co.kr/new/bbs_list.php?id=pmarket2', use:'업체 공개 시세표·진행형 글', pros:'표 형태라 최근/진행형 후보를 훑기 좋음. 카드/반납 X 문구 확인 가능.', cons:'광고 게시판 성격. 가격 언급 금지·방문 조건이 있을 수 있음.', score:4},
+      {name:'DCInside 휴대폰갤러리', url:'https://gall.dcinside.com/board/lists/?id=cellularphone', use:'당일 가격질문·실구매 보고', pros:'최근 분위기 파악이 빠름. 다만 하루 단위로 정책이 바뀜.', cons:'검증 난이도 높고 판매점 정보가 거의 없음.', score:4},
+      {name:'셀나라', url:'https://sellnara.com/bbs/board.php?bo_table=phone', use:'지역별 성지 시세표', pros:'지역/통신사/이동·기변 표가 명확함.', cons:'시세일이 7일 넘으면 실전가로 무효. 부가서비스는 상담해야 함.', score:3},
+      {name:'노피', url:'https://nofee.team/community', use:'커뮤니티+매장 비교', pros:'조건 설명이 비교적 쉬움. 카드/반납 여부가 보이는 글이 있음.', cons:'통신사 혼재. 리드성 링크와 커뮤니티를 구분해야 함.', score:3},
+      {name:'싸당', url:'https://thessadang.com/', use:'온라인/오프라인 성지 메뉴', pros:'오프라인 성지 시세표, 온라인 시세표, 가이드 메뉴가 구조화되어 있음.', cons:'상담/가입 유도형. 실제 최종 조건은 별도 확인 필요.', score:3},
+      {name:'알고사 / 빠삭', url:'https://play.google.com/store/apps/details?id=com.rgo4.rgo4app', use:'전국 시세표·앱/커뮤니티 탐색', pros:'입문자들이 많이 언급하는 시세표/좌표 탐색처.', cons:'로그인/앱/등급 제한 가능. 이번 계산의 핵심 가격은 별도 검증하지 않음.', score:2}
+    ];
+
+    function getVal(id){
+      const raw = Number(document.getElementById(id).value);
+      const value = Number.isFinite(raw) ? raw : 0;
+      const [min, max] = bounds[id] || [-Infinity, Infinity];
+      return clamp(value, min, max);
+    }
+    function planCost(offer, vars){
+      const highMonths = Math.min(vars.highMonths, vars.months);
+      const lowMonths = Math.max(vars.months - highMonths, 0);
+      let highFee = vars.lowPlan;
+      if(offer.highPlan === 'simple') highFee = vars.simplePlan;
+      if(offer.highPlan === '90') highFee = vars.spot90;
+      if(offer.highPlan === '110') highFee = vars.spot110;
+      if(offer.highPlan === '130') highFee = vars.premiumPlan;
+      if(offer.highPlan === 'low') highFee = vars.lowPlan;
+      const rate = offer.discount7 ? (1 - vars.ktRate/100) : 1;
+      return { highFee, highMonths, lowMonths, cost: (highFee * highMonths + vars.lowPlan * lowMonths) * rate };
+    }
+    function interest(principal, vars){
+      if(!vars.includeInterest) return 0;
+      const monthly = vars.interestRate / 100 / 12;
+      return principal * monthly * (vars.months + 1) / 2;
+    }
+    function calcOffer(offer, vars){
+      const p = planCost(offer, vars);
+      const extraUnknown = offer.unknown ? vars.unknownAddon : 0;
+      const int = interest(offer.principal, vars);
+      const addon = offer.addon + extraUnknown;
+      const total = offer.principal + p.cost + addon + int;
+      return {...offer, plan:p, addon, baseAddon:offer.addon, unknownAddon:extraUnknown, interest:int, total};
+    }
+    function riskLevel(r){ return clamp(Number(r) || 0, 0, 5); }
+    function riskDots(r){ const level = riskLevel(r); return Array.from({length:5}, (_,i)=>`<span class="dot ${i<level?'on':''}"></span>`).join(''); }
+    function formulaText(o){
+      const high = o.plan.highMonths, low = o.plan.lowMonths;
+      const rate = o.discount7 ? ` × ${(1 - getVal('ktRate')/100).toFixed(3)} (${getVal('ktRate')}% 할인)` : '';
+      const addonText = o.unknown
+        ? ` + 확정부가 ${krw(o.baseAddon)} + 미확인부가 가정 ${krw(o.unknownAddon)}`
+        : ` + 부가 ${krw(o.baseAddon)}`;
+      const int = document.getElementById('includeInterest').checked ? ` + 할부이자추정 ${krw(o.interest)}` : '';
+      return `${krw(o.principal)} + [${krw(o.plan.highFee)} × ${high}개월 + ${krw(getVal('lowPlan'))} × ${low}개월]${rate}${addonText}${int}`;
+    }
+    function renderOnnuri(){
+      const adPrice = getVal('adPrice');
+      const msrp = getVal('msrp');
+      const rate = getVal('onnuriRate') / 100;
+      const useValue = getVal('onnuriUseValue') / 100;
+      const mode = document.getElementById('adMode').value;
+      let contract = adPrice;
+      let face = contract * rate;
+      let formula = '온누리 별도 표기: 광고가를 계약서 할부원금으로 보고, 온누리 권면액은 별도 혜택으로만 차감합니다.';
+      if(mode === 'separateFixed'){
+        face = getVal('onnuriFixed');
+        formula = `온누리 별도 512GB 프리셋: 광고가 ${krw(adPrice)}를 계약서 할부원금으로 보고, 512GB 온누리 ${krw(face)}를 별도 사후 혜택으로 차감합니다.`;
+      } else if(mode === 'netFixed'){
+        face = getVal('onnuriFixed');
+        contract = adPrice + face;
+        formula = `온누리 포함 광고 역산(512GB 고정액): 광고가 ${krw(adPrice)} + 온누리 ${krw(face)} = 계약서 할부원금 ${krw(contract)}`;
+      } else if(mode === 'netPrincipal'){
+        contract = rate >= 1 ? adPrice : adPrice / (1 - rate);
+        face = contract * rate;
+        formula = `온누리 포함 광고 역산: 광고가 ${krw(adPrice)} = 계약서 할부원금 × ${(1-rate).toFixed(3)} → 계약서 할부원금 ${krw(contract)}`;
+      } else if(mode === 'netMsrp'){
+        face = msrp * rate;
+        contract = adPrice + face;
+        formula = `출고가 기준 온누리 포함 광고 역산: 광고가 ${krw(adPrice)} + 출고가 ${krw(msrp)} × ${getVal('onnuriRate')}% = 계약서 할부원금 ${krw(contract)}`;
+      } else if(mode === 'unknown'){
+        formula = '불명확: 판매자에게 “계약서 단말대금/할부원금이 얼마인지, 온누리상품권은 별도 신청인지, 광고가에 이미 차감했는지”를 확인해야 합니다.';
+        document.getElementById('onnuriContract').textContent = '확인 필요';
+        document.getElementById('onnuriFace').textContent = '확인 필요';
+        document.getElementById('onnuriValue').textContent = '확인 필요';
+        document.getElementById('onnuriNet').textContent = '확인 필요';
+        document.getElementById('onnuriFormula').textContent = formula;
+        return;
+      }
+      const value = face * useValue;
+      document.getElementById('onnuriContract').textContent = krw(contract);
+      document.getElementById('onnuriFace').textContent = krw(face);
+      document.getElementById('onnuriValue').textContent = krw(value);
+      document.getElementById('onnuriNet').textContent = krw(contract - value);
+      document.getElementById('onnuriFormula').textContent = formula + ` 체감가치 ${getVal('onnuriUseValue')}% 적용 시 차감액은 ${krw(value)}입니다.`;
+    }
+
+    function render(){
+      renderOnnuri();
+      const vars = {
+        lowPlan:getVal('lowPlan'), simplePlan:getVal('simplePlan'), spot90:getVal('spot90'), spot110:getVal('spot110'), premiumPlan:getVal('premiumPlan'), highMonths:getVal('highMonths'), months:getVal('months'), ktRate:getVal('ktRate'), unknownAddon:getVal('unknownAddon'), includeInterest:document.getElementById('includeInterest').checked, interestRate:getVal('interestRate')
+      };
+      const rows = offers.map(o=>calcOffer(o, vars)).sort((a,b)=>a.total-b.total);
+      const official = rows.find(o=>o.id==='officialLive');
+      const knownRows = rows.filter(o => !o.unknown);
+      const best = knownRows[0] || rows[0];
+      document.getElementById('heroOfficial').textContent = krw(official.total);
+      document.getElementById('heroBest').textContent = `${best.name.split('·')[0].trim()} ${krw(best.total)}`;
+      document.getElementById('heroDelta').textContent = krw(official.total - best.total);
+      const rankRows = [...knownRows, ...rows.filter(o => o.unknown)].slice(0,4);
+      document.getElementById('rankList').innerHTML = rankRows.map((o,i)=> {
+        const source = sourceNames[o.source] || o.source;
+        const marker = o.unknown ? ' · 미확인 포함' : '';
+        return `<div class="rank"><div class="no">${i+1}</div><div><b>${esc(o.name)}</b><span>${esc(o.verdict)} · ${esc(source)}${esc(marker)}</span></div><em>${krw(o.total)}</em></div>`;
+      }).join('');
+      document.getElementById('offerRows').innerHTML = rows.map((o,i)=>{
+        const diff = o.total - official.total;
+        const diffClass = diff < 0 ? 'good' : diff > 0 ? 'bad' : 'mid';
+        const safeRisk = riskLevel(o.risk);
+        const tagClass = (o.unknown || safeRisk >= 4) ? 'unknown' : (o.type.includes('성지') ? 'hotspot' : o.type === '공식' ? 'official' : 'safe');
+        return `<tr>
+          <td><b>${i+1}</b></td>
+          <td><strong>${esc(o.name)}</strong><br><span class="tag ${tagClass}">${esc(o.type)}</span><span class="tag unknown">위험도 ${esc(safeRisk)}/5</span><br><span class="mini">${esc(o.note)}</span></td>
+          <td class="won">${krw(o.principal)}</td>
+          <td class="won">${krw(o.total)}</td>
+          <td class="won ${diffClass}">${diff===0?'기준':(diff>0?'+':'') + krw(diff)}</td>
+          <td><b>${esc(o.verdict)}</b><div class="score">${riskDots(o.risk)}</div></td>
+          <td><div class="formula">${esc(formulaText(o))}</div></td>
+        </tr>`;
+      }).join('');
+      document.getElementById('formulaCards').innerHTML = rows.map(o=>`<article class="card"><h3>${esc(o.name)}</h3><p>${esc(o.note)}</p><div class="formula">${esc(formulaText(o))}<br>= <span class="won">${krw(o.total)}</span></div></article>`).join('');
+    }
+
+    document.querySelectorAll('input, select').forEach(el=>el.addEventListener('input', render));
+    document.getElementById('spotGrid').innerHTML = hotspots.map(s=>`<article class="spot"><div class="spot-head"><h3>${esc(s.title)}</h3><div class="price">${esc(s.price)}</div></div><dl><dt>근거</dt><dd>${esc(s.meta)}</dd><dt>조건</dt><dd>${esc(s.terms)}</dd><dt>신뢰</dt><dd>${esc(s.trust)}</dd><dt>주의</dt><dd>${esc(s.caveat)}</dd></dl><a href="${safeUrl(s.url)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">원문 보기 ↗</a></article>`).join('');
+    document.getElementById('communityCards').innerHTML = communities.map(c=>`<article class="card"><h3>${esc(c.name)}</h3><div class="score">${riskDots(c.score)}</div><p><b>용도:</b> ${esc(c.use)}</p><p><b>장점:</b> ${esc(c.pros)}</p><p><b>주의:</b> ${esc(c.cons)}</p><a href="${safeUrl(c.url)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">열기 ↗</a></article>`).join('');
+    render();
+  </script>
+</body>
+</html>
