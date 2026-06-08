@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OAuth/OIDC Server — 설계 & API 스펙</title>
+<style>
+:root {
+  --bg: #0d0f18;
+  --bg2: #13161f;
+  --bg3: #1a1e2e;
+  --bg4: #21253a;
+  --border: #262c42;
+  --accent: #6c8ef5;
+  --accent2: #4ecdc4;
+  --accent3: #f5a623;
+  --red: #f56c6c;
+  --green: #4ecdc4;
+  --yellow: #f5c842;
+  --purple: #b06cf5;
+  --blue: #6cafff;
+  --text: #dde1f5;
+  --text2: #8891b8;
+  --text3: #4e5878;
+  --get: #2d6b3e;
+  --get-t: #4ecf80;
+  --post: #2d4a6b;
+  --post-t: #6cb4f5;
+  --put: #6b4a2d;
+  --put-t: #f5a04e;
+  --delete: #6b2d2d;
+  --delete-t: #f56c6c;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;line-height:1.65}
+code{background:var(--bg3);color:var(--accent2);padding:2px 6px;border-radius:4px;font-family:'SF Mono','Fira Code',monospace;font-size:12px}
+pre{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;margin:10px 0}
+pre code{background:none;padding:0;font-size:12px;line-height:1.75;color:#c5d0f5}
+.kw{color:#b06cf5}.str{color:#4ecdc4}.num{color:#f5a623}.cmt{color:#4e5878;font-style:italic}.key{color:#6cafff}.fn{color:#f5c842}
+
+/* Header */
+.hdr{background:linear-gradient(135deg,#13161f,#0d0f18);border-bottom:1px solid var(--border);padding:26px 40px 22px}
+.hdr h1{font-size:20px;font-weight:700;color:#fff}
+.hdr p{color:var(--text2);margin-top:5px;font-size:13px}
+.pill-row{display:flex;gap:7px;margin-top:11px;flex-wrap:wrap}
+.pill{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600;letter-spacing:.3px}
+.pill-b{background:#1a2240;color:var(--blue);border:1px solid #263566}
+.pill-g{background:#152418;color:var(--green);border:1px solid #1e3d28}
+.pill-p{background:#201535;color:var(--purple);border:1px solid #361f5a}
+
+/* Tabs */
+.tabs{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;padding:0 40px}
+.tabs::-webkit-scrollbar{height:3px}
+.tabs::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.tab{padding:13px 16px;cursor:pointer;color:var(--text2);font-size:13px;font-weight:500;border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s,border-color .15s}
+.tab:hover{color:var(--text)}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* Layout */
+.wrap{max-width:1120px;margin:0 auto;padding:28px 40px}
+.tc{display:none}.tc.on{display:block}
+
+/* Section */
+.sec{margin-bottom:32px}
+.sec-h{font-size:15px;font-weight:700;color:#fff;margin-bottom:14px;display:flex;align-items:center;gap:9px}
+.sec-sub{font-size:13px;font-weight:600;color:var(--text);margin:18px 0 9px;border-left:3px solid var(--accent);padding-left:10px}
+
+/* Cards */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:10px}
+.card-title{font-weight:700;color:#fff;margin-bottom:7px;font-size:13px}
+.card p,.card li{color:var(--text2);font-size:13px}
+.card ul{padding-left:16px}
+.card li{margin-bottom:3px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:800px){.grid2,.grid3{grid-template-columns:1fr}}
+
+/* Tables */
+.tbl-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px}
+.tbl-hd{padding:10px 14px;font-size:11px;font-weight:700;color:var(--text2);background:var(--bg3);border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.5px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--bg3);color:var(--text2);font-weight:600;text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+
+/* Tags */
+.tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:4px;font-weight:600}
+.must{background:#2a1616;color:var(--red)}.should{background:#2a2210;color:var(--yellow)}.may{background:#102218;color:var(--green)}.opt{background:#1a1a2a;color:var(--blue)}
+
+/* HTTP Method badges */
+.m{display:inline-block;padding:3px 8px;border-radius:5px;font-size:11px;font-weight:700;letter-spacing:.5px;margin-right:6px}
+.GET{background:var(--get);color:var(--get-t)}
+.POST{background:var(--post);color:var(--post-t)}
+.PUT{background:var(--put);color:var(--put-t)}
+.DELETE{background:var(--delete);color:var(--delete-t)}
+.PATCH{background:#2d3b6b;color:#a0b4f5}
+
+/* Endpoint card */
+.ep{background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-bottom:14px;overflow:hidden}
+.ep-hdr{padding:14px 18px;display:flex;align-items:center;gap:0;cursor:pointer;user-select:none;transition:background .15s}
+.ep-hdr:hover{background:var(--bg3)}
+.ep-path{font-family:'SF Mono','Fira Code',monospace;font-size:13px;font-weight:600;color:#fff}
+.ep-desc{color:var(--text2);font-size:12px;margin-left:auto;padding-left:16px}
+.ep-body{display:none;border-top:1px solid var(--border);padding:16px 18px}
+.ep-body.open{display:block}
+.param-section{margin-bottom:14px}
+.param-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+
+/* Alerts */
+.alert{border-radius:8px;padding:12px 15px;margin:10px 0;font-size:13px;display:flex;gap:9px}
+.alert-i{flex-shrink:0;font-size:15px}
+.alert-b{flex:1}
+.alert-t{font-weight:700;margin-bottom:3px}
+.a-info{background:#0e1824;border:1px solid #1a3040}.a-info .alert-t{color:var(--blue)}
+.a-warn{background:#1e1810;border:1px solid #3d3018}.a-warn .alert-t{color:var(--yellow)}
+.a-must{background:#1e0e0e;border:1px solid #3d1818}.a-must .alert-t{color:var(--red)}
+.a-tip{background:#0e1e14;border:1px solid #1a3d28}.a-tip .alert-t{color:var(--green)}
+
+/* Accordion */
+.acc{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:8px}
+.acc-h{padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:var(--bg2);font-weight:600;font-size:13px;user-select:none}
+.acc-h:hover{background:var(--bg3)}
+.acc-arr{color:var(--text3);transition:transform .2s;font-size:11px}
+.acc-h.open .acc-arr{transform:rotate(90deg)}
+.acc-bd{display:none;padding:16px;background:var(--bg);border-top:1px solid var(--border)}
+.acc-bd.open{display:block}
+
+/* Flow diagram */
+.flow{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:18px 20px;font-family:'SF Mono','Fira Code',monospace;font-size:12px;color:var(--text2);line-height:1.85;overflow-x:auto;margin:10px 0;white-space:pre}
+.fa{color:var(--accent);font-weight:700}
+.fl{color:var(--green)}
+.fn2{color:var(--accent3)}
+.fc{color:var(--text3);font-style:italic}
+
+/* Schema block */
+.schema{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-family:'SF Mono','Fira Code',monospace;font-size:12px;line-height:1.75;overflow-x:auto;margin:8px 0;white-space:pre}
+.col-name{color:#6cafff}
+.col-type{color:#b06cf5}
+.col-note{color:#4e5878;font-style:italic}
+/* Table entity header */
+.tbl-entity{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:20px}
+.tbl-entity-hdr{padding:12px 16px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.tbl-entity-name{font-family:'SF Mono','Fira Code',monospace;font-size:14px;font-weight:700;color:#fff}
+.tbl-entity-desc{font-size:12px;color:var(--text2)}
+.tbl-entity-body{padding:0}
+.ddl-toggle{padding:10px 16px;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;border-top:1px solid var(--border);background:var(--bg2)}
+.ddl-toggle:hover{color:var(--text2);background:var(--bg3)}
+.ddl-body{display:none;padding:0 16px 14px;background:var(--bg)}
+.ddl-body.open{display:block}
+
+/* Status codes */
+.sc{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;font-family:monospace}
+.s2{background:#102218;color:#4ecf80}
+.s3{background:#1a1a0e;color:#f5c842}
+.s4{background:#1e0e0e;color:#f56c6c}
+.s5{background:#1e1028;color:#b06cf5}
+
+/* Checklist */
+.chk{list-style:none;padding:0}
+.chk li{padding:8px 12px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--text2)}
+.chk li:last-child{border-bottom:none}
+.chk-box{width:16px;height:16px;border:2px solid var(--border);border-radius:3px;flex-shrink:0;margin-top:1px}
+.chk-phase{font-size:10px;font-weight:700;background:var(--bg3);color:var(--text3);padding:2px 7px;border-radius:3px;margin-left:auto;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <h1>OAuth 2.0 / OIDC Server — 설계 문서 & API Spec</h1>
+  <p>Golang · HTTP (TLS은 앞단 LB/Proxy) · 이메일+비밀번호+TOTP · Authorization Code+PKCE · Client Credentials · OIDC</p>
+  <div class="pill-row">
+    <span class="pill pill-b">v0.1-draft</span>
+    <span class="pill pill-g">PostgreSQL + Redis</span>
+    <span class="pill pill-p">RS256 / ES256</span>
+    <span class="pill pill-b">RFC 6749 · 7636 · 7519 · OIDC Core 1.0</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab on" onclick="sw('arch')">아키텍처</div>
+  <div class="tab" onclick="sw('schema')">데이터 모델</div>
+  <div class="tab" onclick="sw('auth-api')">OAuth API</div>
+  <div class="tab" onclick="sw('oidc-api')">OIDC API</div>
+  <div class="tab" onclick="sw('ui-api')">로그인 UI</div>
+  <div class="tab" onclick="sw('admin-api')">Admin API</div>
+  <div class="tab" onclick="sw('errors')">에러 코드</div>
+  <div class="tab" onclick="sw('checklist')">구현 체크리스트</div>
+</div>
+
+<div class="wrap">
+
+<!-- ===== 아키텍처 ===== -->
+<div id="tc-arch" class="tc on">
+  <div class="sec">
+    <div class="sec-h">🏗️ 컴포넌트 구성</div>
+    <div style="text-align:center;margin:10px 0">
+      <canvas id="canvas-arch" data-w="720" data-h="530" style="width:100%;max-width:720px;border-radius:10px;border:1px solid var(--border);display:inline-block"></canvas>
+    </div>
+
+    <div class="sec-sub">기술 스택</div>
+    <div class="grid3">
+      <div class="card">
+        <div class="card-title">Runtime & Framework</div>
+        <ul>
+          <li>Go 1.22+</li>
+          <li><code>net/http</code> 표준 라이브러리</li>
+          <li><code>go-chi/chi/v5</code> 라우터</li>
+          <li>단일 바이너리 배포</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">JWT / Crypto</div>
+        <ul>
+          <li><code>golang-jwt/jwt/v5</code></li>
+          <li><code>lestrrat-go/jwx/v3</code> (JWKS)</li>
+          <li><code>golang.org/x/crypto</code> (bcrypt/argon2)</li>
+          <li><code>pquerna/otp</code> (TOTP)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">Storage</div>
+        <ul>
+          <li><code>jackc/pgx/v5</code> PostgreSQL</li>
+          <li><code>redis/go-redis/v9</code></li>
+          <li><code>golang-migrate/migrate</code> 마이그레이션</li>
+          <li><code>google/uuid</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sec-sub">앞단 프록시 설정 요구사항</div>
+    <div class="card">
+      <ul>
+        <li>반드시 <code>X-Forwarded-Proto: https</code> 헤더 전달 — AS는 이 헤더 기반으로 Redirect URI scheme 강제</li>
+        <li><code>X-Real-IP</code> 또는 <code>X-Forwarded-For</code> 전달 — Rate Limiting에 사용</li>
+        <li>Authorization 헤더 strip 금지</li>
+        <li><code>/authorize</code> 경로에 캐시 없음 설정 필수</li>
+        <li>Token/로그인 응답에 Cache-Control 강제 (AS에서도 설정하지만 이중 보호)</li>
+      </ul>
+    </div>
+
+    <div class="sec-sub">포트 설계</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>포트</th><th>용도</th><th>외부 노출</th><th>인증</th></tr>
+        <tr><td><code>:8080</code></td><td>OAuth/OIDC + 로그인 UI</td><td>프록시 경유 ✓</td><td>각 엔드포인트별</td></tr>
+        <tr><td><code>:8081</code></td><td>Admin API</td><td>내부망 전용 ✗</td><td>Admin Bearer Token</td></tr>
+        <tr><td><code>:9090</code></td><td>Prometheus metrics</td><td>내부망 전용 ✗</td><td>없음</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h">🔑 서명 키 관리</div>
+    <div class="card">
+      <div class="card-title">키 순환 전략</div>
+      <ul>
+        <li>RSA 2048 또는 EC P-256 키쌍을 DB에 PEM으로 저장 (암호화 권장)</li>
+        <li>각 키에 <code>kid</code> (UUID), <code>created_at</code>, <code>expires_at</code>, <code>status</code> (active/retired) 관리</li>
+        <li>JWT 발급 시 현재 active 키 사용, <code>kid</code>를 Header에 포함</li>
+        <li>JWKS 엔드포인트에 active + 아직 유효한 retired 키 모두 노출 (전환 기간)</li>
+        <li>키 순환: 새 키 생성 → active로 전환 → 이전 키 retired로 → 이전 키로 발급된 토큰 만료 후 JWKS에서 제거</li>
+      </ul>
+    </div>
+    <div class="alert a-tip">
+      <span class="alert-i">💡</span>
+      <div class="alert-b">
+        <div class="alert-t">초기 구현 권장: RS256 단일 키</div>
+        처음엔 시작 시 RSA 키쌍을 환경변수/파일에서 로드하는 방식으로 단순하게 시작.
+        키 순환은 Phase 2에서 DB 저장 방식으로 확장.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 데이터 모델 ===== -->
+<div id="tc-schema" class="tc">
+  <div class="sec">
+    <div class="sec-h">🗄️ PostgreSQL 스키마</div>
+
+    <!-- users -->
+    <div class="tbl-entity">
+      <div class="tbl-entity-hdr">
+        <span class="tbl-entity-name">users</span>
+        <span class="tbl-entity-desc">사용자 계정 — 이메일+비밀번호 및 외부 IdP(Google 등) 모두의 공통 Identity</span>
+      </div>
+      <div class="tbl-entity-body">
+        <table>
+          <tr><th>컬럼</th><th>타입</th><th>Nullable</th><th>기본값</th><th>설명</th></tr>
+          <tr><td><code>id</code></td><td><span class="col-type">UUID</span></td><td>NO</td><td>gen_random_uuid()</td><td>사용자 고유 ID (PK)</td></tr>
+          <tr><td><code>email</code></td><td><span class="col-type">TEXT</span></td><td>NO</td><td>—</td><td>이메일 주소 (UNIQUE). 외부 IdP 가입 시에도 이메일로 식별.</td></tr>
+          <tr><td><code>email_verified</code></td><td><span class="col-type">BOOLEAN</span></td><td>NO</td><td>false</td><td>이메일 인증 완료 여부. Google 연동 시 Google이 verified면 true로 설정.</td></tr>
+          <tr><td><code>password_hash</code></td><td><span class="col-type">TEXT</span></td><td><strong>YES</strong></td><td>NULL</td><td>bcrypt(cost≥12) 또는 argon2id 해시. <strong>외부 IdP 전용 계정은 NULL.</strong></td></tr>
+          <tr><td><code>status</code></td><td><span class="col-type">TEXT</span></td><td>NO</td><td>'active'</td><td><code>active</code> · <code>suspended</code> · <code>deleted</code></td></tr>
+          <tr><td><code>failed_logins</code></td><td><span class="col-type">INT</span></td><td>NO</td><td>0</td><td>연속 로그인 실패 횟수 (성공 시 0 초기화)</td></tr>
+          <tr><td><code>locked_until</code></td><td><span class="col-type">TIMESTAMPTZ</span></td><td>YES</td><td>NULL</td><td>브루트포스 임시 잠금 해제 시각. NULL이면 잠금 없음.</td></tr>
+          <tr><td><code>created_at</code></td><td><span class="col-type">TIMESTAMPTZ</span></td><td>NO</td><td>now()</td><td>계정 생성 시각</td></tr>
+          <tr><td><code>updated_at</code></td><td><span class="col-type">TIMESTAMPTZ</span></td><td>NO</td><td>now()</td><td>마지막 수정 시각</td></tr>
+        </table>
+      </div>
+      <div class="ddl-toggle" onclick="toggleDDL(this)">▶ DDL 보기</div>
+      <div class="ddl-body">
+        <div class="schema"><span class="fn">CREATE TABLE</span> <span class="col-name">users</span> (
+  <span class="col-name">id</span>              <span class="col-type">UUID</span>         PRIMARY KEY DEFAULT gen_random_uuid(),
+  <span class="col-name">email</span>           <span class="col-type">TEXT</span>         NOT NULL UNIQUE,
+  <span class="col-name">email_verified</span>  <span class="col-type">BOOLEAN</span>      NOT NULL DEFAULT false,
+  <span class="col-name">password_hash</span>   <span class="col-type">TEXT</span>,                        <span class="col-note">-- NULL 허용: 외부 IdP 전용 계정</span>
+  <span class="col-name">status</span>          <span class="col-type">TEXT</span>         NOT NULL DEFAULT 'active',
+  <span class="col-name">failed_logins</span>   <span class="col-type">INT</span>          NOT NULL DEFAULT 0,
+  <span class="col-name">locked_until</span>    <span class="col-type">TIMESTAMPTZ</span>,
+  <span class="col-name">created_at</span>      <span class="col-type">TIMESTAMPTZ</span>  NOT NULL DEFAULT now(),
+  <span class="col-name">updated_at</span>      <span class="col-type">TIMESTAMPTZ</span>  NOT NULL DEFAULT now()
+);
+<span class="cmt">CREATE INDEX idx_users_email ON users(email);</span></div>
+      </div>
+    </div>
+
+    <!-- user_totp -->
+    <div class="tbl-entity">
+      <div class="tbl-entity-hdr">
+        <span class="tbl-entity-name">user_totp</span>
+        <span class="tbl-entity-desc">사용자 TOTP 시크릿 — users와 1:1 관계</span>
+      </div>
+      <div class="tbl-entity-body">
+        <table>
+          <tr><th>컬럼</th><th>타입</th><th>Nullable</th><th>기본값</th><th>설명</th></tr>
+          <tr><td><code>user_id</code></td><td><span class="col-type">UUID</span></td><td>NO</td><td>—</td><td>users.id 참조 (PK, ON DELETE CASCADE)</td></tr>
+          <tr><td><code>secret</code></td><td><span class="col-type">TEXT</span></td><td>NO</td><td>—</td><td>Base32 인코딩된 TOTP 시크릿. 암호화 저장 권장.</td></tr>
+          <tr><td><code>enabled</code></td><td><span class="col-type">BOOLEAN</span></td><td>NO</td><td>false</td><td>TOTP 활성화 여부. 등록 후 첫 인증 성공 시 true로 전환.</td></tr>
+          <tr><td><code>backup_codes</code></td><td><span class="col-type">TEXT[]</span></td><td>YES</td><td>NULL</td><td>복구 코드 배열 (각각 bcrypt 해시). 사용된 코드는 배열에서 제거.</td></tr>
+          <tr><td><code>created_at</code></td><td><span class="col-type">TIMESTAMPTZ</span></td><td>NO</td><td>now()</td><td>TOTP 등록 시각</td></tr>
+        </table>
+      </div>
+      <div class="ddl-toggle" onclick="toggleDDL(this)">▶ DDL 보기</div>
+      <div class="ddl-body">
+        <div class="schema"><span class="fn">CREATE TABLE</span> <span class="col-name">user_totp</span> (
+  <span class="col-name">user_id</span>      <span class="col-type">UUID</span>         PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  <span class="col-name">secret</span>       <span class="col-type">TEXT</span>         NOT NULL,
+  <span class="col-name">enabled</span>      <span class="col-type">BOOLEAN</span>      NOT NULL DEFAULT false,
+  <span class="col-name">backup_codes</span> <span class="col-type">TEXT[]</span>,
+  <span class="col-name">created_at</span>   <span class="col-type">TIMESTAMPTZ</span>  NOT NULL DEFAULT now()
+);</div>
+      </div>
+    </div>
+
+    <!-- external_identities -->
+    <div class="tbl-entity">
+      <div class="tbl-entity-hdr">
+        <span class="tbl-entity-name">external_identities</span>
+        <span class="tbl-entity-desc">외부 IdP(Google 등) 계정과 내부 users의 연결 — Multi-credential 핵심 테이블</span>
+      </div>
+      <div class="tbl-entity-body">
+        <table>
+          <tr><th>컬럼</th><th>타입</th><th>Nullable</th><th>기본값</th><th>설명</th></tr>
+          <tr><td><code>id</code></td><td><span class="col-type">UUID</span></td><td>NO</td><td>gen_random_uuid()</td><td>내부 식별자 (PK)</td></tr>
+          <tr><td><code>user_id</code></td><td><span class="col-type">UUID</span></td><td>NO</td><td>—</td><td>users.id 참조. 하나의 user에 여러 external identity 가능.</td></tr>
+          <tr><td><code>provider</code></td><td><span class="col-type">TEXT</span></td><td>NO</td><td>—</td><td>외부 IdP 식별자. e.g. <code>google</code> · <code>github</code> · <code>apple</code></td></tr>
+          <tr><td><code>provider_sub</code></td><td><span class="col-type">TEXT</span></td><td>NO</td><td>—</td><td>외부 IdP가 발급한 사용자 고유 ID (Google ID Token의 <code>sub</code>). UNIQUE(provider, provider_sub).</td></tr>
+          <tr><td><code>provider_email</code></td><td><span class="col-type">TEXT</span></td><td>YES</td><td>NULL</td><td>외부 IdP의 이메일. 참고용 — 실제 식별은 provider_sub으로.</td></tr>
+          <tr><td><code>access_token</code></td><td><span class="col-type">TEXT</span></td><td>YES</td><td>NULL</td><td>외부 IdP Access Token 캐시 (필요 시). 암호화 저장 권장.</td></tr>
+          <tr><td><code>refresh_token</code></td><td><span class="col-type">TEXT</span></td><td>YES</td><td>NULL</td><td>외부 IdP Refresh Token 캐시 (필요 시). 암호화 저장 권장.</td></tr>
+          <tr><td><code>token_expires_at</code></td><td><span class="col-type">TIMESTAMPTZ</span></td><td>YES</td><td>NULL</td><td>외부 IdP Access Token 만료 시각</td></tr>
+          <tr><td><code>created_at</code></td><td><span class="col-type">TIMESTAMPTZ</span></td><td>NO</td><td>now()</td><td>최초 연결 시각</td></tr>
+          <tr><td><code>updated_at</code></td><td><span class="col-type">TIMESTAMPTZ</span></td><td>NO</td><td>now()</td><td>마지막 로그인 시각</td></tr>
+        </table>
+      </div>
+      <div class="ddl-toggle" onclick="toggleDDL(this)">▶ DDL 보기</div>
+      <div class="ddl-body">
+        <div class="schema"><span class="fn">CREATE TABLE</span> <span class="col-name">external_identities</span> (
+  <span class="col-name">id</span>               <span class="col-type">UUID</span>         PRIMARY KEY DEFAULT gen_random_uuid(),
+  <span class="col-name">user_id</span>          <span class="col-type">UUID</span>         NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  <span class="col-name">provider</span>         <span class="col-type">TEXT</span>         NOT NULL,
+  <span class="col-name">provider_sub</span>     <span class="col-type">TEXT</span>         NOT NULL,
+  <span class="col-name">provider_email</span>   <span class="col-type">TEXT</span>,
+  <span class="col-name">access_token</span>     <span class="col-type">TEXT</span>,
+  <span class="col-name">refresh_token</span>    <span class="col-type">TEXT</span>,
+  <span class="col-name">token_expires_at</span> <span class="col-type">TIMESTAMPTZ</span>,
+  <span class="col-name">created_at</span>       <span class="col-type">TIMESTAMPTZ</span>  NOT NULL DEFAULT now(),
+  <span class="col-name">updated_at</span>       <span class="col-type">TIMESTAMPTZ</span>  NOT NULL DEFAULT now(),
+  UNIQUE(provider, provider_sub)
+);
+<span class="cmt">CREATE INDEX idx_ext_user     ON external_identities(user_id);
+CREATE INDEX idx_ext_provider ON external_identities(provider, provider_sub);</span></div>
+      </div>
+    </div>
+
+    <!-- clients -->
+    <div class="tbl-entity">
+      <div class="tbl-entity-hdr">
+        <span class="tbl-entity-name">clients</span>
+        <span class="tbl-entity-desc">OAuth 2.0 Client 등록 정보 — Admin에서 관리</span>
+      </div>
+      <div class="tbl-entity-body">
+        <table>
+          <tr><th>컬럼</th><th>타입</th><th>Nullable</th><th>기본값</th><th>설명</th></tr>
+          <tr><td><code>id</code></td><td><span class="col-type">TEXT</span></td><td>NO</td><td>—</td><td>Client ID (PK). 예: <code>my-app</code> 또는 UUID.</td></tr>
+          <tr><td><code>secret_hash</code></td><td><span class="col-type">TEXT</span></td><td>YES</td><td>NULL</td><td>bcrypt 해시. NULL이면 Public Client (secret 없음).</td></tr>
+          <tr><td><code>name</code></td><td><span class="col-type">TEXT</span></td><td>NO</td><td>—</td><td>Consent 화면에 표시할 애플리케이션 이름</td></tr>
+          <tr><td><code>client_type</code></td><td><span class="col-type">TEXT</span></td><td>NO</td><td>—</td><td><code>confidential</code> (서버사이드) · <code>public</code> (SPA/모바일)</td></tr>
+          <tr><td><code>allowed_grant_types</code></td><td><span class="col-type">TEXT[]</span></td><td>NO</td><td>—</td><td>허용 Grant Type 목록. e.g. <code>['authorization_code','refresh_token']</code></td></tr>
+          <tr><td><code>redirect_uris</code></td><td><span class="col-type">TEXT[]</span></td><td>NO</td><td>—</td><td>허용 Redirect URI 목록. Exact match 검증.</td></tr>
+          <tr><td><code>allowed_scopes</code></td><td><span class="col-type">TEXT[]</span></td><td>NO</td><td>—</td><td>이 Client가 요청 가능한 scope 목록</td></tr>
+          <tr><td><code>require_pkce</code></td><td><span class="col-type">BOOLEAN</span></td><td>NO</td><td>true</td><td>PKCE 강제 여부. Public Client는 항상 true.</td></tr>
+          <tr><td><code>require_consent</code></td><td><span class="col-type">BOOLEAN</span></td><td>NO</td><td>true</td><td>Consent 화면 표시 여부. 내부 앱은 false 가능.</td></tr>
+          <tr><td><code>token_endpoint_auth</code></td><td><span class="col-type">TEXT</span></td><td>NO</td><td>'client_secret_basic'</td><td>Client 인증 방법: <code>client_secret_basic</code> · <code>client_secret_post</code> · <code>none</code></td></tr>
+          <tr><td><code>access_token_ttl</code></td><td><span class="col-type">INT</span></td><td>NO</td><td>3600</td><td>Access Token 유효 기간 (초). 기본 1시간.</td></tr>
+          <tr><td><code>refresh_token_ttl</code></td><td><span class="col-type">INT</span></td><td>NO</td><td>2592000</td><td>Refresh Token 유효 기간 (초). 기본 30일.</td></tr>
+          <tr><td><code>status</code></td><td><span class="col-type">TEXT</span></td><td>NO</td><td>'active'</td><td><code>active</code> · <code>disabled</code></td></tr>
+          <tr><td><code>created_at</code></td><td><span class="col-type">TIMESTAMPTZ</span></td><td>NO</td><td>now()</td><td>Client 등록 시각</td></tr>
+        </table>
+      </div>
+      <div class="ddl-toggle" onclick="toggleDDL(this)">▶ DDL 보기</div>
+      <div class="ddl-body">
+        <div class="schema"><span class="fn">CREATE TABLE</span> <span class="col-name">clients</span> (
+  <span class="col-name">id</span>                   <span class="col-type">TEXT</span>         PRIMARY KEY,
+  <span class="col-name">secret_hash</span>          <span class="col-type">TEXT</span>,
+  <span class="col-name">name</span>                 <span class="col-type">TEXT</span>         NOT NULL,
+  <span class="col-name">client_type</span>          <span class="col-type">TEXT</span>         NOT NULL,
+  <span class="col-name">allowed_grant_types</span>  <span class="col-type">TEXT[]</span>       NOT NULL,
+  <span class="col-name">redirect_uris</span>        <span class="col-type">TEXT[]</span>       NOT NULL,
+  <span class="col-name">allowed_scopes</span>       <span class="col-type">TEXT[]</span>       NOT NULL,
+  <span class="col-name">require_pkce</span>         <span class="col-type">BOOLEAN</span>      NOT NULL DEFAULT true,
+  <span class="col-name">require_consent</span>      <span class="col-type">BOOLEAN</span>      NOT NULL DEFAULT true,
+  <span class="col-name">token_endpoint_auth</span>  <span class="col-type">TEXT</span>         NOT NULL DEFAULT 'client_secret_basic',
+  <span class="col-name">access_token_ttl</span>     <span class="col-type">INT</span>          NOT NULL DEFAULT 3600,
+  <span class="col-name">refresh_token_ttl</span>    <span class="col-type">INT</span>          NOT NULL DEFAULT 2592000,
+  <span class="col-name">status</span>               <span class="col-type">TEXT</span>         NOT NULL DEFAULT 'active',
+  <span class="col-name">created_at</span>           <span class="col-type">TIMESTAMPTZ</span>  NOT NULL DEFAULT now()
+);</div>
+      </div>
+    </div>
+
+    <!-- refresh_tokens -->
+    <div class="tbl-entity">
+      <div class="tbl-entity-hdr">
+        <span class="tbl-entity-name">refresh_tokens</span>
+        <span class="tbl-entity-desc">발급된 Refresh Token — Rotation 및 탈취 감지 지원</span>
+      </div>
+      <div class="tbl-entity-body">
+        <table>
+          <tr><th>컬럼</th><th>타입</th><th>Nullable</th><th>기본값</th><th>설명</th></tr>
+          <tr><td><code>id</code></td><td><span class="col-type">UUID</span></td><td>NO</td><td>gen_random_uuid()</td><td>내부 식별자 (PK)</td></tr>
+          <tr><td><code>token_hash</code></td><td><span class="col-type">TEXT</span></td><td>NO</td><td>—</td><td>SHA-256(token). 평문 저장 금지. UNIQUE.</td></tr>
+          <tr><td><code>family_id</code></td><td><span class="col-type">UUID</span></td><td>NO</td><td>—</td><td>Rotation lineage ID. 같은 family 내 재사용 감지 시 전체 폐기.</td></tr>
+          <tr><td><code>user_id</code></td><td><span class="col-type">UUID</span></td><td>NO</td><td>—</td><td>users.id 참조. 이 사용자에게만 유효.</td></tr>
+          <tr><td><code>client_id</code></td><td><span class="col-type">TEXT</span></td><td>NO</td><td>—</td><td>clients.id 참조. 이 Client에게만 유효.</td></tr>
+          <tr><td><code>scope</code></td><td><span class="col-type">TEXT</span></td><td>NO</td><td>—</td><td>발급 당시 허용된 scope (공백 구분)</td></tr>
+          <tr><td><code>expires_at</code></td><td><span class="col-type">TIMESTAMPTZ</span></td><td>NO</td><td>—</td><td>토큰 만료 시각</td></tr>
+          <tr><td><code>revoked_at</code></td><td><span class="col-type">TIMESTAMPTZ</span></td><td>YES</td><td>NULL</td><td>폐기 시각. NULL이면 유효.</td></tr>
+          <tr><td><code>created_at</code></td><td><span class="col-type">TIMESTAMPTZ</span></td><td>NO</td><td>now()</td><td>발급 시각</td></tr>
+        </table>
+      </div>
+      <div class="ddl-toggle" onclick="toggleDDL(this)">▶ DDL 보기</div>
+      <div class="ddl-body">
+        <div class="schema"><span class="fn">CREATE TABLE</span> <span class="col-name">refresh_tokens</span> (
+  <span class="col-name">id</span>          <span class="col-type">UUID</span>         PRIMARY KEY DEFAULT gen_random_uuid(),
+  <span class="col-name">token_hash</span>  <span class="col-type">TEXT</span>         NOT NULL UNIQUE,
+  <span class="col-name">family_id</span>   <span class="col-type">UUID</span>         NOT NULL,
+  <span class="col-name">user_id</span>     <span class="col-type">UUID</span>         NOT NULL REFERENCES users(id),
+  <span class="col-name">client_id</span>   <span class="col-type">TEXT</span>         NOT NULL REFERENCES clients(id),
+  <span class="col-name">scope</span>       <span class="col-type">TEXT</span>         NOT NULL,
+  <span class="col-name">expires_at</span>  <span class="col-type">TIMESTAMPTZ</span>  NOT NULL,
+  <span class="col-name">revoked_at</span>  <span class="col-type">TIMESTAMPTZ</span>,
+  <span class="col-name">created_at</span>  <span class="col-type">TIMESTAMPTZ</span>  NOT NULL DEFAULT now()
+);
+<span class="cmt">CREATE INDEX idx_rt_token_hash ON refresh_tokens(token_hash);
+CREATE INDEX idx_rt_family     ON refresh_tokens(family_id);
+CREATE INDEX idx_rt_user       ON refresh_tokens(user_id);</span></div>
+      </div>
+    </div>
+
+    <!-- consents -->
+    <div class="tbl-entity">
+      <div class="tbl-entity-hdr">
+        <span class="tbl-entity-name">consents</span>
+        <span class="tbl-entity-desc">사용자가 Client에 부여한 Scope 동의 기록</span>
+      </div>
+      <div class="tbl-entity-body">
+        <table>
+          <tr><th>컬럼</th><th>타입</th><th>Nullable</th><th>기본값</th><th>설명</th></tr>
+          <tr><td><code>id</code></td><td><span class="col-type">UUID</span></td><td>NO</td><td>gen_random_uuid()</td><td>내부 식별자 (PK)</td></tr>
+          <tr><td><code>user_id</code></td><td><span class="col-type">UUID</span></td><td>NO</td><td>—</td><td>users.id 참조 (ON DELETE CASCADE)</td></tr>
+          <tr><td><code>client_id</code></td><td><span class="col-type">TEXT</span></td><td>NO</td><td>—</td><td>clients.id 참조</td></tr>
+          <tr><td><code>scopes</code></td><td><span class="col-type">TEXT[]</span></td><td>NO</td><td>—</td><td>사용자가 허용한 scope 목록</td></tr>
+          <tr><td><code>granted_at</code></td><td><span class="col-type">TIMESTAMPTZ</span></td><td>NO</td><td>now()</td><td>동의 시각. UNIQUE(user_id, client_id).</td></tr>
+        </table>
+      </div>
+      <div class="ddl-toggle" onclick="toggleDDL(this)">▶ DDL 보기</div>
+      <div class="ddl-body">
+        <div class="schema"><span class="fn">CREATE TABLE</span> <span class="col-name">consents</span> (
+  <span class="col-name">id</span>          <span class="col-type">UUID</span>         PRIMARY KEY DEFAULT gen_random_uuid(),
+  <span class="col-name">user_id</span>     <span class="col-type">UUID</span>         NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  <span class="col-name">client_id</span>   <span class="col-type">TEXT</span>         NOT NULL REFERENCES clients(id),
+  <span class="col-name">scopes</span>      <span class="col-type">TEXT[]</span>       NOT NULL,
+  <span class="col-name">granted_at</span>  <span class="col-type">TIMESTAMPTZ</span>  NOT NULL DEFAULT now(),
+  UNIQUE(user_id, client_id)
+);</div>
+      </div>
+    </div>
+
+    <!-- signing_keys -->
+    <div class="tbl-entity">
+      <div class="tbl-entity-hdr">
+        <span class="tbl-entity-name">signing_keys</span>
+        <span class="tbl-entity-desc">JWT 서명 키쌍 — 키 순환(Rotation) 지원</span>
+      </div>
+      <div class="tbl-entity-body">
+        <table>
+          <tr><th>컬럼</th><th>타입</th><th>Nullable</th><th>기본값</th><th>설명</th></tr>
+          <tr><td><code>kid</code></td><td><span class="col-type">TEXT</span></td><td>NO</td><td>—</td><td>Key ID (PK). JWT Header의 kid와 매칭. e.g. <code>rsa-2024-01</code></td></tr>
+          <tr><td><code>algorithm</code></td><td><span class="col-type">TEXT</span></td><td>NO</td><td>—</td><td>서명 알고리즘: <code>RS256</code> · <code>ES256</code></td></tr>
+          <tr><td><code>public_key</code></td><td><span class="col-type">TEXT</span></td><td>NO</td><td>—</td><td>PEM 형식 공개키. JWKS 엔드포인트로 노출.</td></tr>
+          <tr><td><code>private_key</code></td><td><span class="col-type">TEXT</span></td><td>NO</td><td>—</td><td>PEM 형식 개인키. 암호화 저장 강력 권장.</td></tr>
+          <tr><td><code>status</code></td><td><span class="col-type">TEXT</span></td><td>NO</td><td>'active'</td><td><code>active</code> (현재 발급용) · <code>retired</code> (검증용으로만 유지)</td></tr>
+          <tr><td><code>created_at</code></td><td><span class="col-type">TIMESTAMPTZ</span></td><td>NO</td><td>now()</td><td>키 생성 시각</td></tr>
+          <tr><td><code>retired_at</code></td><td><span class="col-type">TIMESTAMPTZ</span></td><td>YES</td><td>NULL</td><td>키 은퇴 시각. NULL이면 아직 active.</td></tr>
+        </table>
+      </div>
+      <div class="ddl-toggle" onclick="toggleDDL(this)">▶ DDL 보기</div>
+      <div class="ddl-body">
+        <div class="schema"><span class="fn">CREATE TABLE</span> <span class="col-name">signing_keys</span> (
+  <span class="col-name">kid</span>          <span class="col-type">TEXT</span>         PRIMARY KEY,
+  <span class="col-name">algorithm</span>    <span class="col-type">TEXT</span>         NOT NULL,
+  <span class="col-name">public_key</span>   <span class="col-type">TEXT</span>         NOT NULL,
+  <span class="col-name">private_key</span>  <span class="col-type">TEXT</span>         NOT NULL,
+  <span class="col-name">status</span>       <span class="col-type">TEXT</span>         NOT NULL DEFAULT 'active',
+  <span class="col-name">created_at</span>   <span class="col-type">TIMESTAMPTZ</span>  NOT NULL DEFAULT now(),
+  <span class="col-name">retired_at</span>   <span class="col-type">TIMESTAMPTZ</span>
+);</div>
+      </div>
+    </div>
+
+    <!-- audit_logs -->
+    <div class="tbl-entity">
+      <div class="tbl-entity-hdr">
+        <span class="tbl-entity-name">audit_logs</span>
+        <span class="tbl-entity-desc">보안 감사 로그 — 불변 이벤트 기록 (INSERT 전용)</span>
+      </div>
+      <div class="tbl-entity-body">
+        <table>
+          <tr><th>컬럼</th><th>타입</th><th>Nullable</th><th>기본값</th><th>설명</th></tr>
+          <tr><td><code>id</code></td><td><span class="col-type">BIGSERIAL</span></td><td>NO</td><td>auto</td><td>순차 ID (PK, 커서 기반 페이지네이션에 활용)</td></tr>
+          <tr><td><code>event_type</code></td><td><span class="col-type">TEXT</span></td><td>NO</td><td>—</td><td>이벤트 종류. e.g. <code>login.success</code> · <code>login.fail</code> · <code>token.issue</code> · <code>token.revoke</code> · <code>consent.grant</code></td></tr>
+          <tr><td><code>user_id</code></td><td><span class="col-type">UUID</span></td><td>YES</td><td>NULL</td><td>관련 사용자. NULL이면 시스템/Client 이벤트.</td></tr>
+          <tr><td><code>client_id</code></td><td><span class="col-type">TEXT</span></td><td>YES</td><td>NULL</td><td>관련 Client ID</td></tr>
+          <tr><td><code>ip_address</code></td><td><span class="col-type">TEXT</span></td><td>YES</td><td>NULL</td><td>요청 IP (X-Forwarded-For 또는 X-Real-IP)</td></tr>
+          <tr><td><code>user_agent</code></td><td><span class="col-type">TEXT</span></td><td>YES</td><td>NULL</td><td>요청 User-Agent</td></tr>
+          <tr><td><code>details</code></td><td><span class="col-type">JSONB</span></td><td>YES</td><td>NULL</td><td>이벤트별 추가 데이터. e.g. <code>{"reason":"invalid_password","attempt":3}</code></td></tr>
+          <tr><td><code>created_at</code></td><td><span class="col-type">TIMESTAMPTZ</span></td><td>NO</td><td>now()</td><td>이벤트 발생 시각</td></tr>
+        </table>
+      </div>
+      <div class="ddl-toggle" onclick="toggleDDL(this)">▶ DDL 보기</div>
+      <div class="ddl-body">
+        <div class="schema"><span class="fn">CREATE TABLE</span> <span class="col-name">audit_logs</span> (
+  <span class="col-name">id</span>          <span class="col-type">BIGSERIAL</span>    PRIMARY KEY,
+  <span class="col-name">event_type</span>  <span class="col-type">TEXT</span>         NOT NULL,
+  <span class="col-name">user_id</span>     <span class="col-type">UUID</span>,
+  <span class="col-name">client_id</span>   <span class="col-type">TEXT</span>,
+  <span class="col-name">ip_address</span>  <span class="col-type">TEXT</span>,
+  <span class="col-name">user_agent</span>  <span class="col-type">TEXT</span>,
+  <span class="col-name">details</span>     <span class="col-type">JSONB</span>,
+  <span class="col-name">created_at</span>  <span class="col-type">TIMESTAMPTZ</span>  NOT NULL DEFAULT now()
+);
+<span class="cmt">CREATE INDEX idx_audit_user  ON audit_logs(user_id,    created_at DESC);
+CREATE INDEX idx_audit_event ON audit_logs(event_type, created_at DESC);</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h">⚡ Redis 데이터 구조</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Key Pattern</th><th>Value 타입</th><th>TTL</th><th>용도</th></tr>
+        <tr><td><code>authcode:{code}</code></td><td>JSON (AuthorizationCode struct)</td><td>2분</td><td>Authorization Code 임시 저장</td></tr>
+        <tr><td><code>session:{session_id}</code></td><td>JSON (Session struct)</td><td>24시간</td><td>로그인 세션 (HttpOnly 쿠키 기반)</td></tr>
+        <tr><td><code>totp_used:{user_id}:{code}</code></td><td>"1" (String)</td><td>90초</td><td>TOTP 재사용(replay) 방지</td></tr>
+        <tr><td><code>login_fail:{ip}:{email}</code></td><td>Integer (INCR)</td><td>15분</td><td>로그인 실패 횟수 — Rate Limiting</td></tr>
+        <tr><td><code>token_req:{client_id}</code></td><td>Integer (INCR)</td><td>1분</td><td>Token Endpoint Rate Limiting</td></tr>
+        <tr><td><code>jwks_cache</code></td><td>JSON (JWKS)</td><td>5분</td><td>JWKS 응답 캐시 (DB 조회 감소)</td></tr>
+      </table>
+    </div>
+
+    <div class="sec-sub">Authorization Code (Redis JSON 구조)</div>
+    <pre><code>{
+  "code":                  "랜덤 32바이트 hex",
+  "client_id":             "app-client",
+  "user_id":               "uuid",
+  "redirect_uri":          "https://app.example.com/callback",
+  "scope":                 "openid profile email",
+  "code_challenge":        "BASE64URL(SHA256(verifier))",
+  "code_challenge_method": "S256",
+  "nonce":                 "client-nonce-값",
+  "auth_time":             1751230967,
+  "acr":                   "mfa",
+  "amr":                   ["pwd", "otp"],
+  "used":                  false,
+  "expires_at":            "2026-06-08T12:02:00Z"
+}</code></pre>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h">🔗 Federated Login — Google 연동 설계</div>
+    <div class="alert a-info">
+      <span class="alert-i">ℹ️</span>
+      <div class="alert-b">
+        <div class="alert-t">우리 AS의 이중 역할</div>
+        Google에 대해서는 <strong>RP(Relying Party)</strong> — Google의 ID Token을 검증하고 사용자를 식별합니다.<br>
+        우리 Client들에게는 <strong>OP(OpenID Provider)</strong> — 평소처럼 우리 Access Token / ID Token을 발급합니다.<br>
+        Client 입장에서는 사용자가 Google로 로그인했는지 알 필요가 없습니다.
+      </div>
+    </div>
+
+    <div class="sec-sub">Google 연동 플로우</div>
+    <div style="text-align:center;margin:10px 0">
+      <canvas id="canvas-fed" data-w="780" data-h="660" style="width:100%;max-width:780px;border-radius:10px;border:1px solid var(--border);display:inline-block"></canvas>
+    </div>
+
+    <div class="sec-sub">계정 연결 시나리오별 처리</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>시나리오</th><th>처리</th><th>주의사항</th></tr>
+        <tr>
+          <td>최초 Google 로그인 (기존 계정 없음)</td>
+          <td>users 신규 생성 (password_hash=NULL) + external_identities 연결</td>
+          <td>email_verified는 Google의 email_verified 값 사용</td>
+        </tr>
+        <tr>
+          <td>기존 이메일+PW 계정과 같은 이메일로 Google 로그인</td>
+          <td>기존 user에 external_identities만 추가 (자동 연결)</td>
+          <td>Google이 email_verified=true인 경우에만 자동 연결. 아니면 별도 확인 필요.</td>
+        </tr>
+        <tr>
+          <td>이미 연결된 Google 계정으로 재로그인</td>
+          <td>external_identities → user_id 조회, 토큰 발급</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>계정 연결 해제</td>
+          <td>external_identities 행 삭제. password_hash도 NULL이면 로그인 불가 → 먼저 비밀번호 설정 유도</td>
+          <td>마지막 credential 해제 방지 필수</td>
+        </tr>
+        <tr>
+          <td>Google 계정으로 만든 계정에 비밀번호 추가</td>
+          <td>users.password_hash 업데이트 (비밀번호 설정 플로우)</td>
+          <td>—</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="sec-sub">Google OAuth 앱 등록 시 필요한 것</div>
+    <div class="card">
+      <ul>
+        <li>Google Cloud Console에서 OAuth 2.0 Client ID 생성 (Web application 타입)</li>
+        <li>Authorized redirect URIs: <code>https://auth.example.com/oauth/callback/google</code></li>
+        <li>환경변수로 관리: <code>GOOGLE_CLIENT_ID</code>, <code>GOOGLE_CLIENT_SECRET</code></li>
+        <li>요청 scope: <code>openid email profile</code></li>
+        <li>우리 AS도 Google에 대해 PKCE 사용 (S256)</li>
+        <li>Google Discovery: <code>https://accounts.google.com/.well-known/openid-configuration</code></li>
+      </ul>
+    </div>
+
+    <div class="sec-sub">amr / acr 매핑</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>로그인 방식</th><th>acr</th><th>amr</th></tr>
+        <tr><td>이메일+비밀번호만</td><td><code>pwd</code></td><td><code>["pwd"]</code></td></tr>
+        <tr><td>이메일+비밀번호+TOTP</td><td><code>mfa</code></td><td><code>["pwd","otp"]</code></td></tr>
+        <tr><td>Google 로그인 (MFA 여부 불명)</td><td><code>social</code></td><td><code>["google"]</code></td></tr>
+        <tr><td>Google 로그인 + 우리 TOTP 추가 확인</td><td><code>mfa</code></td><td><code>["google","otp"]</code></td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== OAuth API ===== -->
+<div id="tc-auth-api" class="tc">
+  <div class="sec">
+    <div class="sec-h">🔐 OAuth 2.0 엔드포인트</div>
+
+    <!-- /authorize -->
+    <div class="ep">
+      <div class="ep-hdr" onclick="toggleEp(this)">
+        <span class="m GET">GET</span>
+        <span class="ep-path">/authorize</span>
+        <span class="ep-desc">Authorization Code 발급 시작 — 사용자 인증 및 Consent</span>
+      </div>
+      <div class="ep-body open">
+        <div class="param-section">
+          <div class="param-title">Query Parameters</div>
+          <div class="tbl-wrap">
+            <table>
+              <tr><th>파라미터</th><th>필수</th><th>설명</th></tr>
+              <tr><td><code>response_type</code></td><td><span class="tag must">MUST</span></td><td>항상 <code>code</code></td></tr>
+              <tr><td><code>client_id</code></td><td><span class="tag must">MUST</span></td><td>등록된 Client ID</td></tr>
+              <tr><td><code>redirect_uri</code></td><td><span class="tag should">SHOULD</span></td><td>등록된 URI와 exact match. 하나만 등록된 경우 생략 가능.</td></tr>
+              <tr><td><code>scope</code></td><td><span class="tag should">SHOULD</span></td><td>공백 구분. OIDC는 반드시 <code>openid</code> 포함. e.g. <code>openid profile email</code></td></tr>
+              <tr><td><code>state</code></td><td><span class="tag must">보안상 MUST</span></td><td>CSRF 방지 불투명 값. Client가 생성 후 callback에서 검증.</td></tr>
+              <tr><td><code>code_challenge</code></td><td><span class="tag must">MUST</span></td><td>PKCE: BASE64URL(SHA256(code_verifier))</td></tr>
+              <tr><td><code>code_challenge_method</code></td><td><span class="tag must">MUST</span></td><td>반드시 <code>S256</code>. <code>plain</code> 미지원.</td></tr>
+              <tr><td><code>nonce</code></td><td><span class="tag should">OIDC 권장</span></td><td>ID Token replay 방지. Client가 생성.</td></tr>
+              <tr><td><code>prompt</code></td><td><span class="tag opt">선택</span></td><td><code>none</code> · <code>login</code> · <code>consent</code> · <code>select_account</code></td></tr>
+              <tr><td><code>max_age</code></td><td><span class="tag opt">선택</span></td><td>인증 후 허용 최대 경과 시간(초). 초과 시 재인증.</td></tr>
+              <tr><td><code>login_hint</code></td><td><span class="tag opt">선택</span></td><td>로그인 폼에 미리 채울 이메일</td></tr>
+              <tr><td><code>acr_values</code></td><td><span class="tag opt">선택</span></td><td>요구 인증 수준 e.g. <code>mfa</code></td></tr>
+            </table>
+          </div>
+        </div>
+        <div class="param-section">
+          <div class="param-title">처리 흐름</div>
+          <div class="card">
+            <ol style="color:var(--text2);font-size:13px;padding-left:16px;line-height:2.1">
+              <li>파라미터 검증 (client_id 유효, redirect_uri 일치, response_type=code, code_challenge_method=S256)</li>
+              <li>로그인 세션 확인 → 없거나 max_age 초과 → <code>/login</code>으로 redirect (state 보존)</li>
+              <li>prompt=login → 세션 있어도 강제 재인증</li>
+              <li>acr_values=mfa 요구 시 세션에 MFA 완료 여부 확인 → 미완료면 <code>/totp</code>으로 redirect</li>
+              <li>Consent 확인 → require_consent=true이고 기존 동의 없으면 <code>/consent</code>으로 redirect</li>
+              <li>Authorization Code 생성 (crypto/rand 32바이트 hex) → Redis 저장 (TTL 2분)</li>
+              <li>redirect_uri로 302 redirect: <code>?code={code}&state={state}</code></li>
+            </ol>
+          </div>
+        </div>
+        <div class="param-section">
+          <div class="param-title">성공 응답 (302 Redirect)</div>
+          <pre><code>HTTP/1.1 302 Found
+Location: https://app.example.com/callback?code=a1b2c3d4e5...&state=xyz</code></pre>
+        </div>
+        <div class="param-section">
+          <div class="param-title">에러 응답 (redirect_uri로 전달)</div>
+          <pre><code>HTTP/1.1 302 Found
+Location: https://app.example.com/callback?error=access_denied&error_description=User+denied+consent&state=xyz
+
+<span class="cmt">// redirect_uri 자체가 유효하지 않으면 → redirect 없이 400 HTML 에러 페이지</span></code></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- /token -->
+    <div class="ep">
+      <div class="ep-hdr" onclick="toggleEp(this)">
+        <span class="m POST">POST</span>
+        <span class="ep-path">/token</span>
+        <span class="ep-desc">Access Token 발급 — authorization_code / refresh_token / client_credentials</span>
+      </div>
+      <div class="ep-body open">
+        <div class="alert a-info"><span class="alert-i">ℹ️</span><div class="alert-b"><div class="alert-t">Content-Type</div>요청은 반드시 <code>application/x-www-form-urlencoded</code>. JSON body 미지원 (RFC 6749 표준).</div></div>
+
+        <div class="acc">
+          <div class="acc-h open" onclick="toggleAcc(this)">grant_type = authorization_code <span class="acc-arr">▶</span></div>
+          <div class="acc-bd open">
+            <div class="tbl-wrap"><table>
+              <tr><th>파라미터</th><th>필수</th><th>설명</th></tr>
+              <tr><td><code>grant_type</code></td><td><span class="tag must">MUST</span></td><td><code>authorization_code</code></td></tr>
+              <tr><td><code>code</code></td><td><span class="tag must">MUST</span></td><td>/authorize에서 받은 Authorization Code</td></tr>
+              <tr><td><code>redirect_uri</code></td><td>조건부</td><td>/authorize 요청에 redirect_uri 포함했으면 동일값 필수</td></tr>
+              <tr><td><code>code_verifier</code></td><td><span class="tag must">MUST</span></td><td>원본 PKCE verifier. AS에서 SHA256 후 저장된 challenge와 비교.</td></tr>
+              <tr><td><code>client_id</code></td><td>조건부</td><td>Basic Auth 미사용 시 필수</td></tr>
+              <tr><td><code>client_secret</code></td><td>조건부</td><td>Confidential Client, Basic Auth 미사용 시 필수</td></tr>
+            </table></div>
+            <pre><code><span class="cmt"># Confidential Client: HTTP Basic Auth 권장</span>
+POST /token HTTP/1.1
+Authorization: Basic base64(client_id:client_secret)
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code
+&code=a1b2c3d4...
+&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback
+&code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk</code></pre>
+            <pre><code><span class="cmt"># 성공 응답</span>
+HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: no-store
+
+{
+  "access_token":  "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzYS0wMDEiLCJ0eXAiOiJKV1QifQ...",
+  "token_type":    "Bearer",
+  "expires_in":    3600,
+  "refresh_token": "8xLOxBtZp8VRK-oxrVX",
+  "scope":         "openid profile email",
+  "id_token":      "eyJhbGci..."  <span class="cmt">// scope에 openid 포함 시</span>
+}</code></pre>
+          </div>
+        </div>
+
+        <div class="acc">
+          <div class="acc-h" onclick="toggleAcc(this)">grant_type = refresh_token <span class="acc-arr">▶</span></div>
+          <div class="acc-bd">
+            <div class="tbl-wrap"><table>
+              <tr><th>파라미터</th><th>필수</th><th>설명</th></tr>
+              <tr><td><code>grant_type</code></td><td><span class="tag must">MUST</span></td><td><code>refresh_token</code></td></tr>
+              <tr><td><code>refresh_token</code></td><td><span class="tag must">MUST</span></td><td>이전에 발급받은 Refresh Token</td></tr>
+              <tr><td><code>scope</code></td><td><span class="tag opt">선택</span></td><td>원래 scope의 부분집합만 가능. 생략 시 원래 scope 그대로.</td></tr>
+            </table></div>
+            <div class="alert a-warn"><span class="alert-i">⚠️</span><div class="alert-b"><div class="alert-t">Rotation 동작</div>
+              사용된 Refresh Token은 즉시 폐기하고 새 Refresh Token 발급.
+              이전 Refresh Token으로 재요청 시 해당 family_id 전체 폐기 (탈취 감지).
+            </div></div>
+            <pre><code>POST /token
+Authorization: Basic base64(client_id:client_secret)
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=refresh_token&refresh_token=8xLOxBtZp8VRK-oxrVX
+
+<span class="cmt"># 응답: 새 access_token + 새 refresh_token (이전 refresh_token은 무효화)</span></code></pre>
+          </div>
+        </div>
+
+        <div class="acc">
+          <div class="acc-h" onclick="toggleAcc(this)">grant_type = client_credentials <span class="acc-arr">▶</span></div>
+          <div class="acc-bd">
+            <div class="tbl-wrap"><table>
+              <tr><th>파라미터</th><th>필수</th><th>설명</th></tr>
+              <tr><td><code>grant_type</code></td><td><span class="tag must">MUST</span></td><td><code>client_credentials</code></td></tr>
+              <tr><td><code>scope</code></td><td><span class="tag opt">선택</span></td><td>Client에 허용된 scope 범위 내</td></tr>
+            </table></div>
+            <pre><code>POST /token
+Authorization: Basic base64(client_id:client_secret)
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&scope=read%3Adata
+
+<span class="cmt"># 응답: refresh_token 없음. id_token 없음.</span>
+{
+  "access_token": "eyJhbGci...",
+  "token_type":   "Bearer",
+  "expires_in":   3600,
+  "scope":        "read:data"
+}</code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- /introspect -->
+    <div class="ep">
+      <div class="ep-hdr" onclick="toggleEp(this)">
+        <span class="m POST">POST</span>
+        <span class="ep-path">/introspect</span>
+        <span class="ep-desc">Token 유효성 및 메타데이터 조회 (RFC 7662) — RS가 AS에 질의</span>
+      </div>
+      <div class="ep-body">
+        <div class="alert a-warn"><span class="alert-i">🔒</span><div class="alert-b"><div class="alert-t">접근 제어</div>등록된 Client (Basic Auth) 또는 별도 Introspection 자격증명만 허용. 익명 접근 금지.</div></div>
+        <div class="tbl-wrap"><table>
+          <tr><th>파라미터</th><th>필수</th><th>설명</th></tr>
+          <tr><td><code>token</code></td><td><span class="tag must">MUST</span></td><td>검증할 토큰 (Access Token 또는 Refresh Token)</td></tr>
+          <tr><td><code>token_type_hint</code></td><td><span class="tag opt">선택</span></td><td><code>access_token</code> | <code>refresh_token</code></td></tr>
+        </table></div>
+        <pre><code><span class="cmt"># 유효한 토큰</span>
+{
+  "active":     true,
+  "scope":      "openid profile email",
+  "client_id":  "my-app",
+  "username":   "user@example.com",
+  "sub":        "user-uuid",
+  "exp":        1751234567,
+  "iat":        1751230967,
+  "token_type": "Bearer",
+  "jti":        "token-uuid"
+}
+
+<span class="cmt"># 유효하지 않은 토큰 (만료/폐기/미존재 모두 동일 응답 — 이유 구분 금지)</span>
+{ "active": false }</code></pre>
+      </div>
+    </div>
+
+    <!-- /revoke -->
+    <div class="ep">
+      <div class="ep-hdr" onclick="toggleEp(this)">
+        <span class="m POST">POST</span>
+        <span class="ep-path">/revoke</span>
+        <span class="ep-desc">Token 폐기 (RFC 7009)</span>
+      </div>
+      <div class="ep-body">
+        <div class="tbl-wrap"><table>
+          <tr><th>파라미터</th><th>필수</th><th>설명</th></tr>
+          <tr><td><code>token</code></td><td><span class="tag must">MUST</span></td><td>폐기할 토큰</td></tr>
+          <tr><td><code>token_type_hint</code></td><td><span class="tag opt">선택</span></td><td><code>access_token</code> | <code>refresh_token</code></td></tr>
+        </table></div>
+        <div class="alert a-info"><span class="alert-i">ℹ️</span><div class="alert-b"><div class="alert-t">항상 200 반환</div>
+          토큰이 없거나 이미 폐기된 경우에도 <code>200 OK</code>를 반환합니다 (RFC 7009 §2.2).
+          Refresh Token 폐기 시 해당 family의 Access Token도 함께 폐기 권장.
+        </div></div>
+        <pre><code>POST /revoke
+Authorization: Basic base64(client_id:client_secret)
+Content-Type: application/x-www-form-urlencoded
+
+token=8xLOxBtZp8VRK-oxrVX&token_type_hint=refresh_token
+
+HTTP/1.1 200 OK</code></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== OIDC API ===== -->
+<div id="tc-oidc-api" class="tc">
+  <div class="sec">
+    <div class="sec-h">🪪 OIDC 엔드포인트</div>
+
+    <div class="ep">
+      <div class="ep-hdr" onclick="toggleEp(this)">
+        <span class="m GET">GET</span>
+        <span class="ep-path">/.well-known/openid-configuration</span>
+        <span class="ep-desc">Discovery 문서</span>
+      </div>
+      <div class="ep-body open">
+        <div class="alert a-info"><span class="alert-i">ℹ️</span><div class="alert-b"><div class="alert-t">캐시 권장</div>이 문서는 자주 바뀌지 않습니다. <code>Cache-Control: public, max-age=86400</code> 설정 권장.</div></div>
+        <pre><code>HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  <span class="key">"issuer"</span>: <span class="str">"https://auth.example.com"</span>,
+  <span class="key">"authorization_endpoint"</span>: <span class="str">"https://auth.example.com/authorize"</span>,
+  <span class="key">"token_endpoint"</span>: <span class="str">"https://auth.example.com/token"</span>,
+  <span class="key">"userinfo_endpoint"</span>: <span class="str">"https://auth.example.com/userinfo"</span>,
+  <span class="key">"jwks_uri"</span>: <span class="str">"https://auth.example.com/.well-known/jwks.json"</span>,
+  <span class="key">"end_session_endpoint"</span>: <span class="str">"https://auth.example.com/logout"</span>,
+  <span class="key">"introspection_endpoint"</span>: <span class="str">"https://auth.example.com/introspect"</span>,
+  <span class="key">"revocation_endpoint"</span>: <span class="str">"https://auth.example.com/revoke"</span>,
+  <span class="key">"scopes_supported"</span>: [<span class="str">"openid"</span>, <span class="str">"profile"</span>, <span class="str">"email"</span>, <span class="str">"offline_access"</span>],
+  <span class="key">"response_types_supported"</span>: [<span class="str">"code"</span>],
+  <span class="key">"grant_types_supported"</span>: [<span class="str">"authorization_code"</span>, <span class="str">"refresh_token"</span>, <span class="str">"client_credentials"</span>],
+  <span class="key">"subject_types_supported"</span>: [<span class="str">"public"</span>],
+  <span class="key">"id_token_signing_alg_values_supported"</span>: [<span class="str">"RS256"</span>],
+  <span class="key">"token_endpoint_auth_methods_supported"</span>: [<span class="str">"client_secret_basic"</span>, <span class="str">"client_secret_post"</span>, <span class="str">"none"</span>],
+  <span class="key">"code_challenge_methods_supported"</span>: [<span class="str">"S256"</span>],
+  <span class="key">"claims_supported"</span>: [<span class="str">"sub"</span>, <span class="str">"iss"</span>, <span class="str">"name"</span>, <span class="str">"email"</span>, <span class="str">"email_verified"</span>, <span class="str">"updated_at"</span>],
+  <span class="key">"ui_locales_supported"</span>: [<span class="str">"ko"</span>, <span class="str">"en"</span>]
+}</code></pre>
+      </div>
+    </div>
+
+    <div class="ep">
+      <div class="ep-hdr" onclick="toggleEp(this)">
+        <span class="m GET">GET</span>
+        <span class="ep-path">/.well-known/jwks.json</span>
+        <span class="ep-desc">공개키 집합 — JWT 서명 검증용</span>
+      </div>
+      <div class="ep-body">
+        <pre><code>HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: public, max-age=3600
+
+{
+  "keys": [
+    {
+      "kty": "RSA",      <span class="cmt">// Key Type</span>
+      "use": "sig",      <span class="cmt">// sig=서명용, enc=암호화용</span>
+      "alg": "RS256",
+      "kid": "rsa-2024-01",
+      "n": "0vx7agoebGcQ...",   <span class="cmt">// modulus (Base64URL)</span>
+      "e": "AQAB"               <span class="cmt">// exponent</span>
+    }
+    <span class="cmt">// 키 순환 중이면 이전 키도 포함</span>
+  ]
+}</code></pre>
+      </div>
+    </div>
+
+    <div class="ep">
+      <div class="ep-hdr" onclick="toggleEp(this)">
+        <span class="m GET">GET</span> <span style="color:var(--text2);font-size:12px;margin:0 6px">/</span>
+        <span class="m POST">POST</span>
+        <span class="ep-path">/userinfo</span>
+        <span class="ep-desc">사용자 Claims 반환 — Bearer Access Token 필요</span>
+      </div>
+      <div class="ep-body">
+        <div class="alert a-info"><span class="alert-i">ℹ️</span><div class="alert-b"><div class="alert-t">토큰 검증</div>
+          Access Token의 scope에 <code>openid</code>가 포함되어 있어야 합니다.
+          반환하는 Claims는 토큰의 scope에 따라 필터링합니다.
+        </div></div>
+        <pre><code>GET /userinfo HTTP/1.1
+Authorization: Bearer eyJhbGci...
+
+<span class="cmt"># scope=openid 만 있을 때</span>
+{ "sub": "user-uuid-123" }
+
+<span class="cmt"># scope=openid profile email</span>
+{
+  "sub":            "user-uuid-123",
+  "name":           "홍길동",
+  "email":          "user@example.com",
+  "email_verified": true,
+  "updated_at":     1751230967
+}
+
+<span class="cmt"># 401: 토큰 없음/만료</span>
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer error="invalid_token"</code></pre>
+      </div>
+    </div>
+
+    <div class="ep">
+      <div class="ep-hdr" onclick="toggleEp(this)">
+        <span class="m GET">GET</span>
+        <span class="ep-path">/logout</span>
+        <span class="ep-desc">RP-Initiated Logout — 세션 종료</span>
+      </div>
+      <div class="ep-body">
+        <div class="tbl-wrap"><table>
+          <tr><th>Query Parameter</th><th>필수</th><th>설명</th></tr>
+          <tr><td><code>id_token_hint</code></td><td><span class="tag opt">선택</span></td><td>로그아웃할 사용자 식별용 ID Token</td></tr>
+          <tr><td><code>post_logout_redirect_uri</code></td><td><span class="tag opt">선택</span></td><td>로그아웃 후 redirect할 URI (Client에 사전 등록 필요)</td></tr>
+          <tr><td><code>state</code></td><td><span class="tag opt">선택</span></td><td>redirect 시 함께 전달할 state</td></tr>
+        </table></div>
+        <div class="card">
+          <div class="card-title">처리 동작</div>
+          <ul>
+            <li>세션 쿠키 삭제</li>
+            <li>Redis의 session 키 삭제</li>
+            <li>id_token_hint가 있으면 해당 사용자의 모든 세션 종료</li>
+            <li>post_logout_redirect_uri가 등록된 것이면 redirect, 없으면 로그아웃 완료 페이지</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec-sub">ID Token 구조 (JWT Payload)</div>
+    <pre><code>{
+  <span class="cmt">// 필수 Claims</span>
+  <span class="key">"iss"</span>:       <span class="str">"https://auth.example.com"</span>,
+  <span class="key">"sub"</span>:       <span class="str">"user-uuid-123"</span>,
+  <span class="key">"aud"</span>:       <span class="str">"my-app-client-id"</span>,
+  <span class="key">"exp"</span>:       <span class="num">1751234567</span>,
+  <span class="key">"iat"</span>:       <span class="num">1751230967</span>,
+  <span class="cmt">// OIDC Claims</span>
+  <span class="key">"auth_time"</span>: <span class="num">1751230900</span>,  <span class="cmt">// 실제 인증 시각</span>
+  <span class="key">"nonce"</span>:     <span class="str">"client-nonce-값"</span>,
+  <span class="key">"acr"</span>:       <span class="str">"mfa"</span>,          <span class="cmt">// 인증 수준</span>
+  <span class="key">"amr"</span>:       [<span class="str">"pwd"</span>, <span class="str">"otp"</span>],   <span class="cmt">// 사용된 인증 방법</span>
+  <span class="cmt">// 요청 scope에 따른 선택적 Claims</span>
+  <span class="key">"name"</span>:            <span class="str">"홍길동"</span>,
+  <span class="key">"email"</span>:           <span class="str">"user@example.com"</span>,
+  <span class="key">"email_verified"</span>:  <span class="kw">true</span>
+}</code></pre>
+  </div>
+</div>
+
+<!-- ===== 로그인 UI ===== -->
+<div id="tc-ui-api" class="tc">
+  <div class="sec">
+    <div class="sec-h">🖥️ 인증 UI 엔드포인트</div>
+    <div class="alert a-info"><span class="alert-i">ℹ️</span><div class="alert-b"><div class="alert-t">세션 관리 방식</div>
+      로그인 성공 후 세션 ID를 HttpOnly 쿠키로 발급. 세션 상태는 Redis에 저장.
+      <code>SameSite=Lax</code> (CSRF 기본 방어) + 앞단 프록시가 <code>Secure</code> 플래그 처리 (또는 AS에서도 설정).
+    </div></div>
+
+    <div class="sec-sub">로그인 세션 쿠키</div>
+    <pre><code>Set-Cookie: as_session={session_id}; HttpOnly; SameSite=Lax; Path=/; Max-Age=86400
+<span class="cmt">// session_id: crypto/rand 32바이트 hex
+// Redis key: session:{session_id} → JSON{user_id, auth_time, acr, amr, ...}</span></code></pre>
+
+    <div class="ep">
+      <div class="ep-hdr" onclick="toggleEp(this)">
+        <span class="m GET">GET</span>
+        <span class="ep-path">/login</span>
+        <span class="ep-desc">로그인 페이지 렌더링</span>
+      </div>
+      <div class="ep-body open">
+        <div class="tbl-wrap"><table>
+          <tr><th>Query Parameter</th><th>설명</th></tr>
+          <tr><td><code>login_challenge</code></td><td>AS 내부 임시 식별자 — /authorize에서 세션 없을 때 생성 (Redis TTL 10분)</td></tr>
+          <tr><td><code>login_hint</code></td><td>이메일 필드 prefill용</td></tr>
+          <tr><td><code>error</code></td><td>이전 로그인 실패 에러 코드 표시용</td></tr>
+        </table></div>
+        <div class="card"><div class="card-title">HTML 응답</div><p>이메일 + 비밀번호 입력 폼. CSRF hidden 필드 포함.</p></div>
+      </div>
+    </div>
+
+    <div class="ep">
+      <div class="ep-hdr" onclick="toggleEp(this)">
+        <span class="m POST">POST</span>
+        <span class="ep-path">/login</span>
+        <span class="ep-desc">로그인 처리 (이메일 + 비밀번호)</span>
+      </div>
+      <div class="ep-body">
+        <div class="tbl-wrap"><table>
+          <tr><th>Form Field</th><th>필수</th><th>설명</th></tr>
+          <tr><td><code>email</code></td><td><span class="tag must">MUST</span></td><td>사용자 이메일</td></tr>
+          <tr><td><code>password</code></td><td><span class="tag must">MUST</span></td><td>평문 비밀번호 (TLS로 보호된 채널로 전송)</td></tr>
+          <tr><td><code>login_challenge</code></td><td><span class="tag must">MUST</span></td><td>GET /login에서 받은 challenge</td></tr>
+          <tr><td><code>csrf_token</code></td><td><span class="tag must">MUST</span></td><td>CSRF 방어 토큰</td></tr>
+        </table></div>
+        <div class="card">
+          <div class="card-title">처리 로직</div>
+          <ol style="color:var(--text2);font-size:13px;padding-left:16px;line-height:2">
+            <li>CSRF 토큰 검증</li>
+            <li>Rate Limiting: IP+email 조합으로 5회 실패 시 15분 잠금</li>
+            <li>사용자 조회 → 없으면 동일 시간 소비 후 에러 (timing attack 방지)</li>
+            <li>계정 상태 확인 (suspended/locked)</li>
+            <li>비밀번호 검증: bcrypt.CompareHashAndPassword</li>
+            <li>TOTP 활성화 여부 확인 → 활성화면 <code>GET /totp?totp_challenge=xxx</code>로 redirect</li>
+            <li>TOTP 미활성화 → 세션 생성 (acr=pwd, amr=["pwd"]) → Redis 저장</li>
+            <li>login_challenge에서 원래 /authorize 요청 파라미터 복원 → /authorize로 redirect</li>
+          </ol>
+        </div>
+        <pre><code><span class="cmt"># 성공 (TOTP 없는 경우)</span>
+HTTP/1.1 302 Found
+Set-Cookie: as_session=abc123; HttpOnly; SameSite=Lax; Path=/
+Location: /authorize?{original params}
+
+<span class="cmt"># TOTP 필요</span>
+HTTP/1.1 302 Found
+Location: /totp?totp_challenge=def456
+
+<span class="cmt"># 실패</span>
+HTTP/1.1 302 Found
+Location: /login?login_challenge=xxx&error=invalid_credentials</code></pre>
+      </div>
+    </div>
+
+    <div class="ep">
+      <div class="ep-hdr" onclick="toggleEp(this)">
+        <span class="m GET">GET</span> <span style="color:var(--text2);font-size:12px;margin:0 4px">/</span>
+        <span class="m POST">POST</span>
+        <span class="ep-path">/totp</span>
+        <span class="ep-desc">TOTP 2차 인증</span>
+      </div>
+      <div class="ep-body">
+        <div class="card">
+          <div class="card-title">POST /totp — Form Fields</div>
+          <ul>
+            <li><code>code</code>: 6자리 TOTP 코드</li>
+            <li><code>totp_challenge</code>: Redis에 저장된 임시 상태 (user_id, login_challenge 포함)</li>
+            <li><code>csrf_token</code>: CSRF 방어</li>
+          </ul>
+        </div>
+        <div class="card" style="margin-top:10px">
+          <div class="card-title">처리 로직</div>
+          <ol style="color:var(--text2);font-size:13px;padding-left:16px;line-height:2">
+            <li>TOTP 코드 검증 (±1 step 허용, 즉 ±30초)</li>
+            <li>재사용 방지: <code>totp_used:{user_id}:{code}</code> Redis 키 확인/설정 (TTL 90초)</li>
+            <li>연속 실패 5회 시 계정 임시 잠금</li>
+            <li>성공 시 세션 업데이트: acr=mfa, amr=["pwd","otp"]</li>
+            <li>원래 /authorize 요청으로 redirect</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <div class="ep">
+      <div class="ep-hdr" onclick="toggleEp(this)">
+        <span class="m GET">GET</span> <span style="color:var(--text2);font-size:12px;margin:0 4px">/</span>
+        <span class="m POST">POST</span>
+        <span class="ep-path">/consent</span>
+        <span class="ep-desc">Consent 화면 — 사용자가 권한 허용/거부</span>
+      </div>
+      <div class="ep-body">
+        <div class="card">
+          <div class="card-title">GET /consent — 표시 정보</div>
+          <ul>
+            <li>Client 이름, 로고, 설명</li>
+            <li>요청 scope 목록과 각 설명</li>
+            <li>허용/거부 버튼</li>
+          </ul>
+        </div>
+        <div class="card" style="margin-top:10px">
+          <div class="card-title">POST /consent — 처리</div>
+          <ul>
+            <li><code>action=allow</code>: consents 테이블에 저장, /authorize로 돌아가 Code 발급</li>
+            <li><code>action=deny</code>: redirect_uri로 <code>error=access_denied</code> 반환</li>
+            <li><code>remember=true</code>: 다음 번 Consent 화면 skip</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Admin API ===== -->
+<div id="tc-admin-api" class="tc">
+  <div class="sec">
+    <div class="sec-h">⚙️ Admin API</div>
+    <div class="alert a-must"><span class="alert-i">🔒</span><div class="alert-b"><div class="alert-t">모든 Admin API 인증 필수</div>
+      내부 포트 :8081에서만 노출. Bearer Token (별도 Admin 토큰) 또는 mTLS.
+      프로덕션에서는 외부 인터넷 노출 금지.
+    </div></div>
+
+    <div class="sec-sub">Clients</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>메서드</th><th>경로</th><th>설명</th></tr>
+        <tr><td><span class="m GET">GET</span></td><td><code>/admin/clients</code></td><td>클라이언트 목록 (페이지네이션)</td></tr>
+        <tr><td><span class="m POST">POST</span></td><td><code>/admin/clients</code></td><td>클라이언트 생성</td></tr>
+        <tr><td><span class="m GET">GET</span></td><td><code>/admin/clients/{id}</code></td><td>클라이언트 상세</td></tr>
+        <tr><td><span class="m PUT">PUT</span></td><td><code>/admin/clients/{id}</code></td><td>클라이언트 수정</td></tr>
+        <tr><td><span class="m DELETE">DELETE</span></td><td><code>/admin/clients/{id}</code></td><td>클라이언트 삭제</td></tr>
+        <tr><td><span class="m POST">POST</span></td><td><code>/admin/clients/{id}/secret</code></td><td>Client Secret 재발급 (rotate)</td></tr>
+      </table>
+    </div>
+    <pre><code><span class="cmt"># POST /admin/clients — 요청 Body</span>
+{
+  "id":                  "my-app",           <span class="cmt">// 생략 시 UUID 자동 생성</span>
+  "name":                "My Application",
+  "client_type":         "confidential",      <span class="cmt">// "confidential" | "public"</span>
+  "allowed_grant_types": ["authorization_code", "refresh_token"],
+  "redirect_uris":       ["https://app.example.com/callback"],
+  "allowed_scopes":      ["openid", "profile", "email", "offline_access"],
+  "require_pkce":        true,
+  "require_consent":     true,
+  "access_token_ttl":    3600,
+  "refresh_token_ttl":   2592000
+}
+
+<span class="cmt"># 201 Created 응답 (secret은 이 때만 평문으로 반환, 이후 재조회 불가)</span>
+{
+  "client_id":     "my-app",
+  "client_secret": "평문-시크릿-한번만-노출",
+  "created_at":    "2026-06-08T12:00:00Z"
+}</code></pre>
+
+    <div class="sec-sub">Users</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>메서드</th><th>경로</th><th>설명</th></tr>
+        <tr><td><span class="m GET">GET</span></td><td><code>/admin/users</code></td><td>사용자 목록 (검색, 페이지네이션)</td></tr>
+        <tr><td><span class="m POST">POST</span></td><td><code>/admin/users</code></td><td>사용자 생성</td></tr>
+        <tr><td><span class="m GET">GET</span></td><td><code>/admin/users/{id}</code></td><td>사용자 상세</td></tr>
+        <tr><td><span class="m PUT">PUT</span></td><td><code>/admin/users/{id}</code></td><td>사용자 정보 수정</td></tr>
+        <tr><td><span class="m DELETE">DELETE</span></td><td><code>/admin/users/{id}</code></td><td>사용자 삭제 (soft delete)</td></tr>
+        <tr><td><span class="m POST">POST</span></td><td><code>/admin/users/{id}/suspend</code></td><td>계정 정지</td></tr>
+        <tr><td><span class="m POST">POST</span></td><td><code>/admin/users/{id}/unlock</code></td><td>잠금 해제</td></tr>
+        <tr><td><span class="m POST">POST</span></td><td><code>/admin/users/{id}/password</code></td><td>비밀번호 강제 변경</td></tr>
+        <tr><td><span class="m DELETE">DELETE</span></td><td><code>/admin/users/{id}/totp</code></td><td>TOTP 초기화</td></tr>
+        <tr><td><span class="m GET">GET</span></td><td><code>/admin/users/{id}/sessions</code></td><td>활성 세션 목록</td></tr>
+        <tr><td><span class="m DELETE">DELETE</span></td><td><code>/admin/users/{id}/sessions</code></td><td>모든 세션 강제 종료</td></tr>
+      </table>
+    </div>
+
+    <div class="sec-sub">Tokens</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>메서드</th><th>경로</th><th>설명</th></tr>
+        <tr><td><span class="m GET">GET</span></td><td><code>/admin/tokens</code></td><td>발급된 Refresh Token 목록 (필터: user_id, client_id)</td></tr>
+        <tr><td><span class="m DELETE">DELETE</span></td><td><code>/admin/tokens/{id}</code></td><td>특정 토큰 폐기</td></tr>
+        <tr><td><span class="m DELETE">DELETE</span></td><td><code>/admin/users/{id}/tokens</code></td><td>특정 사용자의 모든 토큰 폐기</td></tr>
+      </table>
+    </div>
+
+    <div class="sec-sub">Keys</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>메서드</th><th>경로</th><th>설명</th></tr>
+        <tr><td><span class="m GET">GET</span></td><td><code>/admin/keys</code></td><td>서명 키 목록 (kid, status, created_at — private key 미포함)</td></tr>
+        <tr><td><span class="m POST">POST</span></td><td><code>/admin/keys</code></td><td>새 서명 키 생성 (alg 지정)</td></tr>
+        <tr><td><span class="m POST">POST</span></td><td><code>/admin/keys/{kid}/activate</code></td><td>키를 active로 전환 (기존 active → retired)</td></tr>
+        <tr><td><span class="m DELETE">DELETE</span></td><td><code>/admin/keys/{kid}</code></td><td>키 삭제 (retired 상태만 가능)</td></tr>
+      </table>
+    </div>
+
+    <div class="sec-sub">Audit Logs</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>메서드</th><th>경로</th><th>설명</th></tr>
+        <tr><td><span class="m GET">GET</span></td><td><code>/admin/audit-logs</code></td><td>감사 로그 조회 (필터: event_type, user_id, from, to, limit, cursor)</td></tr>
+      </table>
+    </div>
+    <pre><code><span class="cmt"># GET /admin/audit-logs?event_type=login.fail&limit=50&cursor=123456</span>
+{
+  "logs": [
+    {
+      "id":         123,
+      "event_type": "login.fail",
+      "user_id":    "uuid",
+      "client_id":  null,
+      "ip_address": "1.2.3.4",
+      "details":    { "reason": "invalid_password", "attempt": 3 },
+      "created_at": "2026-06-08T11:55:00Z"
+    }
+  ],
+  "next_cursor": 122,
+  "has_more": true
+}</code></pre>
+  </div>
+</div>
+
+<!-- ===== 에러 코드 ===== -->
+<div id="tc-errors" class="tc">
+  <div class="sec">
+    <div class="sec-h">❌ 에러 코드 레퍼런스</div>
+
+    <div class="sec-sub">OAuth 표준 에러 코드 (RFC 6749)</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>error</th><th>HTTP 상태</th><th>설명</th><th>발생 위치</th></tr>
+        <tr><td><code>invalid_request</code></td><td><span class="sc s4">400</span></td><td>필수 파라미터 누락, 형식 오류</td><td>Authorization, Token</td></tr>
+        <tr><td><code>unauthorized_client</code></td><td><span class="sc s4">400</span></td><td>이 Client에 해당 grant_type 미허용</td><td>Authorization, Token</td></tr>
+        <tr><td><code>access_denied</code></td><td><span class="sc s4">302</span></td><td>사용자가 Consent 거부</td><td>Authorization</td></tr>
+        <tr><td><code>unsupported_response_type</code></td><td><span class="sc s4">302</span></td><td>response_type 미지원</td><td>Authorization</td></tr>
+        <tr><td><code>invalid_scope</code></td><td><span class="sc s4">400</span></td><td>요청 scope가 유효하지 않음</td><td>Authorization, Token</td></tr>
+        <tr><td><code>server_error</code></td><td><span class="sc s5">500</span></td><td>AS 내부 오류</td><td>모든 곳</td></tr>
+        <tr><td><code>temporarily_unavailable</code></td><td><span class="sc s5">503</span></td><td>AS 일시 불가</td><td>모든 곳</td></tr>
+        <tr><td><code>invalid_client</code></td><td><span class="sc s4">401</span></td><td>Client 인증 실패 (ID/Secret 불일치)</td><td>Token</td></tr>
+        <tr><td><code>invalid_grant</code></td><td><span class="sc s4">400</span></td><td>code/refresh_token 유효하지 않음, 만료, 재사용</td><td>Token</td></tr>
+        <tr><td><code>unsupported_grant_type</code></td><td><span class="sc s4">400</span></td><td>grant_type 미지원</td><td>Token</td></tr>
+      </table>
+    </div>
+
+    <div class="sec-sub">OIDC 에러 코드</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>error</th><th>설명</th></tr>
+        <tr><td><code>interaction_required</code></td><td>prompt=none인데 사용자 상호작용 필요</td></tr>
+        <tr><td><code>login_required</code></td><td>prompt=none인데 로그인 필요</td></tr>
+        <tr><td><code>consent_required</code></td><td>prompt=none인데 Consent 필요</td></tr>
+        <tr><td><code>account_selection_required</code></td><td>계정 선택 필요</td></tr>
+        <tr><td><code>request_not_supported</code></td><td>request 파라미터 미지원</td></tr>
+      </table>
+    </div>
+
+    <div class="sec-sub">커스텀 에러 (Admin API / 로그인 UI)</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>에러</th><th>HTTP</th><th>설명</th></tr>
+        <tr><td><code>invalid_credentials</code></td><td><span class="sc s4">401</span></td><td>이메일/비밀번호 불일치 (구체적 이유 미공개)</td></tr>
+        <tr><td><code>account_locked</code></td><td><span class="sc s4">423</span></td><td>브루트포스로 임시 잠금</td></tr>
+        <tr><td><code>account_suspended</code></td><td><span class="sc s4">403</span></td><td>관리자에 의해 정지된 계정</td></tr>
+        <tr><td><code>invalid_totp</code></td><td><span class="sc s4">400</span></td><td>TOTP 코드 불일치</td></tr>
+        <tr><td><code>totp_replay</code></td><td><span class="sc s4">400</span></td><td>동일 TOTP 코드 재사용</td></tr>
+        <tr><td><code>redirect_uri_mismatch</code></td><td><span class="sc s4">400</span></td><td>redirect_uri가 등록된 것과 불일치</td></tr>
+        <tr><td><code>pkce_required</code></td><td><span class="sc s4">400</span></td><td>이 Client는 PKCE 필수</td></tr>
+        <tr><td><code>invalid_pkce</code></td><td><span class="sc s4">400</span></td><td>code_verifier가 code_challenge와 불일치</td></tr>
+        <tr><td><code>code_expired</code></td><td><span class="sc s4">400</span></td><td>Authorization Code 만료</td></tr>
+        <tr><td><code>code_already_used</code></td><td><span class="sc s4">400</span></td><td>Authorization Code 재사용 시도</td></tr>
+      </table>
+    </div>
+
+    <div class="sec-sub">에러 응답 형식 통일</div>
+    <pre><code><span class="cmt"># Token/API JSON 에러</span>
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+
+{
+  "error":             "invalid_grant",
+  "error_description": "Authorization code has expired"
+}
+
+<span class="cmt"># Authorization Endpoint 에러 → redirect</span>
+HTTP/1.1 302 Found
+Location: https://app.example.com/callback
+  ?error=access_denied
+  &error_description=User+denied+access
+  &state=client-state-value
+
+<span class="cmt"># 심각한 에러 (redirect_uri 자체가 잘못됨) → HTML 에러 페이지</span>
+HTTP/1.1 400 Bad Request
+Content-Type: text/html</code></pre>
+  </div>
+</div>
+
+<!-- ===== 체크리스트 ===== -->
+<div id="tc-checklist" class="tc">
+  <div class="sec">
+    <div class="sec-h">✅ 구현 체크리스트</div>
+
+    <div class="sec-sub">Phase 1 — 기반 인프라</div>
+    <div class="card">
+      <ul class="chk">
+        <li><span class="chk-box"></span>PostgreSQL 스키마 마이그레이션 (golang-migrate)<span class="chk-phase">P1</span></li>
+        <li><span class="chk-box"></span>Redis 연결 및 키 TTL 관리 유틸<span class="chk-phase">P1</span></li>
+        <li><span class="chk-box"></span>환경변수 기반 설정 (issuer URL, DB URL, Redis URL, 키 경로)<span class="chk-phase">P1</span></li>
+        <li><span class="chk-box"></span>구조화된 로거 (slog 또는 zap)<span class="chk-phase">P1</span></li>
+        <li><span class="chk-box"></span>HTTP 미들웨어: 요청 ID, 로깅, recover(패닉 방지)<span class="chk-phase">P1</span></li>
+        <li><span class="chk-box"></span>X-Forwarded-Proto/For 헤더 파싱 (신뢰할 프록시 IP 화이트리스트)<span class="chk-phase">P1</span></li>
+        <li><span class="chk-box"></span>RSA 키쌍 로드 및 JWKS 생성 유틸 (lestrrat-go/jwx)<span class="chk-phase">P1</span></li>
+      </ul>
+    </div>
+
+    <div class="sec-sub">Phase 2 — 사용자 인증</div>
+    <div class="card">
+      <ul class="chk">
+        <li><span class="chk-box"></span>사용자 생성/조회 (users 테이블)<span class="chk-phase">P2</span></li>
+        <li><span class="chk-box"></span>비밀번호 해시: argon2id 또는 bcrypt(cost=12)<span class="chk-phase">P2</span></li>
+        <li><span class="chk-box"></span>로그인 처리: 이메일+비밀번호 검증<span class="chk-phase">P2</span></li>
+        <li><span class="chk-box"></span>로그인 Rate Limiting (IP+email, Redis INCR+TTL)<span class="chk-phase">P2</span></li>
+        <li><span class="chk-box"></span>계정 잠금 (5회 실패 → DB locked_until 설정)<span class="chk-phase">P2</span></li>
+        <li><span class="chk-box"></span>세션 발급/검증/삭제 (Redis, HttpOnly 쿠키)<span class="chk-phase">P2</span></li>
+        <li><span class="chk-box"></span>CSRF 토큰 (Double Submit Cookie 패턴)<span class="chk-phase">P2</span></li>
+        <li><span class="chk-box"></span>GET/POST /login HTML 페이지<span class="chk-phase">P2</span></li>
+        <li><span class="chk-box"></span>감사 로그: login.success, login.fail<span class="chk-phase">P2</span></li>
+      </ul>
+    </div>
+
+    <div class="sec-sub">Phase 3 — TOTP</div>
+    <div class="card">
+      <ul class="chk">
+        <li><span class="chk-box"></span>TOTP 시크릿 생성 + otpauth:// URI + QR코드 (pquerna/otp)<span class="chk-phase">P3</span></li>
+        <li><span class="chk-box"></span>TOTP 등록 플로우 (확인 코드 입력 후 활성화)<span class="chk-phase">P3</span></li>
+        <li><span class="chk-box"></span>TOTP 검증: ±1 step 허용, replay 방지 (Redis TTL 90초)<span class="chk-phase">P3</span></li>
+        <li><span class="chk-box"></span>복구 코드 8개 생성 (bcrypt 해시 저장, 사용 시 삭제)<span class="chk-phase">P3</span></li>
+        <li><span class="chk-box"></span>GET/POST /totp HTML 페이지<span class="chk-phase">P3</span></li>
+        <li><span class="chk-box"></span>세션에 amr=["pwd","otp"], acr=mfa 반영<span class="chk-phase">P3</span></li>
+      </ul>
+    </div>
+
+    <div class="sec-sub">Phase 4 — Authorization Code + PKCE</div>
+    <div class="card">
+      <ul class="chk">
+        <li><span class="chk-box"></span>GET /authorize — 파라미터 검증 (client_id, redirect_uri exact match, S256만 허용)<span class="chk-phase">P4</span></li>
+        <li><span class="chk-box"></span>login_challenge 생성/검증 (Redis TTL 10분)<span class="chk-phase">P4</span></li>
+        <li><span class="chk-box"></span>Consent 확인 및 GET/POST /consent 페이지<span class="chk-phase">P4</span></li>
+        <li><span class="chk-box"></span>Authorization Code 생성 (crypto/rand 32바이트 hex, Redis TTL 2분)<span class="chk-phase">P4</span></li>
+        <li><span class="chk-box"></span>code_challenge 저장 및 code_verifier 검증 (SHA256 비교)<span class="chk-phase">P4</span></li>
+        <li><span class="chk-box"></span>Code 일회용 보장 (used=true 플래그, 재사용 시 기발급 토큰 폐기)<span class="chk-phase">P4</span></li>
+        <li><span class="chk-box"></span>감사 로그: auth_code.issue, consent.grant<span class="chk-phase">P4</span></li>
+      </ul>
+    </div>
+
+    <div class="sec-sub">Phase 5 — Token Endpoint</div>
+    <div class="card">
+      <ul class="chk">
+        <li><span class="chk-box"></span>Client 인증 (Basic Auth + body 방식 모두 지원)<span class="chk-phase">P5</span></li>
+        <li><span class="chk-box"></span>JWT Access Token 발급 (RS256, 표준 Claims + scope + client_id)<span class="chk-phase">P5</span></li>
+        <li><span class="chk-box"></span>Refresh Token 발급 (crypto/rand, DB 저장, SHA-256 해시)<span class="chk-phase">P5</span></li>
+        <li><span class="chk-box"></span>Refresh Token Rotation (신규 발급 + 이전 폐기 + family_id 유지)<span class="chk-phase">P5</span></li>
+        <li><span class="chk-box"></span>Client Credentials grant 처리<span class="chk-phase">P5</span></li>
+        <li><span class="chk-box"></span>Cache-Control: no-store 헤더<span class="chk-phase">P5</span></li>
+        <li><span class="chk-box"></span>Token Endpoint Rate Limiting<span class="chk-phase">P5</span></li>
+      </ul>
+    </div>
+
+    <div class="sec-sub">Phase 6 — OIDC</div>
+    <div class="card">
+      <ul class="chk">
+        <li><span class="chk-box"></span>ID Token 발급 (scope=openid 시, OIDC Claims 포함)<span class="chk-phase">P6</span></li>
+        <li><span class="chk-box"></span>nonce, auth_time, acr, amr 포함<span class="chk-phase">P6</span></li>
+        <li><span class="chk-box"></span>GET /userinfo (scope 기반 Claims 필터링)<span class="chk-phase">P6</span></li>
+        <li><span class="chk-box"></span>GET /.well-known/openid-configuration<span class="chk-phase">P6</span></li>
+        <li><span class="chk-box"></span>GET /.well-known/jwks.json<span class="chk-phase">P6</span></li>
+        <li><span class="chk-box"></span>GET /logout (세션 종료 + post_logout_redirect_uri)<span class="chk-phase">P6</span></li>
+      </ul>
+    </div>
+
+    <div class="sec-sub">Phase 7 — Introspection & Revocation</div>
+    <div class="card">
+      <ul class="chk">
+        <li><span class="chk-box"></span>POST /introspect (Client 인증 필수, active/비활성 판별)<span class="chk-phase">P7</span></li>
+        <li><span class="chk-box"></span>POST /revoke (RFC 7009, 항상 200)<span class="chk-phase">P7</span></li>
+        <li><span class="chk-box"></span>JWT 블랙리스트 (jti Redis TTL = 토큰 만료까지) — 선택적<span class="chk-phase">P7</span></li>
+      </ul>
+    </div>
+
+    <div class="sec-sub">Phase 8 — Admin API</div>
+    <div class="card">
+      <ul class="chk">
+        <li><span class="chk-box"></span>Admin Bearer Token 인증 미들웨어 (:8081)<span class="chk-phase">P8</span></li>
+        <li><span class="chk-box"></span>Clients CRUD API<span class="chk-phase">P8</span></li>
+        <li><span class="chk-box"></span>Users CRUD + suspend/unlock/force-password<span class="chk-phase">P8</span></li>
+        <li><span class="chk-box"></span>Tokens 목록 및 폐기<span class="chk-phase">P8</span></li>
+        <li><span class="chk-box"></span>Audit Logs 조회 API (커서 기반 페이지네이션)<span class="chk-phase">P8</span></li>
+        <li><span class="chk-box"></span>Keys 관리 API (생성/활성화/삭제)<span class="chk-phase">P8</span></li>
+      </ul>
+    </div>
+
+    <div class="sec-sub">Phase 9 — Federated Login (Google 등 외부 IdP)</div>
+    <div class="card">
+      <ul class="chk">
+        <li><span class="chk-box"></span>users.password_hash NULL 허용으로 스키마 변경<span class="chk-phase">P9</span></li>
+        <li><span class="chk-box"></span>external_identities 테이블 마이그레이션<span class="chk-phase">P9</span></li>
+        <li><span class="chk-box"></span>Google Cloud Console OAuth Client 등록 (client_id, client_secret, redirect URI)<span class="chk-phase">P9</span></li>
+        <li><span class="chk-box"></span>GET /oauth/redirect/google — Google /authorize로 PKCE redirect<span class="chk-phase">P9</span></li>
+        <li><span class="chk-box"></span>GET /oauth/callback/google — code 수신, Google /token 호출, ID Token 검증<span class="chk-phase">P9</span></li>
+        <li><span class="chk-box"></span>Google ID Token 검증: iss(accounts.google.com), aud, exp, 서명(JWKS)<span class="chk-phase">P9</span></li>
+        <li><span class="chk-box"></span>provider_sub 기반 external_identities 조회 → user_id 매핑<span class="chk-phase">P9</span></li>
+        <li><span class="chk-box"></span>신규 사용자: users 생성(password_hash=NULL) + external_identities 삽입<span class="chk-phase">P9</span></li>
+        <li><span class="chk-box"></span>이메일 일치 계정 자동 연결 (email_verified=true인 경우만)<span class="chk-phase">P9</span></li>
+        <li><span class="chk-box"></span>마지막 credential 해제 방지 (해제 전 비밀번호 설정 유도)<span class="chk-phase">P9</span></li>
+        <li><span class="chk-box"></span>세션에 acr=social, amr=["google"] 반영<span class="chk-phase">P9</span></li>
+        <li><span class="chk-box"></span>로그인 페이지에 "Google로 로그인" 버튼 추가<span class="chk-phase">P9</span></li>
+        <li><span class="chk-box"></span>Admin UI: 사용자의 연결된 external_identities 목록/해제<span class="chk-phase">P9</span></li>
+      </ul>
+    </div>
+
+    <div class="sec-sub">보안 검증 포인트</div>
+    <div class="card">
+      <ul class="chk">
+        <li><span class="chk-box"></span>JWT 파싱 시 WithValidMethods(["RS256"]) 명시 — alg:none 거부<span class="chk-phase">보안</span></li>
+        <li><span class="chk-box"></span>redirect_uri exact match 검증 (prefix/wildcard 금지)<span class="chk-phase">보안</span></li>
+        <li><span class="chk-box"></span>code_challenge_method=S256 강제, plain 거부<span class="chk-phase">보안</span></li>
+        <li><span class="chk-box"></span>Authorization Code 재사용 감지 시 연관 토큰 전체 폐기<span class="chk-phase">보안</span></li>
+        <li><span class="chk-box"></span>Refresh Token 탈취 감지 (family_id 재사용 시 전체 폐기)<span class="chk-phase">보안</span></li>
+        <li><span class="chk-box"></span>Timing Attack 방어 (사용자 미존재/비밀번호 오류 응답 시간 동일하게)<span class="chk-phase">보안</span></li>
+        <li><span class="chk-box"></span>Token 응답 Cache-Control: no-store<span class="chk-phase">보안</span></li>
+        <li><span class="chk-box"></span>모든 에러에서 스택 트레이스/내부 정보 미노출<span class="chk-phase">보안</span></li>
+        <li><span class="chk-box"></span>issuer URL이 Discovery 문서와 발급 JWT에서 동일한지 테스트<span class="chk-phase">보안</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<script>
+function sw(name) {
+  const names = ['arch','schema','auth-api','oidc-api','ui-api','admin-api','errors','checklist'];
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('on', names[i]===name));
+  document.querySelectorAll('.tc').forEach(c => c.classList.toggle('on', c.id==='tc-'+name));
+}
+function toggleEp(hdr) {
+  const body = hdr.nextElementSibling;
+  body.classList.toggle('open');
+}
+function toggleAcc(h) {
+  const b = h.nextElementSibling;
+  h.classList.toggle('open');
+  b.classList.toggle('open');
+}
+function toggleDDL(btn) {
+  const body = btn.nextElementSibling;
+  const open = body.classList.toggle('open');
+  btn.textContent = (open ? '▼' : '▶') + ' DDL 보기';
+}
+
+/* ── Canvas setup ── */
+function setupCanvas(id) {
+  const c = document.getElementById(id);
+  if (!c) return null;
+  const dpr = window.devicePixelRatio || 1;
+  // Read logical size from data attributes set on element
+  const cssW = parseInt(c.getAttribute('data-w'));
+  const cssH = parseInt(c.getAttribute('data-h'));
+  c.width  = cssW * dpr;
+  c.height = cssH * dpr;
+  c.style.width  = cssW + 'px';
+  c.style.height = cssH + 'px';
+  const ctx = c.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { ctx, W: cssW, H: cssH };
+}
+
+/* rounded rect */
+function rr(ctx, x, y, w, h, r, fill, stroke, lw) {
+  r = Math.min(r, w/2, h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y,   x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x,   y+h, r);
+  ctx.arcTo(x,   y+h, x,   y,   r);
+  ctx.arcTo(x,   y,   x+w, y,   r);
+  ctx.closePath();
+  if (fill)   { ctx.fillStyle   = fill;       ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw||1.5; ctx.stroke(); }
+}
+/* centered label */
+function clbl(ctx, s, x, y, color, size, bold) {
+  ctx.fillStyle    = color;
+  ctx.font         = (bold?'700':'400')+' '+(size||12)+'px "Segoe UI",system-ui,sans-serif';
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(s, x, y);
+}
+/* centered monospace */
+function cmono(ctx, s, x, y, color, size) {
+  ctx.fillStyle    = color;
+  ctx.font         = (size||10.5)+'px "SF Mono","Fira Code",monospace';
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(s, x, y);
+}
+/* vertical arrow */
+function arrowV(ctx, x, y1, y2, color, label, labelRight) {
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x, y1); ctx.lineTo(x, y2-9); ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.moveTo(x,y2); ctx.lineTo(x-5,y2-10); ctx.lineTo(x+5,y2-10); ctx.closePath(); ctx.fill();
+  if (label) {
+    ctx.fillStyle    = '#8891b8';
+    ctx.font         = '11px "Segoe UI",system-ui,sans-serif';
+    ctx.textAlign    = labelRight ? 'left' : 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, labelRight ? x+8 : x-8, (y1+y2)/2);
+  }
+}
+
+/* ── Architecture diagram ── */
+function drawArch() {
+  const s = setupCanvas('canvas-arch');
+  if (!s) return;
+  const {ctx, W, H} = s;
+  const C = {
+    bg:'#0d0f18', text:'#dde1f5', dim:'#8891b8', border:'#262c42',
+    acc:'#6c8ef5', arr:'#4ecdc4',
+    green:'#4ecf80', gbg:'#0c1e0e',
+    blue:'#6cafff',  bbg:'#0c1230',
+    purp:'#b06cf5',  pbg:'#150e24',
+    yell:'#f5a623',  ybg:'#1c1600',
+    red: '#f56c6c',  rbg:'#1e0c0c',
+  };
+
+  ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
+
+  /* ── Internet ── */
+  rr(ctx, W/2-110, 14, 220, 44, 8, '#0c1624', C.acc, 2);
+  clbl(ctx, '🌐  Internet / Users', W/2, 36, C.text, 13, true);
+
+  arrowV(ctx, W/2, 58, 96, C.arr, 'HTTPS', true);
+
+  /* ── LB / Proxy ── */
+  rr(ctx, 90, 96, W-180, 56, 8, '#111830', C.acc, 2);
+  clbl(ctx, 'LB / Reverse Proxy', W/2, 114, C.text, 13, true);
+  cmono(ctx, 'Nginx · Caddy · AWS ALB  —  TLS 종료 · X-Forwarded-Proto: https · X-Real-IP', W/2, 132, C.dim, 10);
+
+  arrowV(ctx, W/2, 152, 188, C.arr, 'HTTP', true);
+
+  /* ── Server outer ── */
+  const SX=30, SY=188, SW=W-60, SH=208;
+  rr(ctx, SX, SY, SW, SH, 10, '#0c0f1e', C.acc, 2.5);
+  clbl(ctx, 'OAuth / OIDC Server', W/2, SY+18, C.acc, 12, true);
+
+  /* inner sub-boxes */
+  const bY=SY+32, bH=62;
+  const gap=8, bX0=SX+gap;
+  const bW = Math.floor((SW - gap*4) / 3);
+
+  // Auth UI
+  rr(ctx, bX0, bY, bW, bH, 7, C.gbg, C.green, 1.5);
+  clbl(ctx, 'Auth UI', bX0+bW/2, bY+18, C.green, 12, true);
+  cmono(ctx, '/login', bX0+bW/2, bY+36, '#7fd090', 10);
+  cmono(ctx, '/consent  ·  /totp', bX0+bW/2, bY+50, '#7fd090', 10);
+
+  // OAuth/OIDC
+  const bX1=bX0+bW+gap;
+  rr(ctx, bX1, bY, bW, bH, 7, C.bbg, C.blue, 1.5);
+  clbl(ctx, 'OAuth / OIDC', bX1+bW/2, bY+18, C.blue, 12, true);
+  cmono(ctx, '/authorize  ·  /token', bX1+bW/2, bY+36, '#90b0e0', 10);
+  cmono(ctx, '/userinfo  ·  /introspect  ·  /revoke', bX1+bW/2, bY+50, '#90b0e0', 10);
+
+  // Admin
+  const bX2=bX1+bW+gap;
+  rr(ctx, bX2, bY, bW, bH, 7, C.pbg, C.purp, 1.5);
+  clbl(ctx, 'Admin API  :8081', bX2+bW/2, bY+18, C.purp, 12, true);
+  cmono(ctx, '내부망 전용', bX2+bW/2, bY+36, '#c090d8', 10);
+  cmono(ctx, '/admin/clients  ·  /admin/users  …', bX2+bW/2, bY+50, '#c090d8', 10);
+
+  // Core Services bar
+  const csY = bY+bH+10;
+  rr(ctx, bX0, csY, SW-gap*2, 42, 6, '#181c30', C.border, 1);
+  clbl(ctx, 'Core Services', bX0+(SW-gap*2)/2, csY+14, C.dim, 11, true);
+  cmono(ctx, 'TokenService · AuthService · KeyManager · ClientStore · UserStore · ConsentStore', bX0+(SW-gap*2)/2, csY+30, '#5a6080', 10);
+
+  /* ── Arrows → DB ── */
+  const dbY1 = SY+SH, dbY2 = dbY1+44;
+  const pgX = 160, rdX = W-160;
+  arrowV(ctx, pgX, dbY1, dbY2, C.yell);
+  arrowV(ctx, rdX, dbY1, dbY2, C.red);
+
+  /* ── PostgreSQL ── */
+  rr(ctx, pgX-120, dbY2, 240, 58, 8, C.ybg, C.yell, 1.5);
+  clbl(ctx, 'PostgreSQL  :5432', pgX, dbY2+18, C.yell, 12, true);
+  cmono(ctx, 'users · clients · tokens', pgX, dbY2+34, '#c0a840', 10);
+  cmono(ctx, 'consents · signing_keys · audit_logs', pgX, dbY2+48, '#c0a840', 10);
+
+  /* ── Redis ── */
+  rr(ctx, rdX-120, dbY2, 240, 58, 8, C.rbg, C.red, 1.5);
+  clbl(ctx, 'Redis  :6379', rdX, dbY2+18, C.red, 12, true);
+  cmono(ctx, 'sessions · auth_codes', rdX, dbY2+34, '#c07070', 10);
+  cmono(ctx, 'totp_replay · rate_limit · jwks_cache', rdX, dbY2+48, '#c07070', 10);
+}
+
+/* ── Federated Login Sequence diagram ── */
+function drawFed() {
+  const s = setupCanvas('canvas-fed');
+  if (!s) return;
+  const {ctx, W, H} = s;
+  const C = {
+    bg:'#0d0f18', text:'#dde1f5', dim:'#8891b8',
+    blue:'#6cafff', bbg:'#0c1828',
+    teal:'#4ecdc4', tbg:'#0c1e1e',
+    yell:'#f5a623', ybg:'#1c1600',
+    purp:'#b06cf5',
+  };
+
+  ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
+
+  const AC = [
+    { x:110, label:'Client (RP)', color:C.blue, bg:C.bbg },
+    { x:390, label:'우리 AS',     color:C.teal, bg:C.tbg },
+    { x:670, label:'Google OP',  color:C.yell, bg:C.ybg },
+  ];
+
+  /* actor header boxes */
+  AC.forEach(a => {
+    rr(ctx, a.x-70, 14, 140, 44, 8, a.bg, a.color, 2);
+    clbl(ctx, a.label, a.x, 36, a.color, 13, true);
+  });
+
+  /* lifelines */
+  AC.forEach(a => {
+    ctx.strokeStyle = a.color+'45'; ctx.lineWidth=1; ctx.setLineDash([5,5]);
+    ctx.beginPath(); ctx.moveTo(a.x,58); ctx.lineTo(a.x,H-14); ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  /* ── helpers ── */
+  function arrow(fx, tx, y, mainLabel, subLabel, color, dashed) {
+    const dir = tx>fx ? 1 : -1;
+    ctx.strokeStyle=color; ctx.lineWidth=1.5;
+    ctx.setLineDash(dashed?[6,4]:[]);
+    ctx.beginPath(); ctx.moveTo(fx+dir*4,y); ctx.lineTo(tx-dir*14,y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle=color;
+    ctx.beginPath(); ctx.moveTo(tx,y); ctx.lineTo(tx-dir*14,y-5); ctx.lineTo(tx-dir*14,y+5); ctx.closePath(); ctx.fill();
+    cmono(ctx, mainLabel, (fx+tx)/2, y-13, color, 11);
+    if (subLabel) cmono(ctx, subLabel, (fx+tx)/2, y+10, C.dim, 10);
+  }
+
+  function band(y, text, color) {
+    rr(ctx, 40, y-13, W-80, 26, 5, color+'1a', color+'70', 1);
+    clbl(ctx, text, W/2, y, color, 11.5);
+  }
+
+  function procBox(cx, y, lines, color) {
+    const pad=14, lh=18;
+    const bw = 250, bh = pad*2 + lines.length*lh;
+    rr(ctx, cx-bw/2, y, bw, bh, 7, color+'25', color, 1.5);
+    lines.forEach((l,i) => clbl(ctx, l, cx, y+pad+i*lh+lh/2, color, 11));
+    return bh;
+  }
+
+  /* ── sequence ── */
+  let y = 88;
+
+  arrow(AC[0].x, AC[1].x, y,
+    'GET /authorize',
+    'scope=openid · code_challenge=S256 · state=xxx', C.blue);
+  y += 44;
+
+  band(y, '로그인 페이지  —  이메일+비밀번호  또는  "Google로 로그인"', C.dim);
+  y += 34;
+
+  band(y, '👤  사용자:  "Google로 로그인" 클릭', C.yell);
+  y += 38;
+
+  arrow(AC[1].x, AC[2].x, y,
+    'GET /authorize  (PKCE)',
+    'scope=openid email profile · code_challenge=S256', C.yell);
+  y += 44;
+
+  band(y, '사용자: Google 계정 선택 및 로그인', C.dim);
+  y += 34;
+
+  arrow(AC[2].x, AC[1].x, y,
+    '302 → callback?code=GOOGLE_CODE', '', C.yell, true);
+  y += 36;
+
+  arrow(AC[1].x, AC[2].x, y,
+    'POST /token',
+    'code=GOOGLE_CODE · code_verifier=...', C.yell);
+  y += 42;
+
+  arrow(AC[2].x, AC[1].x, y,
+    '{ id_token, access_token }', '', C.yell, true);
+  y += 30;
+
+  const ph = procBox(AC[1].x, y, [
+    '① ID Token 검증  (iss · aud · exp · 서명)',
+    '② external_identities WHERE provider_sub = sub',
+    '③ 없음 → 신규 user 생성 / 있음 → user_id 매핑',
+    '④ 세션 발급  acr=social  amr=["google"]',
+  ], C.purp);
+  y += ph + 16;
+
+  arrow(AC[1].x, AC[0].x, y,
+    '302 → callback?code=OUR_CODE&state=xxx', '', C.teal, true);
+  y += 38;
+
+  arrow(AC[0].x, AC[1].x, y,
+    'POST /token',
+    'code=OUR_CODE · code_verifier=...', C.blue);
+  y += 42;
+
+  arrow(AC[1].x, AC[0].x, y,
+    '{ access_token, id_token }  (우리 AS 발급)', '', C.teal, true);
+  y += 36;
+
+  band(y, '✓  Client는 Google 토큰을 보지 않음  —  항상 우리 AS 토큰만 수신', C.teal);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  drawArch();
+  drawFed();
+});
+</script>
+</body>
+</html>
