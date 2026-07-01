@@ -1,0 +1,1488 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fleet / Plasma Agent Accuracy Briefing</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f4f3ee;
+      --paper-strong: #ffffff;
+      --ink: #151515;
+      --muted: #5d625f;
+      --line: #cfd2ca;
+      --line-strong: #a9ada6;
+      --fleet: #245b69;
+      --fleet-soft: #d9ebef;
+      --plasma: #9c3f4a;
+      --plasma-soft: #f2dbdf;
+      --evidence: #6f5a1e;
+      --evidence-soft: #eadfc5;
+      --review: #2f7b61;
+      --review-soft: #dce9df;
+      --risk: #b14832;
+      --risk-soft: #efd9d2;
+      --shadow: 0 22px 48px rgba(22, 24, 22, 0.12);
+      --shadow-small: 0 12px 28px rgba(22, 24, 22, 0.1);
+      --radius: 8px;
+      --mono: "SFMono-Regular", "Cascadia Mono", "Liberation Mono", Menlo, monospace;
+      --body: "Avenir Next", "Segoe UI", "Noto Sans KR", system-ui, sans-serif;
+      --display: Georgia, "Times New Roman", "Noto Serif KR", serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background:
+        linear-gradient(90deg, rgba(36, 91, 105, 0.08) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(36, 91, 105, 0.08) 1px, transparent 1px),
+        var(--paper);
+      background-size: 44px 44px;
+      color: var(--ink);
+      font-family: var(--body);
+      font-size: 16px;
+      line-height: 1.62;
+      letter-spacing: 0;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .shell {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      border-bottom: 1px solid var(--line);
+      background: rgba(244, 243, 238, 0.9);
+      backdrop-filter: blur(14px);
+    }
+
+    .topbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 64px;
+    }
+
+    .mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      text-transform: uppercase;
+    }
+
+    .mark-symbol {
+      width: 30px;
+      height: 30px;
+      border: 2px solid var(--ink);
+      display: grid;
+      place-items: center;
+      background: var(--paper-strong);
+      box-shadow: 4px 4px 0 var(--fleet);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .nav a {
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: 7px 11px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      text-decoration: none;
+    }
+
+    .nav a:hover {
+      border-color: var(--line-strong);
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    .hero {
+      min-height: calc(100vh - 64px);
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(360px, 1.05fr);
+      align-items: center;
+      gap: 40px;
+      padding: 56px 0 42px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      margin-bottom: 18px;
+      border: 1px solid var(--line-strong);
+      background: rgba(255, 255, 255, 0.68);
+      border-radius: 999px;
+      padding: 8px 12px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--review);
+      box-shadow: 0 0 0 5px rgba(47, 123, 97, 0.16);
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      font-family: var(--display);
+      font-size: clamp(44px, 7vw, 86px);
+      font-weight: 700;
+      max-width: 760px;
+    }
+
+    h2 {
+      font-family: var(--display);
+      font-size: clamp(32px, 4vw, 54px);
+      margin-bottom: 18px;
+    }
+
+    h3 {
+      font-size: 19px;
+      margin-bottom: 8px;
+    }
+
+    .hero-copy {
+      margin: 24px 0 0;
+      max-width: 680px;
+      font-size: 20px;
+      color: #303430;
+    }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .metric {
+      min-height: 112px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.76);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow-small);
+    }
+
+    .metric strong {
+      display: block;
+      margin-bottom: 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .map-panel {
+      border: 2px solid var(--ink);
+      background: var(--paper-strong);
+      border-radius: var(--radius);
+      box-shadow: 12px 12px 0 rgba(36, 91, 105, 0.26), var(--shadow);
+      overflow: hidden;
+    }
+
+    .map-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #fafaf7;
+    }
+
+    .map-head strong {
+      font-family: var(--mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .segmented {
+      display: inline-flex;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--paper);
+      flex-wrap: wrap;
+    }
+
+    .segmented button {
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      padding: 7px 10px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .segmented button.active {
+      background: var(--ink);
+      color: white;
+    }
+
+    .diagram-wrap {
+      position: relative;
+      min-height: 440px;
+      padding: 14px;
+    }
+
+    .diagram {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .node {
+      transition: opacity 180ms ease, transform 180ms ease;
+      transform-origin: center;
+    }
+
+    .node.dim {
+      opacity: 0.28;
+    }
+
+    .node.hot circle,
+    .node.hot rect {
+      stroke-width: 4;
+    }
+
+    .map-caption {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      padding: 0 16px 16px;
+    }
+
+    .map-caption p {
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      color: var(--muted);
+      background: #fafaf7;
+      font-size: 14px;
+    }
+
+    .section {
+      padding: 68px 0;
+    }
+
+    .section-lead {
+      max-width: 820px;
+      margin: 0 0 26px;
+      color: #303430;
+      font-size: 19px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .two-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.82);
+      box-shadow: var(--shadow-small);
+      overflow: hidden;
+    }
+
+    .card.pad {
+      padding: 20px;
+    }
+
+    .card-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .pill-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .stack {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .stack-list {
+      display: grid;
+      gap: 9px;
+      position: sticky;
+      top: 84px;
+    }
+
+    .stack-button {
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr);
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.74);
+      border-radius: var(--radius);
+      padding: 12px;
+      text-align: left;
+      color: var(--ink);
+    }
+
+    .stack-button.active {
+      border-color: var(--ink);
+      background: var(--ink);
+      color: white;
+      box-shadow: 6px 6px 0 rgba(156, 63, 74, 0.28);
+    }
+
+    .stack-num {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border: 1px solid currentColor;
+      border-radius: 50%;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .stack-title {
+      min-width: 0;
+      font-weight: 750;
+    }
+
+    .detail-panel {
+      min-height: 392px;
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      background: var(--paper-strong);
+      box-shadow: 10px 10px 0 rgba(111, 90, 30, 0.24), var(--shadow);
+      padding: 26px;
+    }
+
+    .detail-kicker {
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .detail-panel h3 {
+      font-family: var(--display);
+      font-size: 34px;
+      margin-bottom: 16px;
+    }
+
+    .detail-panel ul {
+      margin: 18px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }
+
+    .detail-panel li {
+      position: relative;
+      padding-left: 20px;
+      color: #303430;
+    }
+
+    .detail-panel li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.72em;
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--fleet);
+    }
+
+    .source {
+      display: inline-block;
+      margin-top: 22px;
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      word-break: break-word;
+    }
+
+    .matrix {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.86);
+      box-shadow: var(--shadow-small);
+    }
+
+    .matrix-row {
+      display: grid;
+      grid-template-columns: 190px minmax(0, 1fr) minmax(0, 1fr) 180px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .matrix-row:last-child {
+      border-bottom: 0;
+    }
+
+    .matrix-row > div {
+      padding: 16px;
+      border-right: 1px solid var(--line);
+    }
+
+    .matrix-row > div:last-child {
+      border-right: 0;
+    }
+
+    .matrix-head {
+      background: var(--ink);
+      color: white;
+      font-family: var(--mono);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .axis {
+      font-weight: 800;
+    }
+
+    .tradeoff {
+      color: var(--risk);
+      font-weight: 800;
+    }
+
+    .priority-board {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .priority-card {
+      min-height: 272px;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper-strong);
+      box-shadow: var(--shadow-small);
+      overflow: hidden;
+    }
+
+    .priority-rank {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 800;
+      background: #fafaf7;
+    }
+
+    .priority-body {
+      padding: 16px;
+      flex: 1;
+    }
+
+    .priority-body p {
+      color: var(--muted);
+      margin: 10px 0 0;
+    }
+
+    .impact {
+      margin-top: 16px;
+      height: 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      overflow: hidden;
+      background: var(--paper);
+    }
+
+    .impact span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, var(--review), var(--evidence), var(--plasma));
+    }
+
+    .simulator {
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .toggles {
+      display: grid;
+      gap: 10px;
+    }
+
+    .toggle {
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr);
+      gap: 12px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.78);
+      padding: 12px;
+    }
+
+    .toggle input {
+      width: 26px;
+      height: 26px;
+      accent-color: var(--fleet);
+    }
+
+    .toggle strong {
+      display: block;
+    }
+
+    .toggle span {
+      display: block;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .score {
+      display: grid;
+      gap: 14px;
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      background: var(--paper-strong);
+      padding: 22px;
+      box-shadow: 10px 10px 0 rgba(47, 123, 97, 0.22), var(--shadow);
+    }
+
+    .score-number {
+      font-family: var(--display);
+      font-size: 76px;
+      line-height: 1;
+    }
+
+    .bars {
+      display: grid;
+      gap: 10px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr) 44px;
+      gap: 10px;
+      align-items: center;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .bar {
+      height: 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--paper);
+      overflow: hidden;
+    }
+
+    .bar span {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: var(--fleet);
+      transition: width 220ms ease;
+    }
+
+    .evidence-tools {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .search {
+      min-width: 260px;
+      flex: 1;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 10px 14px;
+      color: var(--ink);
+    }
+
+    .evidence-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .evidence-item {
+      display: grid;
+      grid-template-columns: 126px minmax(0, 1fr);
+      gap: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.78);
+      padding: 14px;
+    }
+
+    .tag {
+      width: fit-content;
+      height: fit-content;
+      border-radius: 999px;
+      padding: 5px 9px;
+      color: white;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .tag.fleet {
+      background: var(--fleet);
+    }
+
+    .tag.plasma {
+      background: var(--plasma);
+    }
+
+    .tag.both {
+      background: var(--review);
+    }
+
+    .evidence-item strong {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .evidence-item code {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      white-space: normal;
+      word-break: break-word;
+    }
+
+    .closing {
+      border-top: 2px solid var(--ink);
+      border-bottom: 2px solid var(--ink);
+      background: var(--ink);
+      color: white;
+      padding: 46px 0;
+    }
+
+    .closing-grid {
+      display: grid;
+      grid-template-columns: 0.8fr 1.2fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .closing h2 {
+      margin: 0;
+    }
+
+    .closing p {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 19px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 980px) {
+      .hero,
+      .stack,
+      .simulator,
+      .closing-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stack-list {
+        position: static;
+      }
+
+      .grid,
+      .two-grid,
+      .priority-board,
+      .summary-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .matrix-row {
+        grid-template-columns: 1fr;
+      }
+
+      .matrix-row > div {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .matrix-row > div:last-child {
+        border-bottom: 0;
+      }
+
+      .matrix-head {
+        display: none;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .shell {
+        width: min(100% - 22px, 1180px);
+      }
+
+      .topbar-inner {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 12px 0;
+      }
+
+      .nav {
+        justify-content: flex-start;
+      }
+
+      .hero {
+        min-height: auto;
+        padding-top: 36px;
+      }
+
+      h1 {
+        font-size: 42px;
+      }
+
+      .hero-copy,
+      .section-lead,
+      .closing p {
+        font-size: 17px;
+      }
+
+      .diagram-wrap {
+        min-height: 280px;
+        padding: 8px;
+      }
+
+      .map-caption {
+        grid-template-columns: 1fr;
+      }
+
+      .evidence-item {
+        grid-template-columns: 1fr;
+      }
+
+      .bar-row {
+        grid-template-columns: 86px minmax(0, 1fr) 38px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <a class="mark" href="#top" aria-label="맨 위로 이동">
+        <span class="mark-symbol">F/P</span>
+        <span>agent accuracy briefing</span>
+      </a>
+      <nav class="nav" aria-label="보고서 섹션">
+        <a href="#fleet-stack">Fleet</a>
+        <a href="#comparison">Comparison</a>
+        <a href="#plasma-lessons">Plasma</a>
+        <a href="#evidence">Evidence</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="shell hero" aria-labelledby="title">
+      <div>
+        <div class="eyebrow"><span class="dot"></span> 2026-07-01 조사 기반 · self-contained briefing</div>
+        <h1 id="title">Fleet은 정확도를 운영체계로 만든다. Plasma는 어디를 배울 것인가.</h1>
+        <p class="hero-copy">
+          Fleet은 목표, 근거, 역할, 산출물을 단계마다 검문해 에이전트의 실수를 줄인다.
+          Plasma는 source/read-first 경계를 통해 연구 보고의 근거성을 지킨다.
+          이 보고서는 두 접근을 같은 축에 놓고, Plasma가 가져갈 만한 작은 장치를 우선순위로 정리한다.
+        </p>
+        <div class="summary-strip" aria-label="핵심 요약">
+          <div class="metric">
+            <strong>Fleet thesis</strong>
+            <span>에이전트 자율성을 늘리기보다, 틀릴 수 있는 지점을 프로토콜과 역할 경계로 좁힌다.</span>
+          </div>
+          <div class="metric">
+            <strong>Plasma thesis</strong>
+            <span>큰 프롬프트가 아니라 mission-bound MCP read와 source/result 분리로 grounded report를 만든다.</span>
+          </div>
+          <div class="metric">
+            <strong>Action thesis</strong>
+            <span>Fleet 전체가 아니라 evidence gate, review lane, prompt invariant test만 얇게 차용한다.</span>
+          </div>
+        </div>
+      </div>
+
+      <aside class="map-panel" aria-labelledby="map-title">
+        <div class="map-head">
+          <strong id="map-title">control map</strong>
+          <div class="segmented" aria-label="관계도 강조">
+            <button class="mode active" data-mode="all">전체</button>
+            <button class="mode" data-mode="accuracy">정확도</button>
+            <button class="mode" data-mode="token">토큰</button>
+            <button class="mode" data-mode="plasma">차용</button>
+          </div>
+        </div>
+        <div class="diagram-wrap">
+          <svg class="diagram" viewBox="0 0 760 520" role="img" aria-label="Fleet과 Plasma의 정확도 장치 관계도">
+            <defs>
+              <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 Z" fill="#151515"></path>
+              </marker>
+              <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#151515" flood-opacity="0.15" />
+              </filter>
+            </defs>
+
+            <path d="M190 112 C302 70 410 70 530 112" fill="none" stroke="#151515" stroke-width="2" marker-end="url(#arrow)" />
+            <path d="M196 388 C304 446 418 446 532 388" fill="none" stroke="#151515" stroke-width="2" marker-end="url(#arrow)" />
+            <path d="M140 162 C80 240 82 300 142 360" fill="none" stroke="#6f5a1e" stroke-width="3" marker-end="url(#arrow)" />
+            <path d="M620 162 C680 240 678 300 618 360" fill="none" stroke="#9c3f4a" stroke-width="3" marker-end="url(#arrow)" />
+            <path d="M250 260 H510" fill="none" stroke="#2f7b61" stroke-width="4" marker-end="url(#arrow)" />
+
+            <g class="node accuracy plasma" data-node="plasma-loop" filter="url(#softShadow)">
+              <rect x="38" y="202" width="190" height="116" rx="8" fill="#f2dbdf" stroke="#9c3f4a" stroke-width="3" />
+              <text x="133" y="238" text-anchor="middle" font-family="Georgia, serif" font-size="25" font-weight="700">Plasma</text>
+              <text x="133" y="268" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="14">read-first loop</text>
+              <text x="133" y="291" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="14">source/result boundary</text>
+            </g>
+
+            <g class="node accuracy" data-node="fleet-os" filter="url(#softShadow)">
+              <rect x="532" y="202" width="190" height="116" rx="8" fill="#d9ebef" stroke="#245b69" stroke-width="3" />
+              <text x="627" y="238" text-anchor="middle" font-family="Georgia, serif" font-size="25" font-weight="700">Fleet</text>
+              <text x="627" y="268" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="14">protocol OS</text>
+              <text x="627" y="291" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="14">role + review gates</text>
+            </g>
+
+            <g class="node accuracy" data-node="anchor">
+              <circle cx="218" cy="104" r="58" fill="#ffffff" stroke="#245b69" stroke-width="3" />
+              <text x="218" y="97" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="15" font-weight="700">Mission</text>
+              <text x="218" y="119" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="15" font-weight="700">Anchor</text>
+            </g>
+
+            <g class="node accuracy" data-node="confidence">
+              <circle cx="380" cy="84" r="62" fill="#eadfc5" stroke="#6f5a1e" stroke-width="3" />
+              <text x="380" y="77" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="15" font-weight="700">Context</text>
+              <text x="380" y="99" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="15" font-weight="700">Confidence</text>
+            </g>
+
+            <g class="node accuracy" data-node="integrity">
+              <circle cx="542" cy="104" r="58" fill="#dce9df" stroke="#2f7b61" stroke-width="3" />
+              <text x="542" y="97" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="15" font-weight="700">Result</text>
+              <text x="542" y="119" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="15" font-weight="700">Integrity</text>
+            </g>
+
+            <g class="node token plasma" data-node="session">
+              <rect x="110" y="372" width="156" height="78" rx="8" fill="#ffffff" stroke="#9c3f4a" stroke-width="3" />
+              <text x="188" y="403" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="14" font-weight="700">same session</text>
+              <text x="188" y="426" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="13">continuity + cost</text>
+            </g>
+
+            <g class="node token" data-node="fork">
+              <rect x="302" y="384" width="156" height="78" rx="8" fill="#ffffff" stroke="#b14832" stroke-width="3" />
+              <text x="380" y="415" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="14" font-weight="700">report fork</text>
+              <text x="380" y="438" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="13">isolate inflation</text>
+            </g>
+
+            <g class="node plasma" data-node="review">
+              <rect x="494" y="372" width="156" height="78" rx="8" fill="#ffffff" stroke="#2f7b61" stroke-width="3" />
+              <text x="572" y="403" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="14" font-weight="700">review lane</text>
+              <text x="572" y="426" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="13">citation audit</text>
+            </g>
+          </svg>
+        </div>
+        <div class="map-caption">
+          <p><strong>정확도 축:</strong> Fleet은 목표 고정, 근거 문턱, 결과 검문을 한 흐름으로 묶는다.</p>
+          <p><strong>토큰 축:</strong> Plasma의 문제는 작은 prompt보다 누적 provider session과 tool result transcript에 가깝다.</p>
+        </div>
+      </aside>
+    </section>
+
+    <section class="shell section" aria-labelledby="diagnosis">
+      <h2 id="diagnosis">진단: 두 시스템은 다른 문제를 푼다</h2>
+      <p class="section-lead">
+        Fleet은 여러 에이전트가 같은 저장소에서 일할 때의 정확도를 다룬다.
+        Plasma는 하나의 연구 mission 안에서 근거 있는 답변과 보고서를 만드는 정확도를 다룬다.
+        그래서 정답은 Fleet을 통째로 옮기는 것이 아니라, 오류 비용이 큰 Plasma 단계에만 작은 검문소를 추가하는 것이다.
+      </p>
+      <div class="grid">
+        <article class="card pad">
+          <div class="card-label" style="color: var(--fleet)"><span class="pill-dot"></span> Fleet</div>
+          <h3>정확도를 절차로 만든다</h3>
+          <p>Intent Gate, Mode Gate, Mission Anchor, Context Confidence, Result Integrity, Carrier 역할 분리, Wiki 승인 흐름이 한 운영 체계로 묶여 있다.</p>
+        </article>
+        <article class="card pad">
+          <div class="card-label" style="color: var(--plasma)"><span class="pill-dot"></span> Plasma</div>
+          <h3>근거 경계를 얇게 유지한다</h3>
+          <p>source는 원자료이고 agent answer/report는 result/artifact다. read-first MCP를 통해 자료를 읽고, 큰 prompt pack이나 report-only corpus를 피한다.</p>
+        </article>
+        <article class="card pad">
+          <div class="card-label" style="color: var(--risk)"><span class="pill-dot"></span> Tradeoff</div>
+          <h3>정확도 장치는 비용을 만든다</h3>
+          <p>Fleet식 gate를 과하게 옮기면 Plasma의 빠른 연구 루프가 무거워진다. 적용 지점은 report, synthesis, session fork처럼 오류와 비용이 커지는 구간이어야 한다.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="shell section" id="fleet-stack" aria-labelledby="fleet-title">
+      <h2 id="fleet-title">Fleet의 정확도 스택</h2>
+      <p class="section-lead">
+        아래 항목을 선택하면 Fleet이 어느 지점에서 에이전트 오류를 줄이는지 볼 수 있다.
+        핵심은 한 번의 멋진 prompt가 아니라, 시작 전·진행 중·결과 후에 반복되는 검문이다.
+      </p>
+      <div class="stack">
+        <div class="stack-list" role="tablist" aria-label="Fleet 정확도 장치">
+          <button class="stack-button active" role="tab" aria-selected="true" data-stack="0"><span class="stack-num">01</span><span class="stack-title">Protocol Gate</span></button>
+          <button class="stack-button" role="tab" aria-selected="false" data-stack="1"><span class="stack-num">02</span><span class="stack-title">Mission Anchor</span></button>
+          <button class="stack-button" role="tab" aria-selected="false" data-stack="2"><span class="stack-num">03</span><span class="stack-title">Context Confidence</span></button>
+          <button class="stack-button" role="tab" aria-selected="false" data-stack="3"><span class="stack-num">04</span><span class="stack-title">Carrier Role Boundary</span></button>
+          <button class="stack-button" role="tab" aria-selected="false" data-stack="4"><span class="stack-num">05</span><span class="stack-title">Result Integrity</span></button>
+          <button class="stack-button" role="tab" aria-selected="false" data-stack="5"><span class="stack-num">06</span><span class="stack-title">Fleet Wiki Trust Boundary</span></button>
+        </div>
+        <article class="detail-panel" aria-live="polite">
+          <div class="detail-kicker" id="stack-kicker">gate before action</div>
+          <h3 id="stack-heading">위험도에 맞는 작업 모드를 고른다</h3>
+          <p id="stack-body">
+            모든 operational request는 Intent Gate와 Mode Gate를 지나며, baseline/midline/redline/frontline 중 정확히 하나의 protocol skill을 로드한다.
+            구조 변경, API 변경, multi-module, doctrine/prompt-policy 작업은 Downward Guard 때문에 낮은 모드로 처리할 수 없다.
+          </p>
+          <ul id="stack-points">
+            <li>작업 난이도와 검증 밀도를 연결한다.</li>
+            <li>되돌리기 어려운 작업은 risk review와 complete confidence를 요구한다.</li>
+            <li>simple task에는 compact path가 있어 ceremony를 줄인다.</li>
+          </ul>
+          <span class="source" id="stack-source">packages/fleet-admiral/src/protocols/fleet-action.ts:15, :30, :42</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="shell section" id="comparison" aria-labelledby="comparison-title">
+      <h2 id="comparison-title">동일 축 비교</h2>
+      <p class="section-lead">
+        Fleet과 Plasma는 모두 “에이전트 결과를 그대로 믿지 않는다”는 문제의식을 공유한다.
+        다만 Fleet은 repo work orchestration에 맞게 강한 운영 doctrine을 쓰고, Plasma는 research/report UX에 맞게 source boundary와 telemetry를 중심에 둔다.
+      </p>
+      <div class="matrix" role="table" aria-label="Fleet과 Plasma 비교">
+        <div class="matrix-row matrix-head" role="row">
+          <div role="columnheader">축</div>
+          <div role="columnheader">Fleet</div>
+          <div role="columnheader">Plasma</div>
+          <div role="columnheader">Plasma 판단</div>
+        </div>
+        <div class="matrix-row" role="row">
+          <div class="axis" role="cell">목표 고정</div>
+          <div role="cell">Mission Anchor가 Objective를 만들고 체크포인트마다 alignment를 확인한다.</div>
+          <div role="cell">Mission/session은 있지만, 매 decision checkpoint의 objective recall은 일반화되어 있지 않다.</div>
+          <div class="tradeoff" role="cell">부분 차용</div>
+        </div>
+        <div class="matrix-row" role="row">
+          <div class="axis" role="cell">근거 문턱</div>
+          <div role="cell">Context Confidence가 evidence list 없는 자신감을 speculative로 낮춘다.</div>
+          <div role="cell">read-first MCP와 source/result 분리로 ground를 유지한다. report 전 gate는 약하다.</div>
+          <div class="tradeoff" role="cell">강력 추천</div>
+        </div>
+        <div class="matrix-row" role="row">
+          <div class="axis" role="cell">역할 분리</div>
+          <div role="cell">Nimitz, Kirov, Genesis, Sentinel 등 judgment/plan/build/review 경계를 둔다.</div>
+          <div role="cell">기본은 같은 provider session의 연구 루프다. controller는 weak/conditional이다.</div>
+          <div class="tradeoff" role="cell">review만 차용</div>
+        </div>
+        <div class="matrix-row" role="row">
+          <div class="axis" role="cell">결과 검증</div>
+          <div role="cell">Carrier result는 relevance, completeness, conflict를 검사하고 mutating job은 artifact를 직접 본다.</div>
+          <div role="cell">보고서는 artifact로 저장되지만, 독립 reviewer lane은 기본 구조가 아니다.</div>
+          <div class="tradeoff" role="cell">추천</div>
+        </div>
+        <div class="matrix-row" role="row">
+          <div class="axis" role="cell">토큰 비용</div>
+          <div role="cell">Carrier 분산은 host context를 줄일 수 있지만 orchestration overhead가 있다.</div>
+          <div role="cell">최신 실험 문서는 작은 prompt보다 provider session 누적과 tool result transcript를 핵심 원인으로 본다.</div>
+          <div class="tradeoff" role="cell">session fork</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shell section" id="plasma-lessons" aria-labelledby="lessons-title">
+      <h2 id="lessons-title">Plasma가 배울 점: 통째 이식이 아니라 얇은 검문소</h2>
+      <p class="section-lead">
+        Plasma의 장점은 가벼운 C1 loop다. 따라서 Fleet식 장치를 모든 turn에 넣는 대신,
+        report generation, synthesis, long session, source promotion처럼 실패 비용이 큰 지점에만 적용하는 편이 낫다.
+      </p>
+      <div class="priority-board">
+        <article class="priority-card">
+          <div class="priority-rank"><span>Priority 1</span><span>High</span></div>
+          <div class="priority-body">
+            <h3>Report 전 evidence gate</h3>
+            <p>보고서 작성 직전에 읽은 source, 핵심 claim, unsupported gap을 짧게 점검한다. Context Confidence의 최소판이다.</p>
+            <div class="impact" aria-label="효과 높음"><span style="width: 94%"></span></div>
+          </div>
+        </article>
+        <article class="priority-card">
+          <div class="priority-rank"><span>Priority 2</span><span>High</span></div>
+          <div class="priority-body">
+            <h3>Reviewer session lane</h3>
+            <p>긴 report나 designed HTML export는 writer와 분리된 reviewer가 citation 누락, weak claim 승격, stale source를 검사한다.</p>
+            <div class="impact" aria-label="효과 높음"><span style="width: 88%"></span></div>
+          </div>
+        </article>
+        <article class="priority-card">
+          <div class="priority-rank"><span>Priority 3</span><span>Medium</span></div>
+          <div class="priority-body">
+            <h3>Report session fork</h3>
+            <p>리포트 작업은 research session에서 fork해 후속 연구 turn이 report planning/drafting transcript 비용을 계속 지불하지 않게 한다.</p>
+            <div class="impact" aria-label="효과 중간 이상"><span style="width: 76%"></span></div>
+          </div>
+        </article>
+        <article class="priority-card">
+          <div class="priority-rank"><span>Priority 4</span><span>Medium</span></div>
+          <div class="priority-body">
+            <h3>Prompt invariant tests</h3>
+            <p>agent output은 source가 아니다, default MCP는 read-first다, mutation tools는 기본 노출하지 않는다는 규칙을 테스트로 잠근다.</p>
+            <div class="impact" aria-label="효과 중간"><span style="width: 68%"></span></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="shell section" aria-labelledby="sim-title">
+      <h2 id="sim-title">작은 적용 시뮬레이터</h2>
+      <p class="section-lead">
+        아래 항목을 켜면 Plasma에 더할 guardrail의 균형을 볼 수 있다.
+        점수는 정량 측정이 아니라 이번 분석을 바탕으로 한 설계 감도 모델이다.
+      </p>
+      <div class="simulator">
+        <div class="toggles" aria-label="Plasma 적용 후보">
+          <label class="toggle">
+            <input type="checkbox" class="sim-check" data-accuracy="24" data-cost="8" data-speed="-4" checked />
+            <span><strong>Evidence gate</strong><span>report 전 unsupported gap 확인</span></span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" class="sim-check" data-accuracy="22" data-cost="14" data-speed="-8" checked />
+            <span><strong>Reviewer lane</strong><span>별도 세션으로 citation/claim 검토</span></span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" class="sim-check" data-accuracy="10" data-cost="-18" data-speed="-2" checked />
+            <span><strong>Report fork</strong><span>report transcript inflation 격리</span></span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" class="sim-check" data-accuracy="12" data-cost="3" data-speed="0" checked />
+            <span><strong>Invariant tests</strong><span>source boundary와 MCP surface 고정</span></span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" class="sim-check" data-accuracy="18" data-cost="24" data-speed="-18" />
+            <span><strong>Full Fleet protocol</strong><span>모든 turn에 강한 gate 적용</span></span>
+          </label>
+        </div>
+        <aside class="score" aria-live="polite">
+          <div>
+            <div class="card-label" style="color: var(--review)"><span class="pill-dot"></span> recommended balance</div>
+            <div class="score-number" id="score-number">80</div>
+          </div>
+          <div class="bars">
+            <div class="bar-row"><span>정확도</span><div class="bar"><span id="accuracy-bar"></span></div><span id="accuracy-val">0</span></div>
+            <div class="bar-row"><span>비용 절감</span><div class="bar"><span id="cost-bar"></span></div><span id="cost-val">0</span></div>
+            <div class="bar-row"><span>루프 속도</span><div class="bar"><span id="speed-bar"></span></div><span id="speed-val">0</span></div>
+          </div>
+          <p id="sim-comment">
+            권장 조합은 evidence gate, reviewer lane, report fork, invariant tests다.
+            full protocol은 정확도는 올리지만 Plasma의 기본 연구 루프를 과하게 느리게 만들 수 있다.
+          </p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="shell section" id="evidence" aria-labelledby="evidence-title">
+      <h2 id="evidence-title">근거 노트</h2>
+      <p class="section-lead">
+        보고서의 판단을 뒷받침한 주요 근거다. 검색어 또는 범주로 좁혀볼 수 있다.
+      </p>
+      <div class="evidence-tools">
+        <input class="search" id="evidence-search" type="search" placeholder="검색: confidence, report, session, source..." aria-label="근거 검색" />
+        <div class="segmented" aria-label="근거 범주">
+          <button class="filter active" data-filter="all">전체</button>
+          <button class="filter" data-filter="fleet">Fleet</button>
+          <button class="filter" data-filter="plasma">Plasma</button>
+          <button class="filter" data-filter="both">비교</button>
+        </div>
+      </div>
+      <div class="evidence-list" id="evidence-list">
+        <article class="evidence-item" data-kind="fleet" data-text="protocol gate downward guard baseline midline redline frontline">
+          <span class="tag fleet">Fleet</span>
+          <div>
+            <strong>Protocol Gate와 Downward Guard</strong>
+            작업은 Intent Gate, Mode Gate, 단일 protocol skill을 거친다. irreversible, structural, multi-module, doctrine/prompt-policy 작업은 낮은 모드로 처리하지 못한다.
+            <code>packages/fleet-admiral/src/protocols/fleet-action.ts:15, :30, :42</code>
+          </div>
+        </article>
+        <article class="evidence-item" data-kind="fleet" data-text="mission anchor objective checkpoint drift alignment">
+          <span class="tag fleet">Fleet</span>
+          <div>
+            <strong>Mission Anchor</strong>
+            단일 Objective를 만들고 checkpoint마다 recall과 alignment check를 수행해 목표 이탈을 줄인다.
+            <code>packages/fleet-admiral/src/protocols/standing-orders/mission-anchor.ts:24</code>
+          </div>
+        </article>
+        <article class="evidence-item" data-kind="fleet" data-text="context confidence evidence checklist speculative">
+          <span class="tag fleet">Fleet</span>
+          <div>
+            <strong>Context Confidence</strong>
+            evidence list 없는 confidence는 speculative로 취급한다. redline/frontline은 complete confidence를 요구한다.
+            <code>packages/fleet-admiral/src/protocols/standing-orders/context-confidence.ts:34, :42</code>
+          </div>
+        </article>
+        <article class="evidence-item" data-kind="fleet" data-text="result integrity artifact inspection relevance completeness conflict">
+          <span class="tag fleet">Fleet</span>
+          <div>
+            <strong>Result Integrity</strong>
+            carrier 결과는 relevance, completeness, conflict로 검사하고, mutating job은 carrier narrative가 아니라 실제 artifact/diff 기준으로 닫는다.
+            <code>packages/fleet-admiral/src/protocols/standing-orders/result-integrity.ts:28, :36</code>
+          </div>
+        </article>
+        <article class="evidence-item" data-kind="fleet" data-text="carrier dispatch required blocks label request validation">
+          <span class="tag fleet">Fleet</span>
+          <div>
+            <strong>Carrier Dispatch Validation</strong>
+            label, request block, absolute cwd, no-polling, request brevity를 dispatch layer에서 강제한다.
+            <code>packages/fleet-carriers/src/dispatch/tool-spec.ts:139, :147, :224</code>
+          </div>
+        </article>
+        <article class="evidence-item" data-kind="plasma" data-text="c1 default loop same agent session source result artifact">
+          <span class="tag plasma">Plasma</span>
+          <div>
+            <strong>C1 Default Loop</strong>
+            mission, same provider session, MCP/source read tools, conversation results, report artifacts가 기본 루프다.
+            <code>/Users/allthatcode/gh/c86j224s/liquid2/plasma/docs/c1-default-loop.md:5</code>
+          </div>
+        </article>
+        <article class="evidence-item" data-kind="plasma" data-text="source result boundary reports artifacts not sources">
+          <span class="tag plasma">Plasma</span>
+          <div>
+            <strong>Source/Result Boundary</strong>
+            sources는 원자료이고 agent answers, controller outputs, reports는 results/artifacts다. report는 source로 재분류하지 않는다.
+            <code>/Users/allthatcode/gh/c86j224s/liquid2/plasma/docs/c1-default-loop.md:26</code>
+          </div>
+        </article>
+        <article class="evidence-item" data-kind="plasma" data-text="read-first mcp prompt packs source body stuffing">
+          <span class="tag plasma">Plasma</span>
+          <div>
+            <strong>Read-first MCP</strong>
+            default MCP path는 outline/list/grep/read/references 중심이며 large mission prompt pack, source body stuffing, report-only corpus를 피한다.
+            <code>/Users/allthatcode/gh/c86j224s/liquid2/plasma/docs/c1-default-loop.md:76</code>
+          </div>
+        </article>
+        <article class="evidence-item" data-kind="plasma" data-text="token diet instrumentation provider session tool output cached input">
+          <span class="tag plasma">Plasma</span>
+          <div>
+            <strong>Token Diet Baseline</strong>
+            최신 문서는 명시 prompt보다 resumed provider session의 transcript, tool output, repeated internal model calls가 큰 입력 토큰의 원인일 가능성을 강조한다.
+            <code>/Users/allthatcode/gh/c86j224s/liquid2/plasma/docs/token-diet-instrumentation.md:15, :263</code>
+          </div>
+        </article>
+        <article class="evidence-item" data-kind="plasma" data-text="report fork session isolation product follow ups">
+          <span class="tag plasma">Plasma</span>
+          <div>
+            <strong>Report Session Fork</strong>
+            후속 backlog는 report generation을 active research conversation에서 fork해 report transcript가 이후 연구 turn 비용을 키우지 않게 하자고 제안한다.
+            <code>/Users/allthatcode/gh/c86j224s/liquid2/plasma/docs/product-follow-ups.md:40</code>
+          </div>
+        </article>
+        <article class="evidence-item" data-kind="both" data-text="evidence signal confidence usefulness uncertainty">
+          <span class="tag both">Both</span>
+          <div>
+            <strong>Evidence Signal Model</strong>
+            Plasma의 evidence-signal 설계는 confidence와 report value를 분리하고, weak signal을 fact로 승격하지 말라고 한다. Fleet식 evidence gate와 잘 맞는 접점이다.
+            <code>/Users/allthatcode/gh/c86j224s/liquid2/plasma/docs/evidence-signal-model.md:48, :152</code>
+          </div>
+        </article>
+        <article class="evidence-item" data-kind="both" data-text="designed html report artifact self contained interactive">
+          <span class="tag both">Both</span>
+          <div>
+            <strong>Designed HTML은 artifact</strong>
+            Plasma의 designed HTML export도 source가 아니라 report artifact다. 따라서 self-contained 산출물은 근거를 보존하되 원자료 지위를 부여하지 않아야 한다.
+            <code>/Users/allthatcode/gh/c86j224s/liquid2/plasma/docs/c1-default-loop.md:99</code>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="closing" aria-labelledby="close-title">
+      <div class="shell closing-grid">
+        <h2 id="close-title">최종 판단</h2>
+        <p>
+          Fleet의 교훈은 “강한 프롬프트를 쓰자”가 아니다.
+          정확도는 목표 고정, 근거 문턱, 역할 경계, 산출물 검증, 장기 기억 승인으로 만들어진다.
+          Plasma는 이 전체 체계를 복제할 필요는 없다. 대신 report 전 evidence gate, 별도 review lane,
+          report session fork, prompt invariant tests를 작은 product control로 추가하는 편이 가장 현실적이다.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const stackData = [
+      {
+        kicker: "gate before action",
+        title: "위험도에 맞는 작업 모드를 고른다",
+        body: "모든 operational request는 Intent Gate와 Mode Gate를 지나며, baseline/midline/redline/frontline 중 정확히 하나의 protocol skill을 로드한다. 구조 변경, API 변경, multi-module, doctrine/prompt-policy 작업은 Downward Guard 때문에 낮은 모드로 처리할 수 없다.",
+        points: [
+          "작업 난이도와 검증 밀도를 연결한다.",
+          "되돌리기 어려운 작업은 risk review와 complete confidence를 요구한다.",
+          "simple task에는 compact path가 있어 ceremony를 줄인다."
+        ],
+        source: "packages/fleet-admiral/src/protocols/fleet-action.ts:15, :30, :42"
+      },
+      {
+        kicker: "drift control",
+        title: "목표 이탈을 checkpoint마다 막는다",
+        body: "Mission Anchor는 단일 Objective를 만들고, checkpoint에 들어갈 때마다 그 Objective를 recall하며, 나온 결과가 objective와 맞는지 짧게 판정한다.",
+        points: [
+          "에이전트가 그럴듯한 옆길로 빠지는 문제를 줄인다.",
+          "정확도와 scope control을 같은 문장에 묶는다.",
+          "drift가 보이면 다음 checkpoint로 넘어가지 않는다."
+        ],
+        source: "packages/fleet-admiral/src/protocols/standing-orders/mission-anchor.ts:24"
+      },
+      {
+        kicker: "evidence gate",
+        title: "근거 없는 자신감을 speculative로 낮춘다",
+        body: "Context Confidence는 complete, sufficient, partial, speculative을 지식 gap 해소 상태로 정의한다. evidence list 없이 confidence를 선언하면 speculative로 취급한다.",
+        points: [
+          "계획 전 blocking gap과 confirmatory gap을 분리한다.",
+          "구조/architecture/multi-carrier/doctrine/irreversible 작업은 complete confidence를 요구한다.",
+          "실패하면 좁은 reconnaissance로 되돌아간다."
+        ],
+        source: "packages/fleet-admiral/src/protocols/standing-orders/context-confidence.ts:34, :42, :50"
+      },
+      {
+        kicker: "role boundary",
+        title: "한 에이전트가 모든 역할을 독점하지 않는다",
+        body: "Nimitz는 판단, Kirov는 계획, Genesis는 구현, Sentinel은 QA/보안, Vanguard는 정찰, Chronicle은 문서처럼 역할이 나뉜다. 중요한 것은 이름보다 금지영역이다.",
+        points: [
+          "Nimitz는 read-only 판단을 담당한다.",
+          "Genesis는 Admiral의 결정과 scope를 binding contract로 취급한다.",
+          "Sentinel은 기본적으로 report-only reviewer다."
+        ],
+        source: "packages/fleet-carriers/src/personas/nimitz.ts, genesis.ts, sentinel.ts"
+      },
+      {
+        kicker: "artifact over narrative",
+        title: "결과 설명보다 실제 산출물을 본다",
+        body: "Result Integrity는 carrier 결과를 relevance, completeness, conflict로 검사한다. mutating job은 carrier의 말이 아니라 git diff와 changed files를 직접 확인해야 닫힌다.",
+        points: [
+          "작업자가 '잘했습니다'라고 말하는 것과 실제 변경은 다르다.",
+          "Build -> Review -> Fix -> Re-review 흐름을 명시한다.",
+          "추측은 Deep Dive로 보내되 최대 2회로 비용을 제한한다."
+        ],
+        source: "packages/fleet-admiral/src/protocols/standing-orders/result-integrity.ts:28, :36, :58"
+      },
+      {
+        kicker: "memory integrity",
+        title: "장기 지식도 승인 없이 오염시키지 않는다",
+        body: "Fleet Wiki는 raw source를 untrusted evidence로 보고, durable knowledge는 patch queue와 Admiral approval을 거친다. carrier는 제안할 수 있지만 승인할 수 없다.",
+        points: [
+          "raw evidence는 지시문이 아니라 근거다.",
+          "wiki entry는 contextual knowledge이며 상위 instruction보다 강하지 않다.",
+          "장기 기억 오염을 막기 위해 직접 파일 수정이 금지된다."
+        ],
+        source: ".fleet/knowledge/AGENTS.md:10, packages/fleet-wiki/src/boundaries.ts:17"
+      }
+    ];
+
+    function setStack(index) {
+      const item = stackData[index];
+      document.querySelectorAll(".stack-button").forEach((button) => {
+        const active = button.dataset.stack === String(index);
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-selected", active ? "true" : "false");
+      });
+      document.getElementById("stack-kicker").textContent = item.kicker;
+      document.getElementById("stack-heading").textContent = item.title;
+      document.getElementById("stack-body").textContent = item.body;
+      const points = document.getElementById("stack-points");
+      points.innerHTML = "";
+      item.points.forEach((point) => {
+        const li = document.createElement("li");
+        li.textContent = point;
+        points.appendChild(li);
+      });
+      document.getElementById("stack-source").textContent = item.source;
+    }
+
+    document.querySelectorAll(".stack-button").forEach((button) => {
+      button.addEventListener("click", () => setStack(Number(button.dataset.stack)));
+    });
+
+    document.querySelectorAll(".mode").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".mode").forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+        const mode = button.dataset.mode;
+        document.querySelectorAll(".node").forEach((node) => {
+          const hot = mode === "all" || node.classList.contains(mode);
+          node.classList.toggle("dim", !hot);
+          node.classList.toggle("hot", hot && mode !== "all");
+        });
+      });
+    });
+
+    const checks = Array.from(document.querySelectorAll(".sim-check"));
+    const scoreNumber = document.getElementById("score-number");
+    const bars = {
+      accuracy: [document.getElementById("accuracy-bar"), document.getElementById("accuracy-val")],
+      cost: [document.getElementById("cost-bar"), document.getElementById("cost-val")],
+      speed: [document.getElementById("speed-bar"), document.getElementById("speed-val")]
+    };
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function updateSim() {
+      let accuracy = 24;
+      let cost = 58;
+      let speed = 84;
+      checks.forEach((check) => {
+        if (!check.checked) return;
+        accuracy += Number(check.dataset.accuracy);
+        cost += Number(check.dataset.cost);
+        speed += Number(check.dataset.speed);
+      });
+      accuracy = clamp(accuracy, 0, 100);
+      cost = clamp(cost, 0, 100);
+      speed = clamp(speed, 0, 100);
+      const balance = Math.round((accuracy * 0.48) + (cost * 0.28) + (speed * 0.24));
+      scoreNumber.textContent = balance;
+      const values = { accuracy, cost, speed };
+      Object.entries(values).forEach(([key, value]) => {
+        bars[key][0].style.width = value + "%";
+        bars[key][1].textContent = value;
+      });
+      const comment = document.getElementById("sim-comment");
+      const fullProtocol = checks[4].checked;
+      comment.textContent = fullProtocol
+        ? "full protocol을 켜면 정확도는 오르지만 비용과 속도 손실이 커진다. Plasma 기본 루프에는 과하고, high-risk report/export에만 제한하는 편이 낫다."
+        : "권장 조합은 evidence gate, reviewer lane, report fork, invariant tests다. 정확도 장치를 중요한 순간에만 넣어 Plasma의 가벼운 연구 루프를 보존한다.";
+    }
+
+    checks.forEach((check) => check.addEventListener("change", updateSim));
+    updateSim();
+
+    const filterButtons = Array.from(document.querySelectorAll(".filter"));
+    const searchInput = document.getElementById("evidence-search");
+    const evidenceItems = Array.from(document.querySelectorAll(".evidence-item"));
+    let activeFilter = "all";
+
+    function updateEvidence() {
+      const q = searchInput.value.trim().toLowerCase();
+      evidenceItems.forEach((item) => {
+        const kindMatch = activeFilter === "all" || item.dataset.kind === activeFilter;
+        const text = (item.textContent + " " + item.dataset.text).toLowerCase();
+        const searchMatch = !q || text.includes(q);
+        item.classList.toggle("hidden", !(kindMatch && searchMatch));
+      });
+    }
+
+    filterButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        filterButtons.forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+        activeFilter = button.dataset.filter;
+        updateEvidence();
+      });
+    });
+
+    searchInput.addEventListener("input", updateEvidence);
+  </script>
+</body>
+</html>
