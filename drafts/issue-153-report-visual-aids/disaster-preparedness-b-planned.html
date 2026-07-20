@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>#153 visual aids · Disaster preparedness B · 일반 보고서</title>
+<style>
+:root{--bg:#f7f5ef;--paper:#fffdf8;--panel:#ffffff;--ink:#24211d;--muted:#6f675d;--line:#ded7ca;--line-strong:#c8bda9;--accent:#2f6f73;--accent-2:#8a5c25;--accent-3:#5b648f;--shadow:0 16px 40px rgba(53,45,34,.10)}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.72 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR","Apple SD Gothic Neo",sans-serif}a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.18em}.header{padding:32px clamp(18px,4vw,52px) 24px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fffcf4 0%,#f3efe5 100%)}.header h1{margin:0 0 10px;font-size:clamp(24px,3vw,38px);line-height:1.18;letter-spacing:0}.header p{max-width:980px;margin:6px 0 0;color:var(--muted)}.badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.badge{border:1px solid var(--line-strong);border-radius:999px;padding:4px 10px;background:rgba(255,255,255,.72);color:#534b42;font-size:12px}.layout{padding:24px clamp(14px,3vw,36px) 48px}.index-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:22px}.card{display:block;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;box-shadow:var(--shadow);text-decoration:none;color:inherit}.card:hover{border-color:var(--accent)}.card h2{margin:0 0 8px;font-size:18px}.card p{margin:4px 0;color:var(--muted)}.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:20px}.metric{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px}.metric strong{display:block;font-size:22px;color:var(--accent)}.toolbar{position:sticky;top:0;z-index:5;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px clamp(14px,3vw,36px);border-bottom:1px solid var(--line);background:rgba(247,245,239,.94);backdrop-filter:blur(10px)}.toolbar a,.toolbar button{appearance:none;border:1px solid var(--line-strong);background:#fffdf8;color:var(--ink);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;text-decoration:none}.toolbar button.active{background:var(--accent);color:#fff;border-color:var(--accent)}.compare{display:grid;grid-template-columns:repeat(3,minmax(360px,1fr));gap:14px;align-items:start}.arm{min-width:0;background:var(--paper);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);overflow:hidden}.arm-header{position:sticky;top:49px;z-index:3;background:#fbf7ed;border-bottom:1px solid var(--line);padding:12px 14px}.arm-header h2{margin:0;font-size:16px}.arm-header p{margin:2px 0 0;color:var(--muted);font-size:12px}.doc{padding:18px}.doc h1,.doc h2,.doc h3,.doc h4{line-height:1.34;letter-spacing:0;scroll-margin-top:90px}.doc h1{margin:10px 0 16px;font-size:24px;border-bottom:1px solid var(--line);padding-bottom:10px}.doc h2{margin:28px 0 12px;font-size:20px}.doc h3{margin:22px 0 10px;font-size:17px}.doc h4{margin:18px 0 8px;font-size:15px;color:var(--accent-2)}.doc p{margin:10px 0}.doc ul,.doc ol{padding-left:24px}.doc li{margin:4px 0}.doc blockquote{margin:14px 0;padding:10px 14px;border-left:4px solid var(--accent-3);background:rgba(91,100,143,.08);color:#423e38}.doc code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;background:rgba(47,111,115,.10);padding:1px 4px;border-radius:4px}.doc pre{overflow:auto;background:#25231f;color:#f4efe5;padding:14px;border-radius:8px}.table-wrap{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:8px;background:#fff}table{width:100%;border-collapse:collapse;min-width:520px}th,td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:8px 10px;vertical-align:top}th:last-child,td:last-child{border-right:0}tr:last-child td{border-bottom:0}th{background:#eee7d8;font-weight:700}hr{border:0;border-top:1px solid var(--line);margin:26px 0}.mermaid-static{margin:16px 0;border:1px solid var(--line);border-radius:8px;overflow:auto;background:#fff}.mermaid-static svg{display:block;min-width:560px;width:100%;height:auto}.mermaid-static details{border-top:1px solid var(--line);padding:8px 10px;color:var(--muted)}.mermaid-static pre{margin:8px 0 0;background:#f3efe5;color:var(--ink)}.footnote{color:var(--muted);font-size:13px}@media(max-width:1180px){.compare{display:flex;overflow-x:auto;padding-bottom:12px;scroll-snap-type:x proximity}.arm{flex:0 0 min(88vw,620px);scroll-snap-align:start}}@media(max-width:720px){body{font-size:14px}.toolbar{top:0}.arm-header{top:49px}.doc{padding:14px}}
+</style>
+</head>
+<body>
+<header class="header"><h1>#153 visual aids · Disaster preparedness B · 일반 보고서</h1><p>Baseline, visual_supplement, visual_plan을 한 화면에서 비교합니다. 모든 스타일과 Mermaid 대체 SVG는 파일 안에 포함되어 있습니다.</p></header>
+<nav class="toolbar"><a href="index.html">Index</a><button class="active">3-arm comparison</button><span class="badge">Disaster preparedness B</span><span class="badge">일반 보고서</span></nav><main class="layout"><div class="compare"><section class="arm"><div class="arm-header"><h2>Baseline</h2><p>1,410 words · rendered tables/diagrams preserved</p></div><article class="doc"><h1>Earthquake preparedness</h1>
+<p>지진 대비는 한 가지 목록으로 끝나는 일이 아니다. 현재 확인된 원문 자료는 지진 대비를 크게 두 축으로 설명한다. 하나는 지진이 났을 때 생존 가능성을 높이는 준비이고, 다른 하나는 지진의 피해를 줄이는 완화 조치다. 이 구분은 가정, 인프라, 공공기관의 역할을 비교할 때 유용한 출발점이 된다.<sup>[source]</sup></p>
+<p>다만 이 보고서의 근거 범위는 좁다. 확인된 자료는 비상 식량과 물, 행동 교육, 가구와 전자기기 고정, 침대나 소파 위 낙하물 회피, 지진과 연계된 쓰나미 대비를 언급한다. 반면 건축 내진 기준, 교량·전력·수도망 보강, 지자체 대응 매뉴얼, 비용편익, 법규, 지역별 위험도 같은 세부 사항은 이 자료만으로 결론 내릴 수 없다. 따라서 아래 비교는 확인된 사실을 중심으로 하되, 인프라와 공공기관에 관한 내용은 “직접 증명된 사실”과 “그 사실에서 도출되는 실무적 질문”을 구분해 읽어야 한다.</p>
+<h2>1. 지진 대비의 기본 구조: 생존 준비와 피해 완화</h2>
+<p>확인된 자료는 지진 대비를 “survival measures”와 “mitigating measures”로 나눈다. 한국어로 옮기면 전자는 생존 조치, 후자는 피해 완화 조치에 가깝다.<sup>[source]</sup></p>
+<p>생존 조치는 지진 발생 직후 개인이나 가구가 버틸 수 있게 하는 준비다. 자료가 직접 예로 드는 것은 비상용 식량과 물을 저장하는 일, 그리고 지진 중 무엇을 해야 하는지 개인에게 교육하는 일이다. 이는 지진 자체를 막는 조치가 아니라, 지진이 발생한 뒤의 혼란과 단절을 견디기 위한 준비다.</p>
+<p>피해 완화 조치는 지진이 일어났을 때 물리적 피해를 줄이는 준비다. 자료는 큰 책장이나 수납장, TV, 컴퓨터 화면처럼 넘어질 수 있는 물건을 단단히 고정하는 일을 예로 든다. 또한 침대나 소파 위에 물건을 보관하지 않으면 사람이 쉬거나 자는 공간에 물건이 떨어질 가능성을 줄일 수 있다고 설명한다.<sup>[source]</sup></p>
+<p>이 두 축을 기준으로 보면, 지진 대비는 “무엇을 비축할 것인가”만의 문제가 아니다. 같은 가정 안에서도 물과 식량은 생존 준비이고, 가구 고정과 낙하물 제거는 피해 완화다. 공공기관의 교육과 안내는 생존 준비를 돕는 방식으로 볼 수 있고, 인프라 보강은 원칙상 피해 완화와 연결된다. 다만 인프라 보강의 구체적 방법은 현재 자료가 직접 제공하지 않는다.</p>
+<h2>2. 가정 단위 대비: 가장 직접적으로 확인되는 영역</h2>
+<p>현재 자료가 가장 구체적으로 뒷받침하는 영역은 가정 또는 개인 단위의 대비다.</p>
+<p>첫째, 비상 식량과 물을 저장해야 한다. 자료는 이를 흔한 생존 조치의 예로 든다.<sup>[source]</sup> 여기서 중요한 점은 “저장”이 단순한 구매 행위가 아니라는 것이다. 실제 대비로 작동하려면 가족 구성원이 어디에 보관되어 있는지 알고 있어야 하고, 지진 후 정전·단수·이동 제한 같은 상황에서도 접근할 수 있어야 한다. 이 세부 운영 방식은 원문에 직접 쓰여 있지는 않지만, “비상 상황을 위한 저장”이라는 사실에서 자연스럽게 따라오는 실무적 해석이다.</p>
+<p>둘째, 지진 중 행동 요령을 교육해야 한다. 자료는 개인에게 지진 중 무엇을 해야 하는지 교육하는 일을 생존 조치로 언급한다.<sup>[source]</sup> 교육은 물품과 달리 눈에 보이지 않지만, 지진 발생 순간에는 즉시성을 가진다. 비상용품은 지진이 지나간 뒤 필요해지는 경우가 많지만, 행동 교육은 흔들림이 시작되는 순간부터 효과가 갈린다. 이 때문에 가정 대비에서 물자와 교육은 서로 대체재가 아니라 보완재로 보는 편이 타당하다.</p>
+<p>셋째, 큰 가구와 전자기기를 고정해야 한다. 자료는 책장, 큰 수납장, TV, 컴퓨터 화면처럼 넘어질 수 있는 물건을 단단히 고정하는 것을 피해 완화 조치로 제시한다.<sup>[source]</sup> 이 대목은 지진 피해가 건물 붕괴만으로 생기는 것이 아니라 실내의 물건 이동과 낙하에서도 발생할 수 있음을 보여준다. 특히 책장이나 화면은 평소에는 위험물처럼 보이지 않지만, 흔들림 속에서는 넘어지는 물체가 된다.</p>
+<p>넷째, 침대나 소파 위에 물건을 보관하지 않는 것이 중요하다. 자료는 침대나 소파 위에 물건을 두지 않으면 사람이 있는 곳으로 물건이 떨어질 가능성을 줄인다고 설명한다.<sup>[source]</sup> 이는 비용이 크지 않은 조치다. 별도 장비나 공사가 필요한 것이 아니라, 위험한 위치에 물건을 두지 않는 배치의 문제이기 때문이다.</p>
+<p>가정 대비의 장점은 상당수가 즉시 실행 가능하다는 점이다. 비상 물자 확보, 행동 요령 공유, 가구 고정, 낙하물 제거는 모두 개인이나 가족의 통제 범위 안에 있다. 반대로 한계도 분명하다. 이 조치들은 가정 내부의 생존성과 안전을 높일 수 있지만, 건물 자체의 내진 성능이나 도시 인프라의 복구 능력을 대신하지는 못한다.</p>
+<h2>3. 인프라 대비: 원칙은 연결되지만 세부 근거는 부족하다</h2>
+<p>미션의 비교 대상에는 인프라도 포함되어 있다. 그러나 현재 확인된 자료는 건축물, 도로, 교량, 전력망, 수도망, 통신망 같은 인프라의 구체적 대비책을 설명하지 않는다. 따라서 “어떤 인프라 보강이 가장 효과적인가” 또는 “어떤 기준을 적용해야 하는가” 같은 질문에는 이 자료만으로 답할 수 없다.</p>
+<p>다만 자료가 제시한 “피해를 최소화하려는 완화 조치”라는 개념은 인프라 대비를 생각하는 틀을 제공한다.<sup>[source]</sup> 가정 안에서 책장을 고정하는 이유가 넘어짐으로 인한 피해를 줄이기 위한 것이라면, 인프라 영역에서도 핵심 질문은 비슷하게 정리할 수 있다. 지진이 발생했을 때 무엇이 넘어지고, 끊기고, 막히고, 기능을 잃을 수 있는가. 그리고 그 피해를 줄이려면 사전에 무엇을 고정·보강·분산·대체해야 하는가.</p>
+<p>여기서부터는 현재 자료에 직접 적힌 사실이 아니라 실무적 해석이다. 인프라 대비를 제대로 평가하려면 최소한 다음 자료가 추가로 필요하다.</p>
+<div class="table-wrap"><table><thead><tr><th>비교 질문</th><th>현재 자료로 가능한 판단</th><th>추가로 필요한 근거</th></tr></thead><tbody>
+<tr><td>건물 내진 설계가 얼마나 중요한가</td><td>직접 판단 불가</td><td>건축 기준, 내진 성능 자료, 피해 사례</td></tr>
+<tr><td>교량·도로·철도 보강 우선순위는 무엇인가</td><td>직접 판단 불가</td><td>지역 위험도, 이용량, 대체 경로, 구조 안전성 평가</td></tr>
+<tr><td>전력·수도·통신망은 어떻게 복원력을 높이는가</td><td>직접 판단 불가</td><td>망 설계, 이중화, 복구 시간, 기관별 계획</td></tr>
+<tr><td>실내 설비 고정은 인프라 시설에도 적용 가능한가</td><td>개념적 연결은 가능</td><td>병원·학교·공공시설 설비 고정 기준</td></tr>
+</tbody></table></div>
+<p>결론적으로, 인프라 대비는 지진 대비의 중요한 축일 가능성이 크지만, 이 보고서의 원자료만으로는 세부 처방을 공적 결론처럼 제시할 수 없다. 이 한계를 밝히는 것이 균형 잡힌 해석이다.</p>
+<h2>4. 공공기관 대비: 교육과 연계 재난 대비의 역할</h2>
+<p>공공기관에 대해서도 현재 자료는 기관별 정책이나 대응 매뉴얼을 직접 설명하지 않는다. 그러나 두 가지 지점은 공공기관의 역할과 연결해 볼 수 있다.</p>
+<p>첫째, 자료는 지진 중 무엇을 해야 하는지 개인을 교육하는 것을 생존 조치로 든다.<sup>[source]</sup> 교육은 가정 안에서도 가능하지만, 넓은 사회적 범위에서는 학교, 지방정부, 재난관리기관, 직장, 공공 캠페인이 맡을 수 있는 영역이다. 이 문장은 공공기관이 반드시 어떤 방식으로 교육해야 한다고 말하지는 않는다. 그러나 “행동 교육이 생존 조치에 포함된다”는 점은 공공 안내와 훈련의 필요성을 뒷받침하는 기본 근거가 된다.</p>
+<p>둘째, 자료는 관련 쓰나미에 대한 계획, 즉 쓰나미 대비도 지진 대비의 일부가 될 수 있다고 설명한다.<sup>[source]</sup> 이 지점은 특히 해안 지역에서 중요하다. 지진 대비가 흔들림 자체에만 머물지 않고, 지진 이후 이어질 수 있는 다른 위험까지 포함해야 한다는 뜻이기 때문이다. 다만 현재 자료는 경보 체계, 대피 경로, 해안 지역별 위험도, 대피소 운영 같은 세부 정책을 제시하지 않는다.</p>
+<p>공공기관 대비를 균형 있게 말하려면, 확인된 근거와 해석의 경계를 분명히 해야 한다. 확인된 근거는 “교육”과 “쓰나미 대비가 지진 대비에 포함될 수 있다”는 점이다. 그로부터 도출되는 실무적 질문은 다음과 같다. 주민이 지진 중 행동 요령을 알고 있는가. 학교와 공공시설은 정기적으로 안내하고 훈련하는가. 해안 지역은 지진 이후 쓰나미 가능성을 어떻게 전달하고 대피를 유도하는가. 그러나 이 질문들에 대한 답은 별도 자료가 있어야 한다.</p>
+<h2>5. 세 영역을 함께 보면: 통제 범위와 근거 강도가 다르다</h2>
+<p>가정, 인프라, 공공기관의 지진 대비는 서로 경쟁하는 선택지가 아니다. 각각의 통제 범위가 다르다.</p>
+<div class="table-wrap"><table><thead><tr><th>영역</th><th>현재 자료가 직접 뒷받침하는 내용</th><th>이 보고서에서 가능한 결론</th></tr></thead><tbody>
+<tr><td>가정</td><td>식량·물 저장, 행동 교육, 큰 가구와 화면 고정, 침대·소파 위 낙하물 회피</td><td>직접적이고 실행 가능한 대비 항목을 제시할 수 있다.</td></tr>
+<tr><td>인프라</td><td>피해 최소화라는 완화 조치의 일반 개념</td><td>세부 보강책은 추가 근거 없이는 결론 내릴 수 없다.</td></tr>
+<tr><td>공공기관</td><td>개인 교육, 관련 쓰나미 대비가 지진 대비에 포함될 수 있다는 점</td><td>교육·안내·연계 재난 대비의 필요성을 논리적으로 연결할 수 있으나, 기관별 정책 평가는 보류해야 한다.</td></tr>
+</tbody></table></div>
+<p>이 비교에서 가장 확실한 결론은 가정 단위의 기본 대비가 지진 준비의 출발점이라는 점이다. 물과 식량을 준비하고, 지진 중 행동을 익히고, 넘어질 수 있는 물건을 고정하고, 사람이 머무는 곳 위에 낙하 위험물을 두지 않는 조치는 현재 원자료가 직접 언급한다.<sup>[source]</sup></p>
+<p>반면 인프라와 공공기관에 관한 강한 결론은 유보해야 한다. 지진 대비라는 큰 틀에서 당연히 중요해 보이는 영역이지만, 중요해 보인다는 점과 특정 정책이 효과적이라고 증명하는 것은 다르다. 균형형 보고서라면 이 차이를 흐리지 않아야 한다.</p>
+<h2>6. 추가 확인이 필요한 쟁점</h2>
+<p>현재 자료만으로는 다음 쟁점들을 판단할 수 없다.</p>
+<ul>
+<li>지역별로 어느 대비책이 우선되어야 하는가</li>
+<li>가구 고정, 비상 물자, 행동 교육이 실제 피해나 사망률을 얼마나 줄이는가</li>
+<li>내진 설계와 기존 건축물 보강의 비용편익은 어떠한가</li>
+<li>공공기관 훈련과 안내가 실제 행동 변화를 만드는가</li>
+<li>해안 지역의 쓰나미 대비는 지진 대비 계획 안에서 어떻게 통합되어야 하는가</li>
+<li>학교, 병원, 고층건물, 노후 주택, 산업시설처럼 공간 유형별로 대비책이 어떻게 달라지는가</li>
+</ul>
+<p>이 질문들은 보고서의 결론이 아니라 다음 조사 과제다. 현재 확인된 자료는 지진 대비의 기본 원칙을 설명하는 데는 유용하지만, 정책 우선순위나 성능 평가를 확정할 만큼 넓지는 않다.</p>
+<h2>결론</h2>
+<p>지진 대비의 핵심은 생존 준비와 피해 완화를 함께 하는 것이다. 확인된 자료에 따르면, 비상 식량과 물을 준비하고, 지진 중 행동 요령을 교육하고, 큰 가구와 전자기기를 고정하고, 침대나 소파 위 낙하물을 피하는 일은 기본적인 지진 대비에 포함된다. 또한 지진과 관련된 쓰나미 대비도 지진 대비의 일부가 될 수 있다.<sup>[source]</sup></p>
+<p>가정 단위에서는 이 근거가 비교적 직접적이다. 인프라와 공공기관 영역에서는 같은 원칙을 적용해 질문을 세울 수 있지만, 구체적 처방은 추가 자료가 필요하다. 따라서 현재 근거로 가장 책임 있게 말할 수 있는 결론은 이렇다. 개인과 가정은 지금 당장 할 수 있는 기본 조치를 점검해야 하고, 인프라와 공공기관에 대해서는 별도의 기준·사례·성과 자료를 확인한 뒤 판단해야 한다.</p>
+<p class="footnote"><sup>[source]</sup> 원자료: “Earthquake preparedness,” Wikipedia, https://en.wikipedia.org/wiki/Earthquake_preparedness, Creative Commons Attribution-ShareAlike 4.0 International, retrieved 2026-07-13T14:29:41Z. 확인한 live local_path locator: <code>disaster-preparedness-b.txt</code>; observation_event_id: <code>evt_20260720092316_2e05c571</code>; observed_at: 2026-07-20T09:23:16.645108Z; sha256: <code>4bbfec26760d98fb06ba993692c406058643175be20f366fd0280442b93390f4</code>; git metadata: 제공되지 않음.</p></article></section>
+<section class="arm"><div class="arm-header"><h2>Visual Supplement</h2><p>983 words · rendered tables/diagrams preserved</p></div><article class="doc"><h1>Earthquake preparedness</h1>
+<p>지진 대비는 크게 두 갈래로 나눌 수 있다. 하나는 지진이 발생했을 때 생존 가능성을 높이는 준비이고, 다른 하나는 지진의 피해 자체를 줄이려는 완화 조치다. 현재 확인된 원천 자료인 “Earthquake preparedness”는 이 구분을 분명히 제시하며, 비상 식량과 물 비축, 지진 시 행동요령 교육, 큰 가구와 전자기기 고정, 침대나 소파 위 낙하물 회피, 관련 쓰나미 대비를 주요 예로 든다.<sup>[source]</sup></p>
+<p>이 보고서는 그 근거가 직접 뒷받침하는 범위 안에서 지진 대비를 설명한다. 특히 가정 단위 준비와 실내 위험 완화는 비교적 분명하게 다룰 수 있지만, 인프라와 공공기관 대비는 현재 자료만으로 세부 평가를 내리기 어렵다. 따라서 결론은 “무엇이 확인되었는가”와 “무엇은 추가 근거가 필요한가”를 구분해 제시한다.</p>
+<h2>1. 지진 대비의 기본 구조</h2>
+<p>확인된 자료는 지진 대비를 생존 조치와 완화 조치로 나눈다. 생존 조치는 지진이 이미 발생한 상황에서 사람이 버티고 대응하는 데 초점을 둔다. 예를 들면 비상용 식량과 물을 저장하고, 개인이 지진 중 무엇을 해야 하는지 배우는 일이 여기에 들어간다.<sup>[source]</sup></p>
+<p>완화 조치는 지진이 가져올 피해를 사전에 줄이는 데 초점을 둔다. 자료가 든 예시는 책장, 대형 캐비닛, TV, 컴퓨터 화면처럼 넘어질 수 있는 물건을 단단히 고정하는 것이다. 침대나 소파 위에 물건을 보관하지 않는 것도 낙하물로 인한 부상 가능성을 낮추는 조치로 제시된다.<sup>[source]</sup></p>
+<p>이 구분은 실용적이다. 물과 식량은 지진 후의 시간을 버티게 해 주고, 행동요령 교육은 순간적인 판단을 돕는다. 반면 가구 고정과 낙하물 관리 같은 완화 조치는 지진이 시작되는 바로 그 순간의 위험을 줄인다. 즉, 지진 대비는 “사후 생존”만이 아니라 “사전 피해 감소”까지 포함해야 한다.</p>
+<h2>2. 가정 단위 생존 준비: 물, 식량, 행동요령</h2>
+<p>현재 자료에서 가장 직접적으로 확인되는 가정 대비는 비상 식량과 물을 저장하는 일이다. 자료는 구체적인 양, 보관 기간, 품목 목록까지 제시하지는 않는다. 따라서 이 보고서에서 “며칠 치를 준비해야 한다”거나 “어떤 브랜드나 장비가 필수다”라고 단정할 근거는 없다. 확인 가능한 핵심은 지진 대비의 기본 생존 조치에 식량과 물의 비축이 포함된다는 점이다.<sup>[source]</sup></p>
+<p>또 하나의 핵심은 교육이다. 자료는 개인이 지진 중 무엇을 해야 하는지 배우는 것을 일반적인 생존 조치로 설명한다.<sup>[source]</sup> 여기서 중요한 점은 교육의 주체가 명시되어 있지 않다는 것이다. 학교, 직장, 지방정부, 가족 단위 훈련 등 여러 방식이 가능하겠지만, 현재 자료만으로 어느 방식이 더 효과적이라고 비교할 수는 없다.</p>
+<p>그래도 실천적 의미는 분명하다. 식량과 물은 물리적 준비이고, 행동요령은 판단의 준비다. 둘 중 하나만으로는 충분하지 않다. 물자가 있어도 지진 순간에 위험한 위치로 이동하면 다칠 수 있고, 행동요령을 알아도 지진 후 필요한 기본 물자가 없으면 버티기 어렵다. 이는 자료에 명시된 사실을 바탕으로 한 해석이다.</p>
+<h2>3. 생활공간 피해 완화: 넘어짐과 낙하를 줄이는 일</h2>
+<p>자료가 구체적으로 제시하는 완화 조치는 실내의 큰 물건을 고정하는 것이다. 책장과 대형 캐비닛, TV와 컴퓨터 화면은 지진 때 넘어질 수 있는 물건으로 언급된다.<sup>[source]</sup> 이 목록은 건물 전체의 내진 성능을 말하는 것이 아니라, 실내에서 사람이 직접 줄일 수 있는 비구조적 위험을 가리킨다.</p>
+<p>침대나 소파 위에 물건을 보관하지 않는 것도 같은 맥락이다. 사람이 오래 머무르거나 쉬는 공간 위에 물건을 올려두면, 지진 때 떨어진 물건이 곧바로 사람을 다치게 할 수 있다. 자료는 이런 보관 습관을 피하는 것이 낙하물로 인한 위험을 줄인다고 설명한다.<sup>[source]</sup></p>
+<p>이 대목은 가정 대비와 인프라 대비 사이의 경계를 보여준다. 책장 고정은 국가 기반시설 보강과 같은 대규모 인프라 대책은 아니지만, “구조물이 아닌 물체가 사람에게 피해를 주는 위험”을 줄인다는 점에서 생활공간의 물리적 안전 대책이다. 현재 자료로 확실히 말할 수 있는 것은 여기까지다. 건물의 내진 설계, 교량·도로·전력망의 보강, 수도·통신망 복구계획 같은 인프라 대책은 이 자료가 직접 설명하지 않는다.</p>
+<h2>4. 쓰나미와 연쇄재난 대비</h2>
+<p>지진 대비는 지진 그 자체만으로 끝나지 않을 수 있다. 자료는 관련 쓰나미에 대한 계획, 즉 쓰나미 대비도 지진 대비의 일부가 될 수 있다고 설명한다.<sup>[source]</sup> 이 문장은 특히 해안 지역이나 쓰나미 위험이 있는 지역에서 중요하다.</p>
+<p>다만 이 근거를 모든 지역에 동일하게 적용해서는 안 된다. 내륙 지역과 해안 지역의 위험은 다르고, 쓰나미 대비의 필요성도 지역 조건에 따라 달라진다. 현재 자료는 쓰나미 대비가 “포함될 수 있다”고 말할 뿐, 어느 지역에서 어떤 기준으로 필요한지까지 설명하지 않는다. 그러므로 쓰나미 대비는 보편적 결론이 아니라 조건부 확장 항목으로 다루는 것이 타당하다.</p>
+<h2>5. 가정, 인프라, 공공기관 대비 비교</h2>
+<p>아래 표는 현재 확인된 자료가 각 대비 영역을 어느 정도 뒷받침하는지 정리한 것이다. 이 표의 목적은 대책의 중요도를 평가하는 것이 아니라, 근거의 강도와 공백을 구분하는 데 있다.</p>
+<div class="table-wrap"><table><thead><tr><th>대비 영역</th><th>현재 자료가 직접 뒷받침하는 내용</th><th>근거 수준</th><th>보고서에서의 처리</th></tr></thead><tbody>
+<tr><td>가정 생존 준비</td><td>비상 식량과 물 저장, 지진 중 행동요령 교육</td><td>높음</td><td>핵심 대비책으로 설명</td></tr>
+<tr><td>생활공간 위험 완화</td><td>책장·대형 캐비닛·TV·컴퓨터 화면 고정, 침대·소파 위 보관 회피</td><td>높음</td><td>피해 완화 조치로 설명</td></tr>
+<tr><td>쓰나미 대비</td><td>관련 쓰나미 계획이 지진 대비의 일부가 될 수 있음</td><td>중간</td><td>지역 조건이 필요한 항목으로 설명</td></tr>
+<tr><td>인프라 대비</td><td>대규모 기반시설 보강이나 복구체계는 직접 설명되지 않음</td><td>낮음</td><td>근거 공백으로 명시</td></tr>
+<tr><td>공공기관 대비</td><td>교육의 필요성은 언급되지만 공공기관의 역할은 직접 설명되지 않음</td><td>낮음</td><td>추가 검증 필요 항목으로 분리</td></tr>
+</tbody></table></div>
+<p>표에서 보듯, 현재 근거는 가정과 생활공간 수준에 집중되어 있다. 인프라와 공공기관 대비가 덜 중요하다는 뜻은 아니다. 오히려 미션의 비교 축으로는 중요하지만, 현재 승인 자료만으로는 내진 기준, 공공 경보, 대피소 운영, 훈련 주기, 예산, 복구 시간, 피해 감소 효과를 평가할 수 없다. 균형 있게 말하려면, 이 항목들은 “다음 조사에서 반드시 보강해야 할 영역”으로 남겨야 한다.</p>
+<h2>결론</h2>
+<p>현재 확인된 자료에 따르면 지진 대비의 핵심은 두 가지다. 첫째, 지진 발생 후 생존을 돕는 준비가 필요하다. 여기에는 비상 식량과 물을 저장하고, 지진 중 어떻게 행동해야 하는지 배우는 일이 포함된다. 둘째, 지진이 가져올 물리적 피해를 줄이는 완화 조치가 필요하다. 큰 가구와 전자기기를 고정하고, 침대나 소파 위의 낙하 위험을 줄이는 일이 그 예다.<sup>[source]</sup></p>
+<p>쓰나미 대비는 지진 대비의 일부가 될 수 있지만, 모든 지역에 동일하게 적용되는 보편 항목으로 단정하기는 어렵다. 지역의 해안 접근성, 쓰나미 위험, 대피 체계 같은 추가 정보가 필요하다.</p>
+<p>가정, 인프라, 공공기관을 비교하라는 질문에 대해 현재 자료가 허용하는 가장 엄밀한 답은 다음과 같다. 가정과 생활공간 대비는 직접 근거가 있다. 인프라와 공공기관 대비는 비교의 중요한 축이지만, 현재 승인된 원천만으로는 세부 결론을 내릴 수 없다. 따라서 이 보고서의 실질적 결론은 “가정 안에서 당장 줄일 수 있는 위험은 명확히 존재하며, 더 넓은 사회적 대비를 평가하려면 별도의 근거가 필요하다”는 것이다.</p>
+<h2>출처와 관찰 메타데이터</h2>
+<p class="footnote"><sup>[source]</sup> “Earthquake preparedness,” source URL: https://en.wikipedia.org/wiki/Earthquake_preparedness. 로컬 live_reference 원천 <code>disaster-preparedness-b.txt</code>에서 확인. Retrieved: 2026-07-13T14:29:41Z. License: Creative Commons Attribution-ShareAlike 4.0 International. 관찰 이벤트: <code>evt_20260720083430_5c21171e</code>; observed_at: <code>2026-07-20T08:34:30.408674Z</code>; sha256: <code>4bbfec26760d98fb06ba993692c406058643175be20f366fd0280442b93390f4</code>. Git 메타데이터는 제공되지 않았다.</p></article></section>
+<section class="arm"><div class="arm-header"><h2>Visual Plan</h2><p>1,148 words · rendered tables/diagrams preserved</p></div><article class="doc"><h1>Earthquake preparedness: 지진 대비를 생존 준비와 피해 완화로 나누어 보기</h1>
+<p>지진 대비는 “무엇을 챙길 것인가”라는 물품 목록만으로 끝나지 않는다. 확인된 자료가 제시하는 기본 틀은 두 갈래다. 하나는 지진이 발생했을 때 생존 가능성을 높이는 준비이고, 다른 하나는 지진의 영향을 줄이기 위한 완화 조치다.<sup>[source]</sup> 이 구분은 가정, 인프라, 공공기관의 역할을 비교할 때도 유용하다. 다만 현재 승인된 원문은 짧은 개요 자료이므로, 가정 내 조치에 대해서는 비교적 구체적으로 말할 수 있지만 인프라와 공공기관의 세부 정책까지 단정하기에는 근거가 부족하다.</p>
+<h2>핵심 결론</h2>
+<p>현재 자료로 가장 분명하게 확인되는 대비 영역은 가정이다. 비상식량과 물을 저장하는 일, 지진 중 무엇을 해야 하는지 배우는 일, 큰 가구와 전자기기 화면을 단단히 고정하는 일, 침대나 소파 위에 물건을 보관하지 않는 일이 직접 언급된다.<sup>[source]</sup></p>
+<p>인프라 대비는 “피해를 줄이는 완화 조치”라는 큰 범주와 연결해 이해할 수 있지만, 원문은 건축 기준, 내진 보강, 교량·전력·수도·통신망 복구 같은 세부 인프라 대책을 제시하지 않는다. 따라서 이 보고서에서는 인프라를 별도의 확정 권고 목록으로 다루기보다, 추가 자료가 필요한 영역으로 구분한다.</p>
+<p>공공기관의 역할도 마찬가지다. 원문은 개인에게 지진 중 행동을 교육하는 일을 생존 조치의 하나로 제시하지만, 어떤 기관이 어떤 프로그램으로 교육해야 하는지는 설명하지 않는다.<sup>[source]</sup> 공공기관은 교육과 안내의 실행 주체가 될 수 있다는 실무적 해석은 가능하지만, 특정 제도나 법적 의무로 확장하려면 별도의 출처가 필요하다.</p>
+<h2>1. 지진 대비의 기본 틀</h2>
+<p>확인된 원문은 지진 대비를 크게 두 종류로 설명한다. 첫째는 생존 조치다. 이는 지진 발생 시 생존 가능성을 높이기 위한 준비를 뜻한다. 둘째는 완화 조치다. 이는 지진의 영향을 최소화하려는 조치다.<sup>[source]</sup></p>
+<p>이 구분은 간단하지만 중요하다. 비상식량과 물을 준비하는 일은 지진이 일어난 뒤 버티기 위한 조치에 가깝다. 반면 책장, 큰 캐비닛, TV, 컴퓨터 화면을 고정하는 일은 지진 중 물건이 넘어지거나 떨어져 피해를 키우는 상황을 줄이려는 조치다. 두 종류의 대비는 서로 대체재가 아니라 보완재다. 생존 준비만 있고 위험 물체가 그대로라면 부상 가능성이 남고, 물건을 고정해도 물과 식량이 없다면 이후의 불편과 위험을 줄이기 어렵다.</p>
+<h2>2. 가정에서 바로 확인되는 대비 조치</h2>
+<p>아래 표는 원문에서 직접 확인되는 가정 중심 조치를 생존 조치와 완화 조치로 나눈 것이다. 표의 목적은 “무엇을 해야 하는가”보다 “그 조치가 어떤 위험을 다루는가”를 분명히 보여주는 데 있다.</p>
+<div class="table-wrap"><table><thead><tr><th>분류</th><th>확인된 조치</th><th>다루는 위험</th><th>근거 수준</th></tr></thead><tbody>
+<tr><td>생존 조치</td><td>비상용 식량과 물 저장</td><td>지진 뒤 즉시 필요한 기본 자원 부족</td><td>원문에 직접 언급</td></tr>
+<tr><td>생존 조치</td><td>지진 중 무엇을 해야 하는지 개인에게 교육</td><td>지진 발생 순간의 부적절한 행동</td><td>원문에 직접 언급</td></tr>
+<tr><td>완화 조치</td><td>책장과 큰 캐비닛 같은 대형 가구 고정</td><td>가구 전도와 낙하에 따른 부상</td><td>원문에 직접 언급</td></tr>
+<tr><td>완화 조치</td><td>TV와 컴퓨터 화면 고정</td><td>전자기기 낙하 또는 전도</td><td>원문에 직접 언급</td></tr>
+<tr><td>완화 조치</td><td>침대나 소파 위에 물건을 보관하지 않기</td><td>사람이 머무는 위치 위로 물건이 떨어지는 위험</td><td>원문에 직접 언급</td></tr>
+</tbody></table></div>
+<p>이 표에서 가장 실용적인 시사점은 대비의 출발점이 거창한 장비가 아니라 집 안의 위험 배치와 기본 자원이라는 점이다. 원문은 대형 가구, 책장, 큰 캐비닛, TV, 컴퓨터 화면처럼 넘어지거나 떨어질 수 있는 물건을 구체적으로 언급한다.<sup>[source]</sup> 이는 지진 대비가 재난 직후의 생존만이 아니라, 지진이 흔들리는 바로 그 순간의 부상 가능성을 줄이는 작업이기도 하다는 뜻이다.</p>
+<h2>3. 인프라 대비: 말할 수 있는 것과 말할 수 없는 것</h2>
+<p>미션의 비교 대상에는 인프라가 포함되지만, 현재 승인된 원문은 인프라 대책을 직접 설명하지 않는다. 따라서 “내진 설계가 필요하다”, “교량을 보강해야 한다”, “전력망 복구 계획을 세워야 한다” 같은 구체적 문장을 이 자료만으로 결론처럼 제시하는 것은 근거 범위를 넘어선다.</p>
+<p>다만 원문이 제시한 완화 조치의 원리는 인프라 논의의 입구가 될 수 있다. 완화 조치는 지진의 영향을 최소화하려는 준비다.<sup>[source]</sup> 가정에서는 이것이 가구와 화면 고정으로 나타난다. 인프라 영역에서는 같은 질문, 즉 “흔들림이 발생했을 때 무엇이 넘어지고 끊기고 기능을 잃을 수 있는가”를 묻는 방향으로 확장될 수 있다. 그러나 여기서부터는 해석의 영역이다. 실제 정책 보고서라면 건축법, 내진 성능 기준, 병원·학교·교량·수도·통신망의 취약성 평가 같은 별도 자료가 필요하다.</p>
+<h2>4. 공공기관 대비와 주민 교육의 역할</h2>
+<p>공공기관과 관련해 현재 자료가 직접 뒷받침하는 핵심 단어는 교육이다. 원문은 사람들이 지진 중 무엇을 해야 하는지 배우는 것을 일반적인 생존 조치에 포함한다.<sup>[source]</sup> 이 대목은 공공기관의 역할을 생각하게 한다. 개인이 행동 요령을 알고 있어야 한다면, 그 지식은 학교, 직장, 지역사회, 지방정부 안내, 재난 훈련 같은 통로를 통해 전달될 수 있기 때문이다.</p>
+<p>하지만 이 보고서에서는 그 가능성을 확정된 사실처럼 쓰지 않는다. 승인된 원문은 특정 공공기관, 교육 프로그램, 훈련 방식, 예산, 법적 책임을 제시하지 않는다. 따라서 공공기관에 대해 말할 수 있는 균형 잡힌 결론은 다음과 같다. 교육은 지진 대비의 구성 요소로 확인된다. 공공기관은 그 교육을 넓게 배포할 수 있는 중요한 후보 주체다. 그러나 어떤 기관이 무엇을 해야 하는지는 추가 출처로 검증해야 한다.</p>
+<h2>5. 쓰나미 대비는 언제 함께 고려되는가</h2>
+<p>원문은 관련 쓰나미에 대한 계획도 지진 대비의 일부가 될 수 있다고 설명한다.<sup>[source]</sup> 이 문장은 중요하지만, 넓게 해석하면 안 된다. 자료는 쓰나미 대비가 “항상” 지진 대비에 포함된다고 말하지 않고, 구체적인 위험 지역, 경보 체계, 대피 경로, 해안 조건도 설명하지 않는다.</p>
+<p>따라서 쓰나미 대비는 본 보고서의 주 결론이 아니라 조건부 확장 항목으로 두는 것이 맞다. 지진 대비를 설계할 때 관련 쓰나미 위험이 있는지 따로 판단해야 하며, 그 판단에는 이 원문만으로는 부족한 지역별 위험 자료가 필요하다.</p>
+<h2>6. 가정·인프라·공공기관 비교</h2>
+<p>다음 표는 현재 자료로 확인되는 사실과, 그 사실에서 조심스럽게 도출할 수 있는 해석, 그리고 추가 근거가 필요한 영역을 구분한 것이다.</p>
+<div class="table-wrap"><table><thead><tr><th>영역</th><th>현재 자료로 확인되는 내용</th><th>조심스러운 해석</th><th>추가 근거가 필요한 내용</th></tr></thead><tbody>
+<tr><td>가정</td><td>식량·물 저장, 행동 교육, 가구·전자기기 고정, 침대·소파 위 낙하물 회피</td><td>지진 대비의 가장 구체적인 실행 단위로 다룰 수 있음</td><td>물·식량의 적정량, 고정 장치의 규격, 방별 체크리스트</td></tr>
+<tr><td>인프라</td><td>지진 피해를 줄이는 완화 조치라는 개념</td><td>가정 내 고정 조치와 같은 원리가 구조물·시설에도 적용될 수 있음</td><td>내진 기준, 보강 우선순위, 전력·수도·통신 복구 계획</td></tr>
+<tr><td>공공기관</td><td>개인에게 지진 중 행동을 교육하는 것이 생존 조치에 포함됨</td><td>교육과 안내를 조직적으로 배포하는 역할을 맡을 수 있음</td><td>기관별 책임, 훈련 프로그램, 경보 체계, 법적 의무</td></tr>
+<tr><td>쓰나미 대비</td><td>관련 쓰나미 계획이 지진 대비의 일부가 될 수 있음</td><td>지진 대비 계획에 조건부로 포함할 항목</td><td>지역별 쓰나미 위험, 대피 경로, 경보 기준</td></tr>
+</tbody></table></div>
+<p>이 비교의 핵심은 근거의 밀도가 영역마다 다르다는 점이다. 가정 조치는 원문에서 구체적이다. 인프라와 공공기관은 미션상 중요한 비교 대상이지만, 현재 승인 자료 안에서는 개념적 연결이나 실무적 해석에 머문다. 균형 잡힌 보고서라면 이 차이를 숨기지 않아야 한다.</p>
+<h2>남은 불확실성</h2>
+<p>현재 자료에는 서로 충돌하는 설명이 없다. 그러나 그 이유는 논쟁이 해결되었기 때문이라기보다, 승인된 원문이 하나이고 내용도 짧기 때문이다. 그래서 이 보고서의 결론은 좁고 확실한 쪽에 머문다. 지진 대비는 생존 조치와 완화 조치로 나눌 수 있고, 가정에서는 물·식량 비축, 행동 교육, 위험 물체 고정과 배치 조정이 핵심으로 확인된다. 쓰나미 대비는 관련 위험이 있을 때 함께 고려될 수 있다.<sup>[source]</sup></p>
+<p>반대로 인프라 투자, 건축 기준, 공공기관의 책임 배분, 훈련 효과의 벤치마크, 보험이나 시장 신호, 최근 재난 사례, 논쟁적 정책 선택은 이 자료만으로 판단할 수 없다. 그런 주제를 결론에 포함하려면 정부 매뉴얼, 공학 기준, 지역 위험 지도, 사후 평가 보고서 같은 추가 원자료가 필요하다.</p>
+<p class="footnote"><sup>[source]</sup> 원자료는 “Earthquake preparedness”, https://en.wikipedia.org/wiki/Earthquake_preparedness 에서 가져온 <code>disaster-preparedness-b.txt</code> live local_path 관찰본이다. 원문에는 Creative Commons Attribution-ShareAlike 4.0 International 라이선스와 조회 시각 <code>2026-07-13T14:29:41Z</code>가 기재되어 있다. 이 보고서 작성 전 Plasma read로 확인한 관찰 메타데이터: human locator <code>disaster-preparedness-b.txt</code>, observation_event_id <code>evt_20260720090700_fdc8215f</code>, observed_at <code>2026-07-20T09:07:00.601897Z</code>, sha256 <code>4bbfec26760d98fb06ba993692c406058643175be20f366fd0280442b93390f4</code>, mtime <code>2026-07-13T15:28:48.367868998Z</code>. 읽기 메타데이터에 git 정보는 제공되지 않았다.</p></article></section></div></main>
+</body>
+</html>

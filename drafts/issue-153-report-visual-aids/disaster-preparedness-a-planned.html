@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>#153 visual aids · Disaster preparedness A · 일반 보고서</title>
+<style>
+:root{--bg:#f7f5ef;--paper:#fffdf8;--panel:#ffffff;--ink:#24211d;--muted:#6f675d;--line:#ded7ca;--line-strong:#c8bda9;--accent:#2f6f73;--accent-2:#8a5c25;--accent-3:#5b648f;--shadow:0 16px 40px rgba(53,45,34,.10)}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.72 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR","Apple SD Gothic Neo",sans-serif}a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.18em}.header{padding:32px clamp(18px,4vw,52px) 24px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fffcf4 0%,#f3efe5 100%)}.header h1{margin:0 0 10px;font-size:clamp(24px,3vw,38px);line-height:1.18;letter-spacing:0}.header p{max-width:980px;margin:6px 0 0;color:var(--muted)}.badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.badge{border:1px solid var(--line-strong);border-radius:999px;padding:4px 10px;background:rgba(255,255,255,.72);color:#534b42;font-size:12px}.layout{padding:24px clamp(14px,3vw,36px) 48px}.index-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:22px}.card{display:block;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;box-shadow:var(--shadow);text-decoration:none;color:inherit}.card:hover{border-color:var(--accent)}.card h2{margin:0 0 8px;font-size:18px}.card p{margin:4px 0;color:var(--muted)}.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:20px}.metric{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px}.metric strong{display:block;font-size:22px;color:var(--accent)}.toolbar{position:sticky;top:0;z-index:5;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px clamp(14px,3vw,36px);border-bottom:1px solid var(--line);background:rgba(247,245,239,.94);backdrop-filter:blur(10px)}.toolbar a,.toolbar button{appearance:none;border:1px solid var(--line-strong);background:#fffdf8;color:var(--ink);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;text-decoration:none}.toolbar button.active{background:var(--accent);color:#fff;border-color:var(--accent)}.compare{display:grid;grid-template-columns:repeat(3,minmax(360px,1fr));gap:14px;align-items:start}.arm{min-width:0;background:var(--paper);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);overflow:hidden}.arm-header{position:sticky;top:49px;z-index:3;background:#fbf7ed;border-bottom:1px solid var(--line);padding:12px 14px}.arm-header h2{margin:0;font-size:16px}.arm-header p{margin:2px 0 0;color:var(--muted);font-size:12px}.doc{padding:18px}.doc h1,.doc h2,.doc h3,.doc h4{line-height:1.34;letter-spacing:0;scroll-margin-top:90px}.doc h1{margin:10px 0 16px;font-size:24px;border-bottom:1px solid var(--line);padding-bottom:10px}.doc h2{margin:28px 0 12px;font-size:20px}.doc h3{margin:22px 0 10px;font-size:17px}.doc h4{margin:18px 0 8px;font-size:15px;color:var(--accent-2)}.doc p{margin:10px 0}.doc ul,.doc ol{padding-left:24px}.doc li{margin:4px 0}.doc blockquote{margin:14px 0;padding:10px 14px;border-left:4px solid var(--accent-3);background:rgba(91,100,143,.08);color:#423e38}.doc code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;background:rgba(47,111,115,.10);padding:1px 4px;border-radius:4px}.doc pre{overflow:auto;background:#25231f;color:#f4efe5;padding:14px;border-radius:8px}.table-wrap{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:8px;background:#fff}table{width:100%;border-collapse:collapse;min-width:520px}th,td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:8px 10px;vertical-align:top}th:last-child,td:last-child{border-right:0}tr:last-child td{border-bottom:0}th{background:#eee7d8;font-weight:700}hr{border:0;border-top:1px solid var(--line);margin:26px 0}.mermaid-static{margin:16px 0;border:1px solid var(--line);border-radius:8px;overflow:auto;background:#fff}.mermaid-static svg{display:block;min-width:560px;width:100%;height:auto}.mermaid-static details{border-top:1px solid var(--line);padding:8px 10px;color:var(--muted)}.mermaid-static pre{margin:8px 0 0;background:#f3efe5;color:var(--ink)}.footnote{color:var(--muted);font-size:13px}@media(max-width:1180px){.compare{display:flex;overflow-x:auto;padding-bottom:12px;scroll-snap-type:x proximity}.arm{flex:0 0 min(88vw,620px);scroll-snap-align:start}}@media(max-width:720px){body{font-size:14px}.toolbar{top:0}.arm-header{top:49px}.doc{padding:14px}}
+</style>
+</head>
+<body>
+<header class="header"><h1>#153 visual aids · Disaster preparedness A · 일반 보고서</h1><p>Baseline, visual_supplement, visual_plan을 한 화면에서 비교합니다. 모든 스타일과 Mermaid 대체 SVG는 파일 안에 포함되어 있습니다.</p></header>
+<nav class="toolbar"><a href="index.html">Index</a><button class="active">3-arm comparison</button><span class="badge">Disaster preparedness A</span><span class="badge">일반 보고서</span></nav><main class="layout"><div class="compare"><section class="arm"><div class="arm-header"><h2>Baseline</h2><p>1,028 words · rendered tables/diagrams preserved</p></div><article class="doc"><h1>Emergency management</h1>
+<p>비상관리(Emergency management)는 재난이 난 뒤 현장에 출동하는 일만을 뜻하지 않는다. 승인된 출처는 이를 “자연적·인위적 위험에 대한 공동체의 취약성을 체계적으로 줄이고, 재난 발생 이후 조정된 대응을 수행하는 활동”으로 설명한다. 같은 맥락에서 disaster management, emergency preparedness라는 표현도 함께 쓰인다. 즉 핵심은 두 갈래다. 하나는 재난이 닥치기 전 공동체가 덜 취약해지도록 만드는 일이고, 다른 하나는 재난이 발생했을 때 피해를 줄이기 위해 여러 주체가 함께 움직이는 일이다.</p>
+<p>이 정의에서 중요한 기준은 “공동체가 스스로 감당하기 어려운 파괴적 사건”이다. 출처가 든 예시는 허리케인, 팬데믹, 테러다. 세 사건은 성격이 서로 다르다. 허리케인은 자연재해에 가깝고, 팬데믹은 보건 위기이며, 테러는 인위적 위해에 속한다. 그럼에도 모두 emergency management의 범위 안에 들어가는 이유는 같다. 피해가 개인의 준비나 한 기관의 대응만으로 해결되기 어렵고, 지역사회 전체의 취약성, 경보, 구조, 기본 필요 제공, 복구 역량이 함께 시험대에 오르기 때문이다.</p>
+<h2>1. 개념: 사고 대응이 아니라 취약성 관리</h2>
+<p>비상관리를 단순한 “사후 대응”으로 이해하면 범위가 좁아진다. 출처는 비상관리를 재난 뒤의 조정된 대응뿐 아니라 재난 전 취약성 감소까지 포함하는 체계로 둔다. 이 점은 실무적으로 중요하다. 재난의 피해는 사건 자체의 강도만으로 결정되지 않는다. 같은 폭풍, 같은 감염병, 같은 공격이라도 경보 체계, 대피 능력, 취약계층 지원, 의료·구호 물자, 지역정부와 시민단체의 협력 수준에 따라 결과가 달라질 수 있다.</p>
+<p>따라서 비상관리의 대상은 “위험”과 “공동체”를 함께 포함한다. 위험은 자연적일 수도 있고 인위적일 수도 있다. 공동체는 개인과 가구, 비정부기구, 지방·광역·연방 정부까지 포괄한다. 이 보고서의 근거 출처는 특정 국가의 법령이나 기관 구조를 세부적으로 설명하지 않으므로, 여기서는 특정 제도 모델보다 기본 개념과 단계에 초점을 맞춘다.</p>
+<h2>2. 네 가지 핵심 단계: 대비, 대응, 완화, 복구</h2>
+<p>출처는 비상관리 활동을 일반적으로 대비(preparedness), 대응(response), 완화(mitigation), 복구(recovery)로 분류할 수 있다고 설명한다. 다만 전 세계적으로 용어는 다양하며, disaster risk reduction이나 prevention 같은 표현도 함께 쓰인다고 덧붙인다. 이 말은 네 단계가 유일한 공식 분류라는 뜻은 아니다. 그러나 비상관리의 흐름을 이해하는 기본 틀로는 충분히 유용하다.</p>
+<div class="table-wrap"><table><thead><tr><th>단계</th><th>핵심 질문</th><th>보고서상 해석</th></tr></thead><tbody>
+<tr><td>대비</td><td>재난 전 무엇을 준비할 것인가</td><td>경보, 대피, 물자, 역할 분담, 훈련처럼 재난 전 역량을 만드는 영역</td></tr>
+<tr><td>대응</td><td>재난 발생 직후 무엇을 할 것인가</td><td>수색·구조, 기본 필요 제공, 대피 경보 등 긴급 활동</td></tr>
+<tr><td>완화</td><td>피해 가능성을 어떻게 줄일 것인가</td><td>공동체의 취약성을 낮추고 위험의 영향을 줄이는 활동</td></tr>
+<tr><td>복구</td><td>피해 이후 어떻게 정상 기능을 되찾을 것인가</td><td>재난 뒤 생활, 서비스, 제도적 기능을 회복하는 과정</td></tr>
+</tbody></table></div>
+<p>이 네 단계는 실제 상황에서 칼처럼 분리되기보다 서로 겹친다. 예를 들어 대피 경보는 대응 단계의 활동으로 볼 수 있지만, 경보 체계를 사전에 설계하고 훈련하는 일은 대비에 속한다. 취약성을 줄이는 완화 활동은 재난 전에도 필요하고, 복구 과정에서 다음 재난을 덜 위험하게 만드는 방식으로 이어질 수도 있다. 이 연결성을 놓치면 비상관리는 “사건이 터졌을 때만 움직이는 체계”로 축소된다.</p>
+<h2>3. 전문 활동: 구조, 기본 필요, 대피 경보</h2>
+<p>출처가 구체적으로 언급한 전문 비상관리 활동은 세 가지다. 수색과 구조, 피해를 입은 사람들의 기본 필요 제공, 대피 경보 발령이다. 이 세 활동은 비상관리의 실무적 성격을 잘 보여준다.</p>
+<p>수색과 구조는 생명을 직접 구하는 활동이다. 기본 필요 제공은 구조 이후에도 사람이 생존하고 생활을 이어갈 수 있도록 돕는 영역이다. 여기에는 물, 식량, 임시 거처, 의료 접근 같은 문제들이 포함될 수 있지만, 현재 출처는 세부 항목을 나열하지 않으므로 이 보고서에서는 일반적 의미로만 다룬다. 대피 경보는 피해가 발생하기 전 또는 확산되기 전에 사람들의 행동을 바꾸는 장치다. 경보가 늦거나 불명확하면 대응 역량이 있어도 피해를 줄이기 어렵다.</p>
+<p>이 세 활동은 서로 다른 시간대를 대표한다. 대피 경보는 재난의 전조나 초기 국면에 중요하고, 수색·구조는 피해가 발생한 직후에 중요하며, 기본 필요 제공은 생존과 복구 사이의 공백을 메운다. 비상관리는 바로 이 시간대의 연쇄를 끊기지 않게 만드는 관리 체계라고 볼 수 있다.</p>
+<h2>4. 협력 구조: 개인에서 연방정부까지</h2>
+<p>출처는 재난관리가 개인, 가구, 비정부기구, 지방·광역·연방 정부 간 협력을 요구한다고 설명한다. 이 문장은 짧지만 비상관리의 핵심 긴장을 담고 있다. 재난은 현장에서 발생하지만, 대응 자원과 권한은 여러 층위에 흩어져 있다. 개인과 가구는 가장 먼저 위험을 감지하고 행동해야 할 수 있다. 비정부기구는 현장 지원과 취약계층 접근에서 역할을 맡을 수 있다. 정부는 경보, 자원 배분, 구조 체계, 공공 서비스 복구를 조정한다.</p>
+<p>균형 있게 말하면, 현재 출처만으로는 어느 주체가 어떤 법적 책임을 지는지, 특정 국가에서 중앙정부와 지방정부의 권한이 어떻게 나뉘는지까지 결론낼 수 없다. 다만 출처가 명시한 협력의 범위는 분명하다. 비상관리는 한 기관의 독립적 업무가 아니라 다층적 조정 문제다. 이 점은 preparedness gaps, 즉 준비 격차를 볼 때 특히 중요하다.</p>
+<h2>5. 준비 격차: 확인된 사실과 남는 질문</h2>
+<p>이 보고서의 승인 출처는 “준비 격차”의 구체 사례를 제공하지 않는다. 따라서 특정 지역이 무엇을 얼마나 준비하지 못했는지, 어떤 예산이나 조직 결함이 있었는지, 어떤 경보 실패가 있었는지를 단정할 근거는 없다. 그러나 출처가 제공한 정의와 활동 범위에서 도출할 수 있는 일반적 질문은 있다.</p>
+<p>첫째, 공동체의 취약성을 줄이는 활동이 재난 전부터 충분히 이루어졌는가. 비상관리가 취약성 감소를 포함한다면, 준비 격차는 단순히 장비 부족만이 아니라 취약한 사람과 장소가 계속 취약하게 남아 있는 문제일 수 있다.</p>
+<p>둘째, 대피 경보와 같은 대응 신호가 실제 행동으로 이어질 만큼 명확하고 접근 가능했는가. 출처는 대피 경보를 전문 활동의 하나로 언급하지만, 경보의 속도, 신뢰도, 전달 채널, 수신자의 행동 여건은 추가 자료 없이는 판단할 수 없다.</p>
+<p>셋째, 개인·가구·NGO·정부 사이의 협력이 사전에 설계되어 있었는가. 협력이 필요하다는 사실과 협력이 실제로 작동한다는 사실은 다르다. 역할이 겹치거나 비어 있으면 대응은 지연될 수 있다. 반대로 역할과 정보 흐름이 정리되어 있으면 같은 자원으로도 피해를 줄일 가능성이 커진다.</p>
+<p>넷째, 복구가 다음 재난의 완화로 이어지는가. 복구가 단순히 이전 상태로 되돌아가는 데 그친다면, 같은 취약성이 반복될 수 있다. 다만 이 부분은 출처가 직접 다루는 사례가 아니므로, 이 보고서에서는 실무적 함의로 제시한다.</p>
+<h2>6. 결론: 비상관리는 “재난 이후”가 아니라 “재난 전후”의 체계다</h2>
+<p>현재 확인된 근거에 따르면, emergency management는 재난 발생 후 대응만을 뜻하지 않는다. 자연적·인위적 위험에 대한 공동체의 취약성을 줄이고, 재난 발생 뒤에는 구조, 기본 필요 제공, 대피 경보 등 조정된 활동을 수행하는 체계다. 대표 단계는 대비, 대응, 완화, 복구로 정리할 수 있으며, 그 목적은 재난을 예방하거나, 예방이 불가능할 때 피해를 줄이는 데 있다.</p>
+<p>다만 이 보고서는 단일 승인 출처에 기반한다. 따라서 특정 국가의 최신 제도, 기관별 책임, 실제 재난 사례의 성과 비교, 예산·시장 신호, 논쟁이나 루머는 결론의 근거로 삼지 않았다. 더 강한 보고서를 작성하려면 정부 지침, 재난 사례 조사보고서, 학술 문헌, 성과 지표와 사후 평가 자료가 추가로 필요하다. 특히 “준비 격차”를 진단하려면 경보 체계, 취약계층 지원, 기관 간 조정, 복구 성과를 보여주는 독립 자료가 있어야 한다.</p>
+<h2>출처와 관측 메모</h2>
+<p>이 보고서는 승인된 live reference 로컬 경로 출처 1개를 바탕으로 작성했다. 원문은 <code>Emergency management</code>, Source: &lt;https://en.wikipedia.org/wiki/Emergency_management&gt;, Retrieved: <code>2026-07-13T14:29:41Z</code>, License: Creative Commons Attribution-ShareAlike 4.0 International로 표시되어 있었다. 로컬 관측 정보는 human locator <code>disaster-preparedness-a.txt</code>, observation_event_id <code>evt_20260720083722_d0150a64</code>, observed_at <code>2026-07-20T08:37:22.945805Z</code>, sha256 <code>f0d3b06b9da9ef330c5e7d3bcc12d5bad55e3f877e07305aa31658aa5c4a670e</code>이다. git metadata는 제공되지 않았다.</p></article></section>
+<section class="arm"><div class="arm-header"><h2>Visual Supplement</h2><p>812 words · rendered tables/diagrams preserved</p></div><article class="doc"><h1>Emergency management</h1>
+<p>재난관리는 단순한 “사고 수습”이 아니라, 공동체가 자연적·인위적 위험에 얼마나 취약한지를 낮추고, 실제 재난이 발생했을 때 조정된 대응을 수행하는 체계적 활동이다. 원문은 이를 “disaster management” 또는 “emergency preparedness”와도 연결해 설명하며, 허리케인, 팬데믹, 테러처럼 공동체가 자체 역량만으로 감당하기 어려운 파괴적 사건을 주요 대상으로 든다.<sup>[source]</sup></p>
+<h2>핵심 관점: 재난은 대응 전에 이미 관리된다</h2>
+<p>재난관리의 중심축은 두 가지다. 첫째, 재난이 발생하기 전에 공동체의 취약성을 줄이는 일이다. 둘째, 재난이 발생한 뒤에는 피해를 입은 사람과 지역을 위해 조정된 대응을 실행하는 일이다. 이 관점에서는 “재난관리”가 현장 구조 활동만을 뜻하지 않는다. 예방할 수 있는 재난은 예방하고, 예방이 불가능한 경우에는 피해를 줄이는 것이 최종 목표다.<sup>[source]</sup></p>
+<p>다만 현재 확인된 원문은 짧은 개요 자료이므로, 특정 국가의 법제, 기관별 권한, 예산 구조, 성과 지표까지 뒷받침하지는 않는다. 따라서 이 글의 결론은 재난관리의 기본 개념과 단계, 협력 구조에 한정한다.</p>
+<h2>네 가지 활동 범주</h2>
+<p>원문은 세계적으로 용어 차이가 있지만, 재난관리 활동을 일반적으로 <strong>대비, 대응, 완화, 복구</strong>로 분류할 수 있다고 설명한다. 또 “disaster risk reduction”이나 “prevention” 같은 용어도 함께 쓰인다고 밝힌다.<sup>[source]</sup></p>
+<p>아래 표는 원문이 제시한 네 범주를 독자가 읽기 쉽게 정리한 것이다. “중심 질문”은 원문의 범주를 바탕으로 한 해석이며, 세부 운영 기준은 추가 자료가 필요하다.</p>
+<div class="table-wrap"><table><thead><tr><th>범주</th><th>중심 질문</th><th>원문이 뒷받침하는 범위</th><th>해석상 유의점</th></tr></thead><tbody>
+<tr><td>대비</td><td>재난 전에 무엇을 준비할 것인가</td><td>재난관리는 “emergency preparedness”와 연결되며, preparedness는 일반 범주 중 하나로 제시된다.</td><td>원문은 훈련, 비축, 경보체계 같은 세부 항목을 열거하지 않는다.</td></tr>
+<tr><td>대응</td><td>재난 직후 무엇을 할 것인가</td><td>조정된 사후 대응, 수색·구조, 피해자의 기본 필요 충족, 대피 경보 발령이 언급된다.</td><td>대응 활동은 가장 구체적으로 제시되지만, 기관별 역할 배분은 설명되지 않는다.</td></tr>
+<tr><td>완화</td><td>피해를 어떻게 줄일 것인가</td><td>재난을 예방하고, 불가능할 때는 해로운 영향을 줄이는 것이 목표로 제시된다.</td><td>완화가 인프라, 토지이용, 보험, 교육 중 무엇을 포함하는지는 별도 근거가 필요하다.</td></tr>
+<tr><td>복구</td><td>재난 이후 어떻게 회복할 것인가</td><td>recovery는 일반 범주 중 하나로 제시된다.</td><td>원문은 복구의 기간, 재건 원칙, 재정 조달 방식을 다루지 않는다.</td></tr>
+</tbody></table></div>
+<p>이 표의 핵심은 재난관리가 선형 절차 하나가 아니라는 점이다. 대비와 완화는 재난 전부터 작동하고, 대응은 재난 발생 직후 두드러지며, 복구는 사후 회복을 다룬다. 그러나 실제 제도에서는 이 범주들이 겹칠 수 있다. 현재 원문만으로는 각 단계의 경계를 엄격히 나누기보다, 재난관리의 기본 틀로 이해하는 것이 타당하다.</p>
+<h2>기관보다 협력이 먼저다</h2>
+<p>재난관리는 한 기관의 업무로 끝나지 않는다. 원문은 개인, 가구, 비정부기구, 지방정부, 광역정부, 연방정부의 협력이 필요하다고 설명한다.<sup>[source]</sup> 이 목록은 재난관리의 중요한 현실을 보여준다. 재난은 피해 현장에서 개인과 가구를 먼저 흔들지만, 그 영향은 곧 구조기관, 민간단체, 여러 층위의 정부 대응으로 확장된다.</p>
+<p>여기서 도출할 수 있는 실무적 함의는 명확하다. 재난관리의 취약점은 대개 “누가 담당자인가”만의 문제가 아니라, 서로 다른 주체들이 같은 상황을 얼마나 빨리 공유하고, 역할을 얼마나 명확히 나누며, 필요한 자원을 얼마나 제때 연결하는가의 문제로 나타난다. 다만 이는 원문의 협력 필요성에서 나온 해석이며, 특정 지역이나 기관의 실패 사례가 확인된 것은 아니다.</p>
+<h2>대비 격차를 어떻게 읽어야 하나</h2>
+<p>이번 자료는 “preparedness gaps”, 즉 대비 격차를 직접 열거하지 않는다. 따라서 “어떤 나라가 취약하다”거나 “어떤 기관의 대비가 부족하다”는 식의 결론은 낼 수 없다. 대신 원문이 제공한 정의를 바탕으로, 대비 격차를 점검할 때 필요한 질문은 제시할 수 있다.</p>
+<p>첫째, 공동체가 자체적으로 감당하기 어려운 사건을 전제로 하고 있는가. 원문은 재난관리가 공동체의 처리 능력을 압도하는 사건에 초점을 둔다.<sup>[source]</sup> 따라서 대비 계획은 평상시 행정 처리 수준이 아니라, 역량 초과 상황을 기준으로 검토되어야 한다.</p>
+<p>둘째, 대응 활동이 실제 사람의 필요로 연결되는가. 원문은 수색·구조, 기본 필요 제공, 대피 경보를 전문 활동의 예로 든다.<sup>[source]</sup> 대비 격차를 보려면 장비나 조직도만 볼 것이 아니라, 피해자가 구조되고, 먹고 자고 치료받고, 위험지역에서 빠져나갈 수 있는지까지 확인해야 한다.</p>
+<p>셋째, 협력 주체 간의 연결이 검증되어 있는가. 개인과 가구, NGO, 여러 정부 층위가 모두 포함된다면, 대비는 문서상의 책임 배분을 넘어 실제 연락망, 권한, 자원 동원, 경보 전달이 작동하는지로 평가되어야 한다. 이 역시 현재 원문에서 직접 검증된 사실은 아니며, 협력 필요성으로부터 나온 점검 방향이다.</p>
+<h2>현재 근거로 말할 수 없는 것</h2>
+<p>이 글이 사용한 원문은 재난관리의 개요를 설명하는 짧은 자료다. 출처 간 충돌은 확인되지 않았지만, 비교할 수 있는 두 번째 승인 자료도 없었다. 따라서 다음 항목은 이 보고서의 결론에서 제외한다.</p>
+<ul>
+<li>FEMA 또는 특정 국가 기관의 세부 제도</li>
+<li>국가별 재난관리 성과 비교</li>
+<li>예산, 인력, 장비, 훈련 빈도 같은 정량 지표</li>
+<li>특정 재난 사례의 성공·실패 평가</li>
+<li>최신 정책 논쟁, 시장 신호, 여론 반응, 루머</li>
+</ul>
+<p>이런 항목을 다루려면 법령, 기관 문서, 사후평가 보고서, 통계, 실제 훈련·재난 대응 기록이 추가로 필요하다.</p>
+<h2>결론</h2>
+<p>재난관리는 공동체의 취약성을 낮추고, 재난 발생 후 조정된 대응을 수행하며, 가능한 경우 재난을 예방하고 불가능할 때 피해를 줄이는 체계다. 그 활동은 대비, 대응, 완화, 복구라는 네 범주로 설명될 수 있지만, 실제 운영에서는 개인, 가구, NGO, 지방·광역·연방 정부가 함께 움직여야 한다.<sup>[source]</sup></p>
+<p>따라서 재난관리의 품질은 특정 기관의 존재만으로 판단하기 어렵다. 더 중요한 질문은 “공동체가 감당하기 어려운 사건을 실제로 가정하고 있는가”, “피해자의 기본 필요와 대피가 실행 가능한가”, “여러 주체의 협력이 검증되어 있는가”다. 현재 자료는 이 질문들에 대한 답을 제공하지는 않지만, 어떤 방향으로 대비 격차를 조사해야 하는지는 분명히 보여준다.</p>
+<p class="footnote"><sup>[source]</sup> 원문: *Emergency management*, https://en.wikipedia.org/wiki/Emergency_management, Creative Commons Attribution-ShareAlike 4.0 International, retrieved <code>2026-07-13T14:29:41Z</code>. 관찰한 live local_path 원문: <code>disaster-preparedness-a.txt</code>; observation_event_id <code>evt_20260720090957_cdfb0dd5</code>; observed_at <code>2026-07-20T09:09:57.936956Z</code>; sha256 <code>f0d3b06b9da9ef330c5e7d3bcc12d5bad55e3f877e07305aa31658aa5c4a670e</code>. 관찰 메타데이터에 Git 정보는 제공되지 않았다.</p></article></section>
+<section class="arm"><div class="arm-header"><h2>Visual Plan</h2><p>941 words · rendered tables/diagrams preserved</p></div><article class="doc"><h1>Emergency management</h1>
+<p>재난관리(emergency management)는 재난이 난 뒤 “무엇을 할 것인가”만을 뜻하지 않는다. 승인된 원본 자료인 *Emergency management*는 이를 자연적·인위적 위험에 대한 공동체의 취약성을 체계적으로 줄이고, 재난 발생 뒤에는 조정된 대응을 수행하는 활동으로 설명한다. 여기서 핵심은 두 가지다. 첫째, 재난관리는 위험이 현실화되기 전부터 시작된다. 둘째, 재난이 발생한 뒤에는 한 기관이나 개인이 아니라 여러 행위자의 협력이 필요하다.</p>
+<p>이 보고서는 현재 확인된 단일 원본 자료에 근거해 재난관리의 기본 구조를 정리한다. 구체 국가의 제도, 최신 기관 정책, 예산, 성과 지표, 특정 사건의 실패 원인까지 단정하기에는 자료가 부족하므로, 그런 부분은 결론이 아니라 추가 검증 질문으로 남긴다.</p>
+<h2>재난관리의 범위와 목적</h2>
+<p>원본 자료는 재난관리를 “공동체가 자체적으로 감당하기 어려운 파괴적 사건”을 다루는 영역으로 설명한다. 예시로는 허리케인, 팬데믹, 테러가 제시된다. 이 세 사례는 성격이 다르다. 허리케인은 자연재해에 가깝고, 팬데믹은 보건·사회 시스템 전체를 흔들며, 테러는 인위적 위협에 해당한다. 그럼에도 모두 재난관리의 범위에 들어가는 이유는 한 공동체의 일상적 대응 능력을 넘어서는 피해와 조정 필요성을 만들기 때문이다.</p>
+<p>따라서 재난관리의 목적은 단순한 사후 수습이 아니다. 자료는 재난관리의 결과를 재난을 예방하고, 예방이 불가능할 때는 해로운 영향을 줄이는 것으로 정리한다. 이 문장은 중요한 경계선을 만든다. 모든 위험을 없앨 수 있다는 뜻이 아니라, 피해 가능성과 피해 규모를 줄이는 실천 체계가 재난관리라는 뜻이다.</p>
+<h2>핵심 활동과 참여 주체</h2>
+<p>원본 자료가 제시하는 전문적 재난관리 활동에는 수색·구조, 피해자의 기본적 필요 충족, 대피 경보 발령이 포함된다. 이 세 활동은 각각 다른 시간 감각을 가진다. 대피 경보는 피해가 커지기 전에 사람을 위험에서 벗어나게 하려는 활동이고, 수색·구조는 이미 발생한 피해 상황에서 생명을 구하는 활동이며, 기본 필요 충족은 피해 이후 생존과 생활의 최소 조건을 지탱하는 활동이다.</p>
+<p>자료는 또한 재난관리가 여러 주체의 협력을 요구한다고 말한다. 개인과 가구, 비정부기구, 지방·주·연방 정부가 함께 등장한다. 이는 재난관리의 책임이 어느 한 층위에만 놓이지 않는다는 점을 보여준다. 개인과 가구는 위험 인지와 초기 행동의 단위가 될 수 있고, 비정부기구는 현장 지원과 취약 집단 지원에서 역할을 맡을 수 있으며, 정부는 경보, 자원 배분, 구조·복구 조정 같은 공적 책임을 수행한다. 다만 현재 자료만으로는 각 주체의 법적 권한, 지휘 체계, 예산 책임까지는 확인할 수 없다.</p>
+<h2>네 단계 프레임: 대비·대응·완화·복구</h2>
+<p>자료는 세계적으로 다양한 용어가 쓰이지만, 재난관리 활동을 대체로 대비(preparedness), 대응(response), 완화(mitigation), 복구(recovery)로 범주화할 수 있다고 설명한다. 이 네 단계는 재난관리를 시간순 업무 목록으로만 보는 대신, 재난 전후의 목표와 책임을 나누어 이해하게 해 준다.</p>
+<div class="table-wrap"><table><thead><tr><th>범주</th><th>이 자료에서 확인되는 근거</th><th>해석상 역할</th><th>주의할 점</th></tr></thead><tbody>
+<tr><td>대비</td><td>emergency preparedness가 재난관리의 다른 명칭으로 제시됨</td><td>재난 발생 전 준비와 대응 능력 형성의 범주로 이해할 수 있음</td><td>원본은 구체 훈련, 비축, 계획 수립 항목을 열거하지 않음</td></tr>
+<tr><td>대응</td><td>재난 발생 뒤 coordinated response가 필요하다고 설명함</td><td>경보, 수색·구조, 기본 필요 지원 같은 즉각적 활동과 연결됨</td><td>기관별 지휘 체계나 표준 절차는 이 자료만으로 확인되지 않음</td></tr>
+<tr><td>완화</td><td>취약성 감소와 피해 영향 축소가 재난관리의 목적이라고 설명함</td><td>위험 자체 또는 피해 규모를 줄이는 방향의 활동으로 해석됨</td><td>구조물 보강, 토지 이용, 보험 등 구체 수단은 추가 자료가 필요함</td></tr>
+<tr><td>복구</td><td>recovery가 일반 범주 중 하나로 제시됨</td><td>재난 이후 생활·서비스·공동체 기능을 회복하는 단계로 이해할 수 있음</td><td>원본은 복구의 세부 범위와 종료 기준을 설명하지 않음</td></tr>
+</tbody></table></div>
+<p>이 표의 핵심은 네 단계가 모두 같은 정도로 자세히 뒷받침되는 것은 아니라는 점이다. 원본 자료는 네 범주 이름과 재난관리의 총괄 목적을 제공하지만, 각 단계의 세부 정책 도구까지 제공하지는 않는다. 따라서 이 보고서에서 네 단계는 분석 틀로 사용할 수 있으나, 특정 제도의 성과를 평가하는 기준으로 쓰려면 별도 근거가 필요하다.</p>
+<h2>용어 차이와 해석상 주의점</h2>
+<p>자료는 emergency management 외에도 disaster management, emergency preparedness라는 표현을 함께 제시한다. 또한 disaster risk reduction과 prevention 같은 용어도 흔하다고 설명한다. 이 차이는 단순한 번역 문제가 아니다.</p>
+<p>예를 들어 “대응”을 중심에 두는 표현은 재난 발생 후의 현장 조정과 구조 활동을 강조하기 쉽다. 반면 “위험 감소”나 “예방”을 앞세우는 표현은 재난 전 취약성 축소와 피해 가능성 관리에 더 큰 무게를 둘 수 있다. 원본 자료가 말하는 재난관리의 목적은 예방과 피해 저감 모두를 포함하므로, 한 용어만으로 전체 범위를 좁게 이해하는 것은 조심해야 한다.</p>
+<p>다만 현재 자료는 각 용어가 어느 국가나 기관에서 어떻게 다르게 쓰이는지까지 비교하지 않는다. 따라서 용어 차이가 실제 정책 차이로 이어지는지 확인하려면 특정 기관 문서, 법령, 국제기구 기준, 사후 평가 보고서를 추가로 읽어야 한다.</p>
+<h2>대비 격차: 지금 말할 수 있는 것과 없는 것</h2>
+<p>미션의 관심사 중 하나는 preparedness gaps, 즉 대비 격차다. 그러나 현재 승인된 원본 자료는 재난관리의 일반 정의와 범주를 설명할 뿐, 특정 지역·기관·사건에서 어떤 대비가 부족했는지를 분석하지 않는다. 따라서 이 보고서에서 “대비 격차”를 특정 실패 원인으로 단정하는 것은 근거 범위를 넘는다.</p>
+<p>그럼에도 이 자료에서 출발해 합리적으로 제기할 수 있는 질문은 있다.</p>
+<ul>
+<li>공동체의 취약성을 줄인다는 목표가 실제 계획, 훈련, 경보 체계, 자원 배분에 어떻게 반영되어 있는가?</li>
+<li>개인·가구·비정부기구·지방·주·연방 정부 사이의 협력은 사전에 정해진 절차로 작동하는가, 아니면 사건 발생 뒤 임시 조정에 의존하는가?</li>
+<li>대피 경보, 수색·구조, 기본 필요 지원 사이의 우선순위와 책임 소재는 명확한가?</li>
+<li>복구 단계의 목표는 단순한 시설 복원인가, 아니면 취약성 감소까지 포함하는가?</li>
+<li>“예방이 불가능할 때 피해를 줄인다”는 목표를 평가할 지표가 있는가?</li>
+</ul>
+<p>이 질문들은 결론이 아니라 조사 의제다. 균형 있게 말하면, 현재 자료는 재난관리의 기본 프레임을 세우는 데는 충분하지만, 대비 격차의 실제 규모와 원인을 판단하기에는 부족하다.</p>
+<h2>결론</h2>
+<p>재난관리는 재난 직후의 현장 대응만을 뜻하지 않는다. 원본 자료에 따르면 재난관리는 자연적·인위적 위험에 대한 공동체의 취약성을 줄이고, 재난 발생 뒤에는 조정된 대응을 수행하며, 궁극적으로 재난을 예방하거나 피해를 줄이려는 체계다. 그 안에는 수색·구조, 기본 필요 지원, 대피 경보 같은 활동이 포함되고, 개인·가구·비정부기구·여러 층위의 정부가 함께 관여한다.</p>
+<p>가장 실용적인 이해 틀은 대비·대응·완화·복구의 네 범주다. 다만 이 틀은 출발점이지 완성된 평가표가 아니다. 실제 대비 격차를 말하려면 특정 관할권의 제도 자료, 예산과 인력, 훈련 기록, 사건별 사후 평가, 경보와 구조의 실제 작동 기록이 필요하다. 현재 근거로 가능한 결론은 분명하다. 재난관리는 사전 취약성 감소와 사후 조정 대응을 함께 요구하는 협력 체계이며, 구체적 실패와 격차를 말하려면 추가 검증이 필요하다.</p>
+<h2>출처와 관찰 정보</h2>
+<ul>
+<li>*Emergency management*, https://en.wikipedia.org/wiki/Emergency_management, Creative Commons Attribution-ShareAlike 4.0 International, retrieved 2026-07-13T14:29:41Z.</li>
+<li>원본은 live local_path 자료 <code>disaster-preparedness-a.txt</code>로 관찰되었다. 관찰 이벤트: <code>evt_20260720091235_bbf94632</code>; 관찰 시각: 2026-07-20T09:12:35.032714Z; SHA-256: <code>f0d3b06b9da9ef330c5e7d3bcc12d5bad55e3f877e07305aa31658aa5c4a670e</code>.</li>
+</ul></article></section></div></main>
+</body>
+</html>
