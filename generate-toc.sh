@@ -30,7 +30,10 @@ emit_link_list() {
       printf 'error: unsafe path for generated Markdown link: %s\n' "$path" >&2
       exit 1
     fi
-    name=${path##*/}
+    case $path in
+    drafts/*/*) name=${path#drafts/} ;;
+    *) name=${path##*/} ;;
+    esac
     printf -- '- [%s](./%s)\n' "$name" "$path"
   done
 }
@@ -54,10 +57,10 @@ emit_link_list() {
   printf '\n'
 
   printf '### Drafts\n\n'
-  for file in "$repo_root"/drafts/*.html; do
-    [ -f "$file" ] || continue
-    printf 'drafts/%s\n' "${file##*/}"
-  done | sort | emit_link_list
+  find "$repo_root/drafts" -type f -name '*.html' -print |
+    sed "s|^$repo_root/||" |
+    sort |
+    emit_link_list
   printf '%s\n' "$end_marker"
 } >"$block_file"
 
